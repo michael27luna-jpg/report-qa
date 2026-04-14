@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QA Shadow — Week Dashboard</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-left">
+      <h1>QA <span>Shadow</span> Dashboard</h1>
+      <p>// Week of Apr 6 – Apr 10, 2026 &nbsp;|&nbsp; Cox Automotive</p>
+    </div>
+    <div class="week-badge">WK 15 · 2026</div>
+  </header>
+
+  <!-- ── TABS ── -->
+  <div class="tabs">
+    <div class="tab active"  onclick="showPanel('overview')">Overview</div>
+    <div class="tab"         onclick="showPanel('cases')">Case Log</div>
+    <div class="tab"         onclick="showPanel('team')">Team Analysis</div>
+    <div class="tab"         onclick="showPanel('guidelines')">Guidelines</div>
+    <div class="tab"         onclick="showPanel('report')">Weekly Report</div>
+    <div class="tab"         onclick="showPanel('import')">+ Import Data</div>
+  </div>
+
+  <!-- ════════════════════════ OVERVIEW ════════════════════════ -->
+  <div class="panel active" id="panel-overview">
+
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Cases Reviewed per Day</div>
+      <div class="timeline" id="timeline"></div>
+      <div style="margin-top:14px;" id="daily-bars"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Status Distribution</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-status"></svg>
+          <div class="donut-legend" id="donut-status-legend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bug Categories</div>
+        <div class="bar-chart" id="cat-bars"></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-title">Top Bug Contributors</div>
+        <div class="bar-chart" id="owner-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">LP vs Posting Split</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-type"></svg>
+          <div class="donut-legend" id="donut-type-legend"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════ CASE LOG ════════════════════════ -->
+  <div class="panel" id="panel-cases">
+    <div class="day-filters" id="day-filters"></div>
+    <div class="card">
+      <div class="card-title">Bug Log — <span id="case-count-label">All Days</span></div>
+      <div class="scroll-x">
+        <table class="data-table" id="case-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Owner</th>
+              <th>Task ID</th>
+              <th>Status</th>
+              <th>Type</th>
+              <th>Categories</th>
+              <th>Summary</th>
+            </tr>
+          </thead>
+          <tbody id="case-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ TEAM ════════════════════════ -->
+  <div class="panel" id="panel-team">
+    <div class="owner-grid" id="owner-grid"></div>
+  </div>
+
+  <!-- ════════════════════════ GUIDELINES ════════════════════════ -->
+  <div class="panel" id="panel-guidelines">
+    <div class="grid-2">
+
+      <!-- Left column -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Bug Classification</div>
+
+          <div class="guide-section">
+            <h3>🟢 Observed</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">🎨</span>Styling issues (spacing, layout, responsive)</li>
+              <li class="ok"><span class="guide-icon">🖼</span>Title on images</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🔴 Failed</h3>
+            <ul class="guide-list">
+              <li class="warn"><span class="guide-icon">🔗</span>Linking errors</li>
+              <li class="warn"><span class="guide-icon">⚓</span>Broken anchors (#)</li>
+              <li class="warn"><span class="guide-icon">📄</span>Double H1 tags</li>
+              <li class="warn"><span class="guide-icon">📦</span>Inventory config mismatch</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🚨 Critical</h3>
+            <ul class="guide-list">
+              <li class="danger"><span class="guide-icon">❌</span>Missing content</li>
+              <li class="danger"><span class="guide-icon">📋</span>Instructions not followed (custom order, content, etc.)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Error Type Classification</div>
+          <ul class="guide-list">
+            <li class="danger"><span class="guide-icon">😴</span><div><strong>Careless</strong> — Simple mistakes from lack of attention (empty space, wrong image)</div></li>
+            <li class="warn"><span class="guide-icon">📚</span><div><strong>Knowledge Gap</strong> — Missing understanding of config rules or anchoring</div></li>
+            <li class="ok"><span class="guide-icon">🎲</span><div><strong>One-time</strong> — Isolated, not repeated, context-specific</div></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Control Points (Daily)</div>
+          <ul class="guide-list">
+            <li class="warn"><span class="guide-icon">🕔</span><div><strong>5:00–5:30 PM</strong> → Assign same-day cases. Team pauses QA intake.</div></li>
+            <li class="warn"><span class="guide-icon">🕙</span><div><strong>11:00–11:30 AM</strong> → Assign late cases from previous day.</div></li>
+            <li class="ok"><span class="guide-icon">📊</span><div><strong>Midday update</strong> → People reviewed, key issues, patterns, pending risks.</div></li>
+            <li class="ok"><span class="guide-icon">📝</span><div><strong>End-of-day report</strong> → Full summary including actions needed.</div></li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Pending Work Checklist</div>
+          <ul class="guide-list">
+            <li class="ok"><span class="guide-icon">✔</span>No pending bugs from previous days</li>
+            <li class="ok"><span class="guide-icon">✔</span>No missed reworks</li>
+            <li class="ok"><span class="guide-icon">✔</span>WOMS queues checked</li>
+            <li class="ok"><span class="guide-icon">✔</span>Pending Reworks filter verified</li>
+            <li class="ok"><span class="guide-icon">✔</span>Not-completed posting cases filter verified</li>
+            <li class="ok"><span class="guide-icon">✔</span>Reply received / hidden statuses reviewed</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Success Criteria</div>
+          <ul class="guide-list">
+            <li class="ok"><span class="guide-icon">✔</span>No pending work</li>
+            <li class="ok"><span class="guide-icon">✔</span>All cases reviewed</li>
+            <li class="ok"><span class="guide-icon">✔</span>Bugs followed up</li>
+            <li class="ok"><span class="guide-icon">✔</span>Queues under control</li>
+            <li class="ok"><span class="guide-icon">✔</span>Risks detected early</li>
+            <li class="ok"><span class="guide-icon">✔</span>Clear performance patterns</li>
+            <li class="ok"><span class="guide-icon">✔</span>Continuous team improvement</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════ WEEKLY REPORT ════════════════════════ -->
+  <div class="panel" id="panel-report">
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div>
+        <div class="card-title" style="margin-bottom:8px;">Daily Comment (Midday/EOD)</div>
+        <div class="report-box" id="daily-report"></div>
+        <button class="copy-btn" onclick="copyText('daily-report')">Copy ↗</button>
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:8px;">Weekly Summary</div>
+        <div class="report-box" id="weekly-report"></div>
+        <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ IMPORT DATA ════════════════════════ -->
+  <div class="panel" id="panel-import">
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Import from Google Sheets (CSV Export)</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;">
+        Export your Google Sheet as CSV (<strong style="color:var(--text)">File → Download → CSV</strong>)
+        then upload below. Columns expected:
+        <code style="color:var(--accent)">Owner, ID task, Status, Summary bugs, Type, day</code>
+      </p>
+      <label class="import-area" for="csv-file-input">
+        <div class="import-icon">📂</div>
+        <div class="import-label">
+          <strong>Click to upload CSV</strong><br>or drop your file here
+        </div>
+      </label>
+      <input type="file" id="csv-file-input" accept=".csv"/>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Google Sheets CSV Link</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">
+        Publish your sheet to the web
+        (<strong style="color:var(--text)">File → Share → Publish to web → CSV</strong>)
+        and paste the link below.
+      </p>
+      <div class="gs-link-row">
+        <input class="gs-input" id="gs-url" type="text"
+          placeholder="https://docs.google.com/spreadsheets/d/…/pub?output=csv"/>
+        <button class="btn btn-accent" onclick="fetchGS()">Load Sheet</button>
+      </div>
+      <div id="import-status" style="font-size:.78rem;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Expected Google Sheet Column Format</div>
+      <div class="scroll-x">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Column A</th>
+              <th>Column B</th>
+              <th>Column C</th>
+              <th>Column D</th>
+              <th>Column E</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Owner</td><td>ID task</td><td>Status</td><td>Summary bugs</td><td>Type</td></tr>
+            <tr><td>Jesus Macedo</td><td>D-12345</td><td>Failed</td><td>D | Issue | Config | inventory config</td><td>LP</td></tr>
+            <tr><td>Javier Callejas</td><td>D-67890</td><td>Observed</td><td>M | Issue | Styling | empty space</td><td>LP</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /shell -->
+
+<!-- JavaScript -->
+<script src="app.js"></script>
+</body>
+</html>
