@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════
    QA Shadow Dashboard — app.js
-   Week of Apr 6–10, 2026 · Cox Automotive
+   Week of Apr 13–17, 2026 · Cox Automotive
    ═══════════════════════════════════════════ */
 
 // ─────────────────────────────────────────────────────────────
-// DATA  (extracted from Excel — Apr 6–10, 2026)
+// DATA  (extracted from Excel — Apr 13–17, 2026)
 // ─────────────────────────────────────────────────────────────
 let DATA = [
   // ── Apr 7 ──
@@ -66,8 +66,10 @@ let DATA = [
   { day:"Apr 10", owner:"Jesus Macedo",     task_id:"D-36910",       status:"Observed", type:"LP",      summary:"D | Question | Styling | why you leave this empty space?",                                                                                                                   categories:["Styling"] }
 ];
 
-// Note: Apr 6 had 8 cases (counted from weekly chart data — all Observed)
-const DAYS = ["Apr 6", "Apr 7", "Apr 8", "Apr 9", "Apr 10"];
+// Note: day counts are generated dynamically from the current dataset.
+const WEEK_NUMBER = '16';
+const WEEK_RANGE  = 'Apr 13–17, 2026';
+const DAYS = ["Apr 13", "Apr 14", "Apr 15", "Apr 16", "Apr 17"];
 
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
@@ -154,15 +156,12 @@ function renderOverview() {
       <div class="kpi-sub">${k.sub}</div>
     </div>`).join('');
 
-  // Day counts (Apr 6 from chart data = 8)
+  // Day counts for this week
   const byDay = groupBy(d, 'day');
-  const counts = {
-    "Apr 6":  8,
-    "Apr 7":  byDay["Apr 7"]?.length  || 0,
-    "Apr 8":  byDay["Apr 8"]?.length  || 0,
-    "Apr 9":  byDay["Apr 9"]?.length  || 0,
-    "Apr 10": byDay["Apr 10"]?.length || 0,
-  };
+  const counts = DAYS.reduce((acc, day) => {
+    acc[day] = byDay[day]?.length || 0;
+    return acc;
+  }, {});
 
   // Timeline strip
   document.getElementById('timeline').innerHTML = DAYS.map(day => `
@@ -341,7 +340,7 @@ function renderReport() {
   const repeatedConfig = d.filter(x => x.categories.includes('Config')).length >= 5;
 
   document.getElementById('daily-report').textContent =
-`QA Shadow – Daily EOD (Apr 6–10, 2026)
+`QA Shadow – Daily EOD (${WEEK_RANGE})
 
 • Reviewed: ${owners.length} people / ${total} cases
 • Main issues: Config mismatches (inventory filter / trim), Styling (empty space, mobile layout)
@@ -352,7 +351,7 @@ function renderReport() {
 
   document.getElementById('weekly-report').textContent =
 `QA Shadow – Weekly Summary
-Week Apr 6–10, 2026
+Week ${WEEK_RANGE}
 
 ## Coverage
 - Total people reviewed: ${owners.length}
@@ -464,7 +463,10 @@ function showPanel(id) {
   event.target.classList.add('active');
   if (id === 'cases')  renderCases();
   if (id === 'team')   renderTeam();
-  if (id === 'report') renderReport();
+  if (id === 'report') {
+    renderReport();
+    renderOverview();
+  }
 }
 
 function copyText(id) {
@@ -481,10 +483,14 @@ function rerender() {
   renderOverview();
   if (document.getElementById('panel-cases').classList.contains('active'))  renderCases();
   if (document.getElementById('panel-team').classList.contains('active'))   renderTeam();
-  if (document.getElementById('panel-report').classList.contains('active')) renderReport();
+  if (document.getElementById('panel-report').classList.contains('active')) {
+    renderReport();
+    renderOverview();
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────
+renderReport();
 renderOverview();

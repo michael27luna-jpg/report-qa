@@ -19,60 +19,18 @@
   <header>
     <div class="header-left">
       <h1>QA <span>Shadow</span> Dashboard</h1>
-      <p>// Week of Apr 6 – Apr 10, 2026 &nbsp;|&nbsp; Cox Automotive</p>
+      <p>// Week of Apr 13 – Apr 17, 2026 &nbsp;|&nbsp; Cox Automotive</p>
     </div>
-    <div class="week-badge">WK 15 · 2026</div>
+    <div class="week-badge">WK 16 · 2026</div>
   </header>
 
   <!-- ── TABS ── -->
   <div class="tabs">
-    <div class="tab active"  onclick="showPanel('overview')">Overview</div>
-    <div class="tab"         onclick="showPanel('cases')">Case Log</div>
+    <div class="tab active"  onclick="showPanel('report')">Weekly Report</div>
     <div class="tab"         onclick="showPanel('team')">Team Analysis</div>
     <div class="tab"         onclick="showPanel('guidelines')">Guidelines</div>
-    <div class="tab"         onclick="showPanel('report')">Weekly Report</div>
+    <div class="tab"         onclick="showPanel('cases')">Case Log</div>
     <div class="tab"         onclick="showPanel('import')">+ Import Data</div>
-  </div>
-
-  <!-- ════════════════════════ OVERVIEW ════════════════════════ -->
-  <div class="panel active" id="panel-overview">
-
-    <div class="kpi-row" id="kpi-row"></div>
-
-    <div class="card" style="margin-bottom:16px;">
-      <div class="card-title">Cases Reviewed per Day</div>
-      <div class="timeline" id="timeline"></div>
-      <div style="margin-top:14px;" id="daily-bars"></div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-title">Status Distribution</div>
-        <div class="donut-wrap">
-          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-status"></svg>
-          <div class="donut-legend" id="donut-status-legend"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Bug Categories</div>
-        <div class="bar-chart" id="cat-bars"></div>
-      </div>
-    </div>
-
-    <div class="grid-2" style="margin-top:16px;">
-      <div class="card">
-        <div class="card-title">Top Bug Contributors</div>
-        <div class="bar-chart" id="owner-bars"></div>
-      </div>
-      <div class="card">
-        <div class="card-title">LP vs Posting Split</div>
-        <div class="donut-wrap">
-          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-type"></svg>
-          <div class="donut-legend" id="donut-type-legend"></div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- ════════════════════════ CASE LOG ════════════════════════ -->
@@ -192,7 +150,7 @@
   </div>
 
   <!-- ════════════════════════ WEEKLY REPORT ════════════════════════ -->
-  <div class="panel" id="panel-report">
+  <div class="panel active" id="panel-report">
     <div class="grid-2" style="margin-bottom:20px;">
       <div>
         <div class="card-title" style="margin-bottom:8px;">Daily Comment (Midday/EOD)</div>
@@ -203,6 +161,42 @@
         <div class="card-title" style="margin-bottom:8px;">Weekly Summary</div>
         <div class="report-box" id="weekly-report"></div>
         <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Cases Reviewed per Day</div>
+      <div class="timeline" id="timeline"></div>
+      <div style="margin-top:14px;" id="daily-bars"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Status Distribution</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-status"></svg>
+          <div class="donut-legend" id="donut-status-legend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bug Categories</div>
+        <div class="bar-chart" id="cat-bars"></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-title">Top Bug Contributors</div>
+        <div class="bar-chart" id="owner-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">LP vs Posting Split</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-type"></svg>
+          <div class="donut-legend" id="donut-type-legend"></div>
+        </div>
       </div>
     </div>
   </div>
