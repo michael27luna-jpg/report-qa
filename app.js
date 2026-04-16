@@ -6,68 +6,68 @@
 // ─────────────────────────────────────────────────────────────
 // DATA  (extracted from Excel — Apr 6–10, 2026)
 // ─────────────────────────────────────────────────────────────
-let DATA = [
-  // ── Apr 7 ──
-  { day:"Apr 7", owner:"Javier Callejas",  task_id:"D-36300",       status:"Observed", type:"LP",      summary:"M | Issue | Content | H1 and content appears below the map widget only on mobile view",                                                                                      categories:["Content"] },
-  { day:"Apr 7", owner:"Javier Callejas",  task_id:"MS0326208217",   status:"Observed", type:"LP",      summary:"D | Issue | Linking | Research CTA button should use # anchoring when going to section in the same page",                                                                    categories:["Linking"] },
-  { day:"Apr 7", owner:"Diego Torrez",     task_id:"D-36245",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | Text content container got not left padding",                                                                                                          categories:["Styling"] },
-  { day:"Apr 7", owner:"Javier Callejas",  task_id:"MS0326208411",   status:"Observed", type:"LP",      summary:"D | Issue | Config | Inventory on page shows less vehicles than in new inventory page filtered to show only Tahoe model",                                                    categories:["Config"] },
-  { day:"Apr 7", owner:"Edmundo Morales",  task_id:"D-36227",        status:"Observed", type:"LP",      summary:"D | Issue | Config | View Inventory CTA button has not been anchored to any section",                                                                                        categories:["Config"] },
-  { day:"Apr 7", owner:"Alexander Sosa",   task_id:"D-35530",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | Way too much space between sections",                                                                                                                  categories:["Styling"] },
-  { day:"Apr 7", owner:"Diego Torrez",     task_id:"D-46678",        status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory mismatch with used inventory filter to SUV body style",                                                                                       categories:["Config"] },
-  { day:"Apr 7", owner:"Nestor Apaza",     task_id:"D-44108",        status:"Failed",   type:"Posting", summary:"D | Issue | Content | missing content",                                                                                                                                      categories:["Content"] },
+// let DATA = [
+//   // ── Apr 7 ──
+//   { day:"Apr 7", owner:"Javier Callejas",  task_id:"D-36300",       status:"Observed", type:"LP",      summary:"M | Issue | Content | H1 and content appears below the map widget only on mobile view",                                                                                      categories:["Content"] },
+//   { day:"Apr 7", owner:"Javier Callejas",  task_id:"MS0326208217",   status:"Observed", type:"LP",      summary:"D | Issue | Linking | Research CTA button should use # anchoring when going to section in the same page",                                                                    categories:["Linking"] },
+//   { day:"Apr 7", owner:"Diego Torrez",     task_id:"D-36245",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | Text content container got not left padding",                                                                                                          categories:["Styling"] },
+//   { day:"Apr 7", owner:"Javier Callejas",  task_id:"MS0326208411",   status:"Observed", type:"LP",      summary:"D | Issue | Config | Inventory on page shows less vehicles than in new inventory page filtered to show only Tahoe model",                                                    categories:["Config"] },
+//   { day:"Apr 7", owner:"Edmundo Morales",  task_id:"D-36227",        status:"Observed", type:"LP",      summary:"D | Issue | Config | View Inventory CTA button has not been anchored to any section",                                                                                        categories:["Config"] },
+//   { day:"Apr 7", owner:"Alexander Sosa",   task_id:"D-35530",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | Way too much space between sections",                                                                                                                  categories:["Styling"] },
+//   { day:"Apr 7", owner:"Diego Torrez",     task_id:"D-46678",        status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory mismatch with used inventory filter to SUV body style",                                                                                       categories:["Config"] },
+//   { day:"Apr 7", owner:"Nestor Apaza",     task_id:"D-44108",        status:"Failed",   type:"Posting", summary:"D | Issue | Content | missing content",                                                                                                                                      categories:["Content"] },
 
-  // ── Apr 8 ──
-  { day:"Apr 8", owner:"Romel Pinto",      task_id:"D-35627",        status:"Failed",   type:"LP",      summary:"M | Issue | Styling | different image and missing some ones\nM/D | Issue | Config | Inventory is showing 2025 model",                                                        categories:["Styling","Config"] },
-  { day:"Apr 8", owner:"Diego Torrez",     task_id:"D-36788",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | \"Learn More\" CTA button overflows its container in mobile view\nM | Issue | Styling | Background image in text section gets blurred and vehicle cropped", categories:["Styling"] },
-  { day:"Apr 8", owner:"Romel Pinto",      task_id:"D-36036",        status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | incorrect segment distribution",                                                                                                                     categories:["Styling"] },
-  { day:"Apr 8", owner:"Michael Luna",     task_id:"D-36248",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
-  { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-35920",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config\nM/D | Issue | Styling | the first right content with image needs to be black",                                                      categories:["Styling","Config"] },
-  { day:"Apr 8", owner:"Ariel Vargas",     task_id:"D-45300",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | image cut mobile view",                                                                                                                                categories:["Styling"] },
-  { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36120",        status:"Critical", type:"LP",      summary:"M/D | Issue | Content | the PM ask for inventory under header",                                                                                                               categories:["Content"] },
-  { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36052",        status:"Failed",   type:"LP",      summary:"M/D | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
-  { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36251",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | empty space",                                                                                                                                          categories:["Styling"] },
-  { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36424",        status:"Observed", type:"LP",      summary:"M/D | Question | Styling | why you dont use the same left/right image for technology and trim levels?",                                                                       categories:["Question"] },
-  { day:"Apr 8", owner:"Ambar Rojas",      task_id:"D-46057",        status:"Failed",   type:"Posting", summary:"D | Issue | Config | one content is not showing",                                                                                                                             categories:["Config"] },
+//   // ── Apr 8 ──
+//   { day:"Apr 8", owner:"Romel Pinto",      task_id:"D-35627",        status:"Failed",   type:"LP",      summary:"M | Issue | Styling | different image and missing some ones\nM/D | Issue | Config | Inventory is showing 2025 model",                                                        categories:["Styling","Config"] },
+//   { day:"Apr 8", owner:"Diego Torrez",     task_id:"D-36788",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | \"Learn More\" CTA button overflows its container in mobile view\nM | Issue | Styling | Background image in text section gets blurred and vehicle cropped", categories:["Styling"] },
+//   { day:"Apr 8", owner:"Romel Pinto",      task_id:"D-36036",        status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | incorrect segment distribution",                                                                                                                     categories:["Styling"] },
+//   { day:"Apr 8", owner:"Michael Luna",     task_id:"D-36248",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
+//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-35920",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config\nM/D | Issue | Styling | the first right content with image needs to be black",                                                      categories:["Styling","Config"] },
+//   { day:"Apr 8", owner:"Ariel Vargas",     task_id:"D-45300",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | image cut mobile view",                                                                                                                                categories:["Styling"] },
+//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36120",        status:"Critical", type:"LP",      summary:"M/D | Issue | Content | the PM ask for inventory under header",                                                                                                               categories:["Content"] },
+//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36052",        status:"Failed",   type:"LP",      summary:"M/D | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
+//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36251",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | empty space",                                                                                                                                          categories:["Styling"] },
+//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36424",        status:"Observed", type:"LP",      summary:"M/D | Question | Styling | why you dont use the same left/right image for technology and trim levels?",                                                                       categories:["Question"] },
+//   { day:"Apr 8", owner:"Ambar Rojas",      task_id:"D-46057",        status:"Failed",   type:"Posting", summary:"D | Issue | Config | one content is not showing",                                                                                                                             categories:["Config"] },
 
-  // ── Apr 9 ──
-  { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208214",   status:"Observed", type:"LP",      summary:"D | Issue | Content | Same image repeated across sections\nD | Issue | Content | H1 doesn't match the page title given in the task description",                              categories:["Content"] },
-  { day:"Apr 9", owner:"Kattya Torrez",    task_id:"D-45490",        status:"Failed",   type:"Posting", summary:"D | Issue | Config | All campaigns don't have trim filter although it was instructed in case details",                                                                        categories:["Config"] },
-  { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0426209436",   status:"Failed",   type:"LP",      summary:"M/D | Issue | Config | inventory config\nM/D | Issue | Linking | the last button of the page redirect a empty page",                                                         categories:["Config","Linking"] },
-  { day:"Apr 9", owner:"Kattya Torrez",    task_id:"D-40813",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | empty space",                                                                                                                                          categories:["Styling"] },
-  { day:"Apr 9", owner:"Richard Villalba", task_id:"D-36678",        status:"Observed", type:"LP",      summary:"D | Issue | Linking | Most \"Shop Now\" CTA buttons on trims section only goes to model new inventory 2025",                                                                  categories:["Linking"] },
-  { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208415",   status:"Observed", type:"LP",      summary:"D | Issue | Config | Inventory mismatch with new inventory filtered to model\nM | Issue | Content | Hero image in page title is different in mobile view",                    categories:["Config","Content"] },
-  { day:"Apr 9", owner:"Richard Villalba", task_id:"D-47027",        status:"Observed", type:"Posting", summary:"D | Issue | Config | Campaign 5 not showing on inventory SRP due to wrong config on its model. Its correct model is Escalade ESV",                                           categories:["Config"] },
-  { day:"Apr 9", owner:"Nicole Gongora",   task_id:"D-45479",        status:"Observed", type:"LP",      summary:"D | Issue | Content | couldn't find the post",                                                                                                                               categories:["Content"] },
-  { day:"Apr 9", owner:"Michael Luna",     task_id:"D-36660",        status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory configuration doesn't match the new inventory page filtered to ADX model",                                                                     categories:["Config"] },
-  { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208300",   status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
-  { day:"Apr 9", owner:"Javier Alcoba",    task_id:"D-36391",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | Most text section with colored background doesn't have padding on x-axis\nD | Issue | Content | Breadcrumb was not added although it also appears in page example", categories:["Styling","Content"] },
-  { day:"Apr 9", owner:"Nicole Gongora",   task_id:"D-36973",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | content cut",                                                                                                                                          categories:["Styling"] },
-  { day:"Apr 9", owner:"Sebastian Salazar",task_id:"D-36340",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config\nD | Issue | Styling | too much space between widgets",                                                                               categories:["Styling","Config"] },
-  { day:"Apr 9", owner:"Jesus Macedo",     task_id:"D-44881",        status:"Critical", type:"Posting", summary:"D | Critical | Config | the last content in not showing in the specials page",                                                                                                categories:["Config"] },
-  { day:"Apr 9", owner:"Jesus Macedo",     task_id:"D-45104",        status:"Observed", type:"Posting", summary:"D | Question | Content | posting missing",                                                                                                                                   categories:["Content"] },
-  { day:"Apr 9", owner:"Michael Luna",     task_id:"D-44755",        status:"Observed", type:"Posting", summary:"D | Issue | Config | Postings are not displayed on the specials page",                                                                                                        categories:["Config"] },
+//   // ── Apr 9 ──
+//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208214",   status:"Observed", type:"LP",      summary:"D | Issue | Content | Same image repeated across sections\nD | Issue | Content | H1 doesn't match the page title given in the task description",                              categories:["Content"] },
+//   { day:"Apr 9", owner:"Kattya Torrez",    task_id:"D-45490",        status:"Failed",   type:"Posting", summary:"D | Issue | Config | All campaigns don't have trim filter although it was instructed in case details",                                                                        categories:["Config"] },
+//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0426209436",   status:"Failed",   type:"LP",      summary:"M/D | Issue | Config | inventory config\nM/D | Issue | Linking | the last button of the page redirect a empty page",                                                         categories:["Config","Linking"] },
+//   { day:"Apr 9", owner:"Kattya Torrez",    task_id:"D-40813",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | empty space",                                                                                                                                          categories:["Styling"] },
+//   { day:"Apr 9", owner:"Richard Villalba", task_id:"D-36678",        status:"Observed", type:"LP",      summary:"D | Issue | Linking | Most \"Shop Now\" CTA buttons on trims section only goes to model new inventory 2025",                                                                  categories:["Linking"] },
+//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208415",   status:"Observed", type:"LP",      summary:"D | Issue | Config | Inventory mismatch with new inventory filtered to model\nM | Issue | Content | Hero image in page title is different in mobile view",                    categories:["Config","Content"] },
+//   { day:"Apr 9", owner:"Richard Villalba", task_id:"D-47027",        status:"Observed", type:"Posting", summary:"D | Issue | Config | Campaign 5 not showing on inventory SRP due to wrong config on its model. Its correct model is Escalade ESV",                                           categories:["Config"] },
+//   { day:"Apr 9", owner:"Nicole Gongora",   task_id:"D-45479",        status:"Observed", type:"LP",      summary:"D | Issue | Content | couldn't find the post",                                                                                                                               categories:["Content"] },
+//   { day:"Apr 9", owner:"Michael Luna",     task_id:"D-36660",        status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory configuration doesn't match the new inventory page filtered to ADX model",                                                                     categories:["Config"] },
+//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208300",   status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
+//   { day:"Apr 9", owner:"Javier Alcoba",    task_id:"D-36391",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | Most text section with colored background doesn't have padding on x-axis\nD | Issue | Content | Breadcrumb was not added although it also appears in page example", categories:["Styling","Content"] },
+//   { day:"Apr 9", owner:"Nicole Gongora",   task_id:"D-36973",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | content cut",                                                                                                                                          categories:["Styling"] },
+//   { day:"Apr 9", owner:"Sebastian Salazar",task_id:"D-36340",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config\nD | Issue | Styling | too much space between widgets",                                                                               categories:["Styling","Config"] },
+//   { day:"Apr 9", owner:"Jesus Macedo",     task_id:"D-44881",        status:"Critical", type:"Posting", summary:"D | Critical | Config | the last content in not showing in the specials page",                                                                                                categories:["Config"] },
+//   { day:"Apr 9", owner:"Jesus Macedo",     task_id:"D-45104",        status:"Observed", type:"Posting", summary:"D | Question | Content | posting missing",                                                                                                                                   categories:["Content"] },
+//   { day:"Apr 9", owner:"Michael Luna",     task_id:"D-44755",        status:"Observed", type:"Posting", summary:"D | Issue | Config | Postings are not displayed on the specials page",                                                                                                        categories:["Config"] },
 
-  // ── Apr 10 ──
-  { day:"Apr 10", owner:"Dylan Jitton",     task_id:"D-46017",       status:"Failed",   type:"LP",      summary:"D/M | Issue | Linking | a button leads to an empty page",                                                                                                                    categories:["Linking"] },
-  { day:"Apr 10", owner:"Richard Villalba", task_id:"D-45755",       status:"Failed",   type:"Posting", summary:"D | Issue | Config | Campaigns not filtering correctly, they go to inventories showing 0 vehicles",                                                                           categories:["Config"] },
-  { day:"Apr 10", owner:"Sebastian Salazar",task_id:"D-37068",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | Way too much empty space after trim section",                                                                                                        categories:["Styling"] },
-  { day:"Apr 10", owner:"Nicole Gongora",   task_id:"D-36444",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | the lead form should go under the inventory like example page",                                                                                      categories:["Styling"] },
-  { day:"Apr 10", owner:"Javier Callejas",  task_id:"D-37234",       status:"Observed", type:"LP",      summary:"M | Issue | Styling | Service center text widget container has a fixed height which makes it overflow its content in mobile view",                                            categories:["Styling"] },
-  { day:"Apr 10", owner:"Javier Callejas",  task_id:"D-37217",       status:"Observed", type:"LP",      summary:"D | Issue | Content | Double h1 tag with different content",                                                                                                                 categories:["Content"] },
-  { day:"Apr 10", owner:"Edmundo Morales",  task_id:"D-46034",       status:"Observed", type:"LP",      summary:"D | Issue | Styling | Hyperlinked text gets lost in background with the same color",                                                                                         categories:["Styling"] },
-  { day:"Apr 10", owner:"Michael Luna",     task_id:"D-37048",       status:"Failed",   type:"LP",      summary:"D | Issue | Content | Instructed CTAs in case details not found in page",                                                                                                    categories:["Content"] },
-  { day:"Apr 10", owner:"Javier Callejas",  task_id:"MS0426209479",  status:"Observed", type:"LP",      summary:"D | Issue | Linking | When referencing a section in the same page we should use # anchoring",                                                                                categories:["Linking"] },
-  { day:"Apr 10", owner:"Romel Pinto",      task_id:"D-36941",       status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory filter incorrect model, showing EX30 instead of EX30 Cross Country",                                                                          categories:["Config"] },
-  { day:"Apr 10", owner:"Ariel Vargas",     task_id:"D-37426",       status:"Failed",   type:"LP",      summary:"D/M | Issue | Linking | the first button anchor direct to the wrong part",                                                                                                   categories:["Linking"] },
-  { day:"Apr 10", owner:"Javier Callejas",  task_id:"MS0426209524",  status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory not properly configured, not showing any vehicle when there is stock available",                                                               categories:["Config"] },
-  { day:"Apr 10", owner:"Kattya Torrez",    task_id:"D-42580",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | empty widget",                                                                                                                                       categories:["Styling"] },
-  { day:"Apr 10", owner:"Javier Alcoba",    task_id:"D-38342",       status:"Observed", type:"LP",      summary:"M | Issue | Styling | Hero image not properly placed on mobile view",                                                                                                        categories:["Styling"] },
-  { day:"Apr 10", owner:"Jesus Macedo",     task_id:"D-36910",       status:"Observed", type:"LP",      summary:"D | Question | Styling | why you leave this empty space?",                                                                                                                   categories:["Styling"] }
-];
+//   // ── Apr 10 ──
+//   { day:"Apr 10", owner:"Dylan Jitton",     task_id:"D-46017",       status:"Failed",   type:"LP",      summary:"D/M | Issue | Linking | a button leads to an empty page",                                                                                                                    categories:["Linking"] },
+//   { day:"Apr 10", owner:"Richard Villalba", task_id:"D-45755",       status:"Failed",   type:"Posting", summary:"D | Issue | Config | Campaigns not filtering correctly, they go to inventories showing 0 vehicles",                                                                           categories:["Config"] },
+//   { day:"Apr 10", owner:"Sebastian Salazar",task_id:"D-37068",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | Way too much empty space after trim section",                                                                                                        categories:["Styling"] },
+//   { day:"Apr 10", owner:"Nicole Gongora",   task_id:"D-36444",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | the lead form should go under the inventory like example page",                                                                                      categories:["Styling"] },
+//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"D-37234",       status:"Observed", type:"LP",      summary:"M | Issue | Styling | Service center text widget container has a fixed height which makes it overflow its content in mobile view",                                            categories:["Styling"] },
+//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"D-37217",       status:"Observed", type:"LP",      summary:"D | Issue | Content | Double h1 tag with different content",                                                                                                                 categories:["Content"] },
+//   { day:"Apr 10", owner:"Edmundo Morales",  task_id:"D-46034",       status:"Observed", type:"LP",      summary:"D | Issue | Styling | Hyperlinked text gets lost in background with the same color",                                                                                         categories:["Styling"] },
+//   { day:"Apr 10", owner:"Michael Luna",     task_id:"D-37048",       status:"Failed",   type:"LP",      summary:"D | Issue | Content | Instructed CTAs in case details not found in page",                                                                                                    categories:["Content"] },
+//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"MS0426209479",  status:"Observed", type:"LP",      summary:"D | Issue | Linking | When referencing a section in the same page we should use # anchoring",                                                                                categories:["Linking"] },
+//   { day:"Apr 10", owner:"Romel Pinto",      task_id:"D-36941",       status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory filter incorrect model, showing EX30 instead of EX30 Cross Country",                                                                          categories:["Config"] },
+//   { day:"Apr 10", owner:"Ariel Vargas",     task_id:"D-37426",       status:"Failed",   type:"LP",      summary:"D/M | Issue | Linking | the first button anchor direct to the wrong part",                                                                                                   categories:["Linking"] },
+//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"MS0426209524",  status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory not properly configured, not showing any vehicle when there is stock available",                                                               categories:["Config"] },
+//   { day:"Apr 10", owner:"Kattya Torrez",    task_id:"D-42580",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | empty widget",                                                                                                                                       categories:["Styling"] },
+//   { day:"Apr 10", owner:"Javier Alcoba",    task_id:"D-38342",       status:"Observed", type:"LP",      summary:"M | Issue | Styling | Hero image not properly placed on mobile view",                                                                                                        categories:["Styling"] },
+//   { day:"Apr 10", owner:"Jesus Macedo",     task_id:"D-36910",       status:"Observed", type:"LP",      summary:"D | Question | Styling | why you leave this empty space?",                                                                                                                   categories:["Styling"] }
+// ];
 
 // Note: Apr 6 had 8 cases (counted from weekly chart data — all Observed)
-const DAYS = ["Apr 6", "Apr 7", "Apr 8", "Apr 9", "Apr 10"];
+const DAYS = ["Apr 6", "Apr 7", "Apr 8", "Apr 9", "Apr 10", "04/13/26", "04/14/26"];
 
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
@@ -162,6 +162,8 @@ function renderOverview() {
     "Apr 8":  byDay["Apr 8"]?.length  || 0,
     "Apr 9":  byDay["Apr 9"]?.length  || 0,
     "Apr 10": byDay["Apr 10"]?.length || 0,
+    "04/13/26": byDay["04/13/26"]?.length || 0,
+    "04/14/26": byDay["04/14/26"]?.length || 0,
   };
 
   // Timeline strip
@@ -391,33 +393,105 @@ ${sortDesc(catCount).map(([c, n]) => `- ${c}: ${n} occurrences`).join('\n')}
 // CSV IMPORT (file upload + Google Sheets URL)
 // ─────────────────────────────────────────────────────────────
 
+// function parseCSV(text) {
+//   const lines   = text.trim().split('\n');
+//   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+
+//   return lines.slice(1).map(line => {
+//     const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
+//     const obj  = {};
+//     headers.forEach((h, i) => obj[h] = vals[i] || '');
+
+//     const sum  = obj['Summary bugs'] || obj['summary'] || '';
+//     const cats = [];
+//     if (sum.includes('Styling'))  cats.push('Styling');
+//     if (sum.includes('Content'))  cats.push('Content');
+//     if (sum.includes('Config'))   cats.push('Config');
+//     if (sum.includes('Linking'))  cats.push('Linking');
+//     if (sum.includes('Question')) cats.push('Question');
+
+//     return {
+//       day:        obj['day']      || obj['Day']    || 'Imported',
+//       owner:      obj['Owner']    || obj['owner']  || 'Unknown',
+//       task_id:    obj['ID task']  || obj['task_id']|| '',
+//       status:     obj['Status']   || obj['status'] || 'Observed',
+//       type:       obj['Type']     || obj['type']   || 'LP',
+//       summary:    sum,
+//       categories: [...new Set(cats)]
+//     };
+//   }).filter(r => r.owner && r.owner !== 'Owner');
+// }
+// function parseCSV(text) {
+//   const lines = text.trim().split('\n'); // Divide las líneas por salto de línea
+//   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '')); // Las cabeceras
+
+//   return lines.slice(1).map(line => {
+//     const vals = line.split(',').map(v => v.trim().replace(/"/g, '')); // Extrae los valores de cada línea
+//     const obj = {};
+
+//     // Mapea las columnas del CSV a las claves esperadas en el sistema
+//     headers.forEach((h, i) => {
+//       obj[h] = vals[i] || '';  // Si no hay valor, se asigna una cadena vacía
+//     });
+
+//     // Adaptación a las claves esperadas por el sistema (puedes cambiarlo según sea necesario)
+//     const sum = obj['QA Comment'] || '';  // Mapea 'QA Comment' a 'summary' si es necesario
+//     const cats = [];
+//     if (sum.includes('Styling')) cats.push('Styling');
+//     if (sum.includes('Content')) cats.push('Content');
+//     if (sum.includes('Config')) cats.push('Config');
+//     if (sum.includes('Linking')) cats.push('Linking');
+//     if (sum.includes('Question')) cats.push('Question');
+
+//     return {
+//       day: obj['Date QA Completed'] || 'Imported', // Usamos la columna 'Date QA Completed' como el día
+//       // owner: obj['QA Completed by:'] || 'Unknown',  // Usamos 'QA Completed by:' como el propietario
+//       owner: extractNameFromEmail(obj['Name']) || 'Unknown',  // Usamos 'QA Completed by:' como el propietario
+//       task_id: obj['ID / Task / Case Number'] || '', // Mapeamos 'ID / Task / Case Number' a 'task_id'
+//       status: obj['QA Status'] || 'Observed', // Usamos 'QA Status' como el estado
+//       type: 'LP',  // Lo mantengo como 'LP' si no está especificado de otro modo
+//       summary: sum,
+//       categories: [...new Set(cats)]
+//     };
+//   }).filter(r => r.owner && r.owner !== 'Owner');  // Filtra las filas con propietario vacío
+// }
 function parseCSV(text) {
-  const lines   = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  const lines = text.trim().split('\n'); // Divide las líneas por salto de línea
+  const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, '')); // Usamos ';' como delimitador
 
   return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
-    const obj  = {};
-    headers.forEach((h, i) => obj[h] = vals[i] || '');
+    const vals = line.split(';').map(v => v.trim().replace(/"/g, '')); // Usamos ';' como delimitador
+    const obj = {};
 
-    const sum  = obj['Summary bugs'] || obj['summary'] || '';
+    // Mapea las columnas del CSV a las claves esperadas en el sistema
+    headers.forEach((h, i) => {
+      obj[h] = vals[i] || '';  // Si no hay valor, se asigna una cadena vacía
+    });
+
+    // Adaptación a las claves esperadas por el sistema (puedes cambiarlo según sea necesario)
+    const sum = obj['QA Comment'] || '';  // Mapea 'QA Comment' a 'summary' si es necesario
     const cats = [];
-    if (sum.includes('Styling'))  cats.push('Styling');
-    if (sum.includes('Content'))  cats.push('Content');
-    if (sum.includes('Config'))   cats.push('Config');
-    if (sum.includes('Linking'))  cats.push('Linking');
+    if (sum.includes('Styling')) cats.push('Styling');
+    if (sum.includes('Content')) cats.push('Content');
+    if (sum.includes('Config')) cats.push('Config');
+    if (sum.includes('Linking')) cats.push('Linking');
     if (sum.includes('Question')) cats.push('Question');
 
     return {
-      day:        obj['day']      || obj['Day']    || 'Imported',
-      owner:      obj['Owner']    || obj['owner']  || 'Unknown',
-      task_id:    obj['ID task']  || obj['task_id']|| '',
-      status:     obj['Status']   || obj['status'] || 'Observed',
-      type:       obj['Type']     || obj['type']   || 'LP',
-      summary:    sum,
+      day: obj['Date QA Completed'] || 'Imported', // Usamos la columna 'Date QA Completed' como el día
+      owner: extractNameFromEmail(obj['Name']) || 'Unknown',  // Usamos 'Name' (correo) como propietario
+      task_id: obj['ID / Task / Case Number'] || '', // Mapeamos 'ID / Task / Case Number' a 'task_id'
+      status: obj['QA Status'] || 'Observed', // Usamos 'QA Status' como el estado
+      type: 'LP',  // Lo mantengo como 'LP' si no está especificado de otro modo
+      summary: sum,
       categories: [...new Set(cats)]
     };
-  }).filter(r => r.owner && r.owner !== 'Owner');
+  }).filter(r => r.owner && r.owner !== 'Owner');  // Filtra las filas con propietario vacío
+}
+function extractNameFromEmail(email) {
+  const namePart = email.split('@')[0];  // Toma todo lo que está antes del '@'
+  const [firstName, lastName] = namePart.split('.');  // Divide por el punto para obtener nombre y apellido
+  return `${firstName} ${lastName}`;  // Retorna el nombre completo
 }
 
 document.getElementById('csv-file-input').addEventListener('change', function (e) {
@@ -427,7 +501,10 @@ document.getElementById('csv-file-input').addEventListener('change', function (e
   reader.onload = function (ev) {
     try {
       const parsed = parseCSV(ev.target.result);
-      DATA = [...DATA, ...parsed];
+      // DATA = [...DATA, ...parsed];
+      DATA = [...parsed];
+      console.log('Data:', DATA);
+      console.log('Parsed data:', parsed);
       document.getElementById('import-status').textContent = `✓ Loaded ${parsed.length} new cases. Switch tabs to see updated data.`;
       rerender();
     } catch (err) {

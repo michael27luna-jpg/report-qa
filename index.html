@@ -61,7 +61,8 @@
 
     <div class="grid-2" style="margin-top:16px;">
       <div class="card">
-        <div class="card-title">Top Bug Contributors</div>
+        <!-- <div class="card-title">Top Bug Contributors</div> -->
+        <div class="card-title">Bugs found:</div>
         <div class="bar-chart" id="owner-bars"></div>
       </div>
       <div class="card">
@@ -225,10 +226,11 @@
       </label>
       <input type="file" id="csv-file-input" accept=".csv"/>
     </div>
-
+    <!-- TODO: LINK CSV -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-title">Google Sheets CSV Link</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">
+      <!-- <div class="card-title">Google Sheets CSV Link</div> -->
+      <div class="card-title"> Status</div>
+      <!-- <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">
         Publish your sheet to the web
         (<strong style="color:var(--text)">File → Share → Publish to web → CSV</strong>)
         and paste the link below.
@@ -237,11 +239,11 @@
         <input class="gs-input" id="gs-url" type="text"
           placeholder="https://docs.google.com/spreadsheets/d/…/pub?output=csv"/>
         <button class="btn btn-accent" onclick="fetchGS()">Load Sheet</button>
-      </div>
+      </div> -->
       <div id="import-status" style="font-size:.78rem;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;"></div>
     </div>
 
-    <div class="card">
+    <!-- <div class="card">
       <div class="card-title">Expected Google Sheet Column Format</div>
       <div class="scroll-x">
         <table class="data-table">
@@ -258,6 +260,30 @@
             <tr><td>Owner</td><td>ID task</td><td>Status</td><td>Summary bugs</td><td>Type</td></tr>
             <tr><td>Jesus Macedo</td><td>D-12345</td><td>Failed</td><td>D | Issue | Config | inventory config</td><td>LP</td></tr>
             <tr><td>Javier Callejas</td><td>D-67890</td><td>Observed</td><td>M | Issue | Styling | empty space</td><td>LP</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div> -->
+    <div class="card">
+      <div class="card-title">Expected Google Sheet Column Format</div>
+      <div class="scroll-x">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>ID / Task / Case Number</th>
+              <th>QA Status</th>
+              <th>QA Comment</th>
+              <th>QA Completed by</th>
+              <th>Date QA Completed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Observed</td><td>D/M | Issue | Label | Page title year wrong</td><td>Cidar</td><td>04/13/26</td></tr>
+            <tr><td>jesus.macedo@coxautoinc.com</td><td>D-47099</td><td>Passed</td><td>well done</td><td>Cidar</td><td>04/13/26</td></tr>
+            <tr><td>javier.alcoba@coxautoinc.com</td><td>D-36966</td><td>Passed</td><td>well done</td><td>Cidar</td><td>04/13/26</td></tr>
+            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Observed</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td></tr>
+            <tr><td>sebastian.salazar@coxautoinc.com</td><td>D-45360</td><td>Passed</td><td>well done</td><td>Cidar</td><td>04/13/26</td></tr>
           </tbody>
         </table>
       </div>
