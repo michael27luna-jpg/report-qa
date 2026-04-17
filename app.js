@@ -4,82 +4,36 @@
    ═══════════════════════════════════════════ */
 
 // ─────────────────────────────────────────────────────────────
-// DATA  (extracted from Excel — Apr 13–17, 2026)
+// CONFIG
 // ─────────────────────────────────────────────────────────────
-// let DATA = [
-//   // ── Apr 7 ──
-//   { day:"Apr 7", owner:"Javier Callejas",  task_id:"D-36300",       status:"Observed", type:"LP",      summary:"M | Issue | Content | H1 and content appears below the map widget only on mobile view",                                                                                      categories:["Content"] },
-//   { day:"Apr 7", owner:"Javier Callejas",  task_id:"MS0326208217",   status:"Observed", type:"LP",      summary:"D | Issue | Linking | Research CTA button should use # anchoring when going to section in the same page",                                                                    categories:["Linking"] },
-//   { day:"Apr 7", owner:"Diego Torrez",     task_id:"D-36245",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | Text content container got not left padding",                                                                                                          categories:["Styling"] },
-//   { day:"Apr 7", owner:"Javier Callejas",  task_id:"MS0326208411",   status:"Observed", type:"LP",      summary:"D | Issue | Config | Inventory on page shows less vehicles than in new inventory page filtered to show only Tahoe model",                                                    categories:["Config"] },
-//   { day:"Apr 7", owner:"Edmundo Morales",  task_id:"D-36227",        status:"Observed", type:"LP",      summary:"D | Issue | Config | View Inventory CTA button has not been anchored to any section",                                                                                        categories:["Config"] },
-//   { day:"Apr 7", owner:"Alexander Sosa",   task_id:"D-35530",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | Way too much space between sections",                                                                                                                  categories:["Styling"] },
-//   { day:"Apr 7", owner:"Diego Torrez",     task_id:"D-46678",        status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory mismatch with used inventory filter to SUV body style",                                                                                       categories:["Config"] },
-//   { day:"Apr 7", owner:"Nestor Apaza",     task_id:"D-44108",        status:"Failed",   type:"Posting", summary:"D | Issue | Content | missing content",                                                                                                                                      categories:["Content"] },
-
-//   // ── Apr 8 ──
-//   { day:"Apr 8", owner:"Romel Pinto",      task_id:"D-35627",        status:"Failed",   type:"LP",      summary:"M | Issue | Styling | different image and missing some ones\nM/D | Issue | Config | Inventory is showing 2025 model",                                                        categories:["Styling","Config"] },
-//   { day:"Apr 8", owner:"Diego Torrez",     task_id:"D-36788",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | \"Learn More\" CTA button overflows its container in mobile view\nM | Issue | Styling | Background image in text section gets blurred and vehicle cropped", categories:["Styling"] },
-//   { day:"Apr 8", owner:"Romel Pinto",      task_id:"D-36036",        status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | incorrect segment distribution",                                                                                                                     categories:["Styling"] },
-//   { day:"Apr 8", owner:"Michael Luna",     task_id:"D-36248",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
-//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-35920",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config\nM/D | Issue | Styling | the first right content with image needs to be black",                                                      categories:["Styling","Config"] },
-//   { day:"Apr 8", owner:"Ariel Vargas",     task_id:"D-45300",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | image cut mobile view",                                                                                                                                categories:["Styling"] },
-//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36120",        status:"Critical", type:"LP",      summary:"M/D | Issue | Content | the PM ask for inventory under header",                                                                                                               categories:["Content"] },
-//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36052",        status:"Failed",   type:"LP",      summary:"M/D | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
-//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36251",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | empty space",                                                                                                                                          categories:["Styling"] },
-//   { day:"Apr 8", owner:"Alexander Sosa",   task_id:"D-36424",        status:"Observed", type:"LP",      summary:"M/D | Question | Styling | why you dont use the same left/right image for technology and trim levels?",                                                                       categories:["Question"] },
-//   { day:"Apr 8", owner:"Ambar Rojas",      task_id:"D-46057",        status:"Failed",   type:"Posting", summary:"D | Issue | Config | one content is not showing",                                                                                                                             categories:["Config"] },
-
-//   // ── Apr 9 ──
-//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208214",   status:"Observed", type:"LP",      summary:"D | Issue | Content | Same image repeated across sections\nD | Issue | Content | H1 doesn't match the page title given in the task description",                              categories:["Content"] },
-//   { day:"Apr 9", owner:"Kattya Torrez",    task_id:"D-45490",        status:"Failed",   type:"Posting", summary:"D | Issue | Config | All campaigns don't have trim filter although it was instructed in case details",                                                                        categories:["Config"] },
-//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0426209436",   status:"Failed",   type:"LP",      summary:"M/D | Issue | Config | inventory config\nM/D | Issue | Linking | the last button of the page redirect a empty page",                                                         categories:["Config","Linking"] },
-//   { day:"Apr 9", owner:"Kattya Torrez",    task_id:"D-40813",        status:"Observed", type:"LP",      summary:"D | Issue | Styling | empty space",                                                                                                                                          categories:["Styling"] },
-//   { day:"Apr 9", owner:"Richard Villalba", task_id:"D-36678",        status:"Observed", type:"LP",      summary:"D | Issue | Linking | Most \"Shop Now\" CTA buttons on trims section only goes to model new inventory 2025",                                                                  categories:["Linking"] },
-//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208415",   status:"Observed", type:"LP",      summary:"D | Issue | Config | Inventory mismatch with new inventory filtered to model\nM | Issue | Content | Hero image in page title is different in mobile view",                    categories:["Config","Content"] },
-//   { day:"Apr 9", owner:"Richard Villalba", task_id:"D-47027",        status:"Observed", type:"Posting", summary:"D | Issue | Config | Campaign 5 not showing on inventory SRP due to wrong config on its model. Its correct model is Escalade ESV",                                           categories:["Config"] },
-//   { day:"Apr 9", owner:"Nicole Gongora",   task_id:"D-45479",        status:"Observed", type:"LP",      summary:"D | Issue | Content | couldn't find the post",                                                                                                                               categories:["Content"] },
-//   { day:"Apr 9", owner:"Michael Luna",     task_id:"D-36660",        status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory configuration doesn't match the new inventory page filtered to ADX model",                                                                     categories:["Config"] },
-//   { day:"Apr 9", owner:"Javier Callejas",  task_id:"MS0326208300",   status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config",                                                                                                                                    categories:["Config"] },
-//   { day:"Apr 9", owner:"Javier Alcoba",    task_id:"D-36391",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | Most text section with colored background doesn't have padding on x-axis\nD | Issue | Content | Breadcrumb was not added although it also appears in page example", categories:["Styling","Content"] },
-//   { day:"Apr 9", owner:"Nicole Gongora",   task_id:"D-36973",        status:"Observed", type:"LP",      summary:"M | Issue | Styling | content cut",                                                                                                                                          categories:["Styling"] },
-//   { day:"Apr 9", owner:"Sebastian Salazar",task_id:"D-36340",        status:"Failed",   type:"LP",      summary:"D/M | Issue | Config | inventory config\nD | Issue | Styling | too much space between widgets",                                                                               categories:["Styling","Config"] },
-//   { day:"Apr 9", owner:"Jesus Macedo",     task_id:"D-44881",        status:"Critical", type:"Posting", summary:"D | Critical | Config | the last content in not showing in the specials page",                                                                                                categories:["Config"] },
-//   { day:"Apr 9", owner:"Jesus Macedo",     task_id:"D-45104",        status:"Observed", type:"Posting", summary:"D | Question | Content | posting missing",                                                                                                                                   categories:["Content"] },
-//   { day:"Apr 9", owner:"Michael Luna",     task_id:"D-44755",        status:"Observed", type:"Posting", summary:"D | Issue | Config | Postings are not displayed on the specials page",                                                                                                        categories:["Config"] },
-
-//   // ── Apr 10 ──
-//   { day:"Apr 10", owner:"Dylan Jitton",     task_id:"D-46017",       status:"Failed",   type:"LP",      summary:"D/M | Issue | Linking | a button leads to an empty page",                                                                                                                    categories:["Linking"] },
-//   { day:"Apr 10", owner:"Richard Villalba", task_id:"D-45755",       status:"Failed",   type:"Posting", summary:"D | Issue | Config | Campaigns not filtering correctly, they go to inventories showing 0 vehicles",                                                                           categories:["Config"] },
-//   { day:"Apr 10", owner:"Sebastian Salazar",task_id:"D-37068",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | Way too much empty space after trim section",                                                                                                        categories:["Styling"] },
-//   { day:"Apr 10", owner:"Nicole Gongora",   task_id:"D-36444",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | the lead form should go under the inventory like example page",                                                                                      categories:["Styling"] },
-//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"D-37234",       status:"Observed", type:"LP",      summary:"M | Issue | Styling | Service center text widget container has a fixed height which makes it overflow its content in mobile view",                                            categories:["Styling"] },
-//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"D-37217",       status:"Observed", type:"LP",      summary:"D | Issue | Content | Double h1 tag with different content",                                                                                                                 categories:["Content"] },
-//   { day:"Apr 10", owner:"Edmundo Morales",  task_id:"D-46034",       status:"Observed", type:"LP",      summary:"D | Issue | Styling | Hyperlinked text gets lost in background with the same color",                                                                                         categories:["Styling"] },
-//   { day:"Apr 10", owner:"Michael Luna",     task_id:"D-37048",       status:"Failed",   type:"LP",      summary:"D | Issue | Content | Instructed CTAs in case details not found in page",                                                                                                    categories:["Content"] },
-//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"MS0426209479",  status:"Observed", type:"LP",      summary:"D | Issue | Linking | When referencing a section in the same page we should use # anchoring",                                                                                categories:["Linking"] },
-//   { day:"Apr 10", owner:"Romel Pinto",      task_id:"D-36941",       status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory filter incorrect model, showing EX30 instead of EX30 Cross Country",                                                                          categories:["Config"] },
-//   { day:"Apr 10", owner:"Ariel Vargas",     task_id:"D-37426",       status:"Failed",   type:"LP",      summary:"D/M | Issue | Linking | the first button anchor direct to the wrong part",                                                                                                   categories:["Linking"] },
-//   { day:"Apr 10", owner:"Javier Callejas",  task_id:"MS0426209524",  status:"Failed",   type:"LP",      summary:"D | Issue | Config | Inventory not properly configured, not showing any vehicle when there is stock available",                                                               categories:["Config"] },
-//   { day:"Apr 10", owner:"Kattya Torrez",    task_id:"D-42580",       status:"Observed", type:"LP",      summary:"D/M | Issue | Styling | empty widget",                                                                                                                                       categories:["Styling"] },
-//   { day:"Apr 10", owner:"Javier Alcoba",    task_id:"D-38342",       status:"Observed", type:"LP",      summary:"M | Issue | Styling | Hero image not properly placed on mobile view",                                                                                                        categories:["Styling"] },
-//   { day:"Apr 10", owner:"Jesus Macedo",     task_id:"D-36910",       status:"Observed", type:"LP",      summary:"D | Question | Styling | why you leave this empty space?",                                                                                                                   categories:["Styling"] }
-// ];
-
-// Note: day counts are generated dynamically from the current dataset.
 const WEEK_NUMBER = '16';
 const WEEK_RANGE  = 'Apr 13–17, 2026';
-//const DAYS = ["Apr 13", "Apr 14", "Apr 15", "Apr 16", "Apr 17"];//
-// Note: Apr 6 had 8 cases (counted from weekly chart data — all Observed)
-const DAYS = ["Apr 6", "Apr 7", "Apr 8", "Apr 9", "Apr 10", "04/13/26", "04/14/26"];
+
+let DATA = [];  // populated via CSV upload
+
+// ─────────────────────────────────────────────────────────────
+// STATUS & CATEGORY COLORS  (single source of truth)
+// Passed=green, Observed=yellow, Failed=orange, Critical=red
+// ─────────────────────────────────────────────────────────────
+const STATUS_COLORS = {
+  Passed:   'var(--passed)',
+  Observed: 'var(--observed)',
+  Failed:   'var(--failed)',
+  Critical: 'var(--critical)',
+};
+
+const CAT_COLORS = {
+  Config:   'var(--warn)',
+  Linking:  'var(--failed)',
+  Content:  'var(--accent)',
+  Styling:  'var(--accent2)',
+  Label:    '#c084fc',
+};
 
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────────────────────────
-
-function count(arr, fn) {
-  return arr.filter(fn).length;
-}
+function count(arr, fn) { return arr.filter(fn).length; }
 
 function groupBy(arr, key) {
   return arr.reduce((acc, val) => {
@@ -93,64 +47,197 @@ function sortDesc(obj) {
   return Object.entries(obj).sort((a, b) => b[1] - a[1]);
 }
 
-// ─────────────────────────────────────────────────────────────
-// DONUT CHART (SVG)
-// ─────────────────────────────────────────────────────────────
+function extractNameFromEmail(email) {
+  if (!email || !email.includes('@')) return email || 'Unknown';
+  return email.split('@')[0]
+    .split('.')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
 
+function getDays() {
+  const days = [...new Set(DATA.map(x => x.day))];
+  return days.sort((a, b) => {
+    const parse = d => {
+      const [m, dd, yy] = d.split('/');
+      return new Date(`20${yy}-${String(m).padStart(2,'0')}-${String(dd).padStart(2,'0')}`);
+    };
+    return parse(a) - parse(b);
+  });
+}
+
+function parseCategories(comment) {
+  if (!comment) return [];
+  const cats = new Set();
+  const u = comment.toUpperCase();
+  if (u.includes('LABEL'))                            cats.add('Label');
+  if (u.includes('STYLING') || u.includes('STYLE'))  cats.add('Styling');
+  if (u.includes('CONTENT'))                          cats.add('Content');
+  if (u.includes('CONFIG') || u.includes('CONFGI'))  cats.add('Config');
+  if (u.includes('LINK') || u.includes('LINKING'))   cats.add('Linking');
+  return [...cats];
+}
+
+// ─────────────────────────────────────────────────────────────
+// CSV PARSER
+// ─────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
+
+  return lines.slice(1).map(line => {
+    const vals = line.split(';').map(v => v.trim().replace(/"/g, ''));
+    const obj  = {};
+    headers.forEach((h, i) => obj[h] = vals[i] || '');
+
+    const status  = obj['QA Status'] || 'Observed';
+    const comment = obj['QA Comment'] || '';
+
+    return {
+      day:        obj['Date QA Completed'] || '',
+      owner:      extractNameFromEmail(obj['Name'] || ''),
+      task_id:    obj['ID / Task / Case Number'] || '',
+      status,
+      qa_by:      (obj['QA Completed by:'] || obj['QA Completed by'] || '').trim(),
+      summary:    comment,
+      categories: status === 'Passed' ? [] : parseCategories(comment),
+    };
+  }).filter(r => r.owner && r.owner !== 'Unknown' && r.task_id);
+}
+
+// ─────────────────────────────────────────────────────────────
+// FILE UPLOAD
+// ─────────────────────────────────────────────────────────────
+document.getElementById('csv-file-input').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = parseCSV(ev.target.result);
+      DATA = [...parsed];
+      const statusEl = document.getElementById('import-status');
+      if (!parsed.length) {
+        statusEl.textContent = '⚠ File loaded but no valid rows found. Check column headers.';
+        statusEl.style.color = 'var(--observed)';
+      } else {
+        statusEl.textContent = `✓ Loaded ${parsed.length} cases across ${getDays().length} day(s).`;
+        statusEl.style.color = 'var(--passed)';
+      }
+      rerender();
+    } catch (err) {
+      document.getElementById('import-status').textContent = '✗ Parse error: ' + err.message;
+      document.getElementById('import-status').style.color = 'var(--critical)';
+    }
+  };
+  reader.readAsText(file);
+});
+
+// ─────────────────────────────────────────────────────────────
+// DONUT CHART — full size (with legend)
+// ─────────────────────────────────────────────────────────────
 function drawDonut(svgId, legendId, slices) {
-  const total = slices.reduce((s, x) => s + x.value, 0);
-  const r = 42, cx = 55, cy = 55, stroke = 14;
-  let angle = -90;
-  let paths = '';
+  const valid = slices.filter(s => s.value > 0);
+  const svgEl = document.getElementById(svgId);
+  const legEl = legendId ? document.getElementById(legendId) : null;
+  if (!svgEl) return;
 
-  slices.forEach(s => {
-    const pct  = s.value / total;
-    const deg  = pct * 360;
+  if (!valid.length) {
+    svgEl.innerHTML = '';
+    if (legEl) legEl.innerHTML = '<div style="color:var(--muted);font-size:.72rem;">No data</div>';
+    return;
+  }
+
+  const total = valid.reduce((s, x) => s + x.value, 0);
+  const r = 42, cx = 55, cy = 55, hole = 10;
+  let angle = -90, paths = '';
+
+  valid.forEach(s => {
+    const deg  = (s.value / total) * 360;
     const rad1 = angle * Math.PI / 180;
     const rad2 = (angle + deg) * Math.PI / 180;
-    const x1   = cx + r * Math.cos(rad1);
-    const y1   = cy + r * Math.sin(rad1);
-    const x2   = cx + r * Math.cos(rad2);
-    const y2   = cy + r * Math.sin(rad2);
-    const lg   = deg > 180 ? 1 : 0;
-    paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${lg} 1 ${x2},${y2} Z" fill="${s.color}" opacity=".85"/>`;
+    const x1 = cx + r * Math.cos(rad1), y1 = cy + r * Math.sin(rad1);
+    const x2 = cx + r * Math.cos(rad2), y2 = cy + r * Math.sin(rad2);
+    paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${deg > 180 ? 1 : 0} 1 ${x2},${y2} Z" fill="${s.color}" opacity=".88"/>`;
     angle += deg;
   });
+  paths += `<circle cx="${cx}" cy="${cy}" r="${r - hole}" fill="var(--surface)"/>`;
+  paths += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--text)" font-size="16" font-family="Space Mono,monospace" font-weight="700">${total}</text>`;
 
-  // inner hole + center label
-  paths += `<circle cx="${cx}" cy="${cy}" r="${r - stroke}" fill="var(--surface)"/>`;
-  paths += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--text)" font-size="13" font-family="Space Mono,monospace" font-weight="700">${total}</text>`;
-
-  document.getElementById(svgId).innerHTML = paths;
-
-  document.getElementById(legendId).innerHTML = slices.map(s => `
+  svgEl.innerHTML = paths;
+  if (legEl) legEl.innerHTML = valid.map(s => `
     <div class="legend-item">
-      <div class="legend-dot" style="background:${s.color}"></div>
-      <span>${s.label} <span style="color:var(--muted);font-family:'Space Mono',monospace">(${s.value})</span></span>
+      <div class="legend-dot" style="background:${s.color};width:13px;height:13px;"></div>
+      <span style="font-size:.85rem;">${s.label}<span style="color:var(--muted);font-family:'Space Mono',monospace;margin-left:5px;font-size:.8rem;">(${s.value})</span></span>
     </div>`).join('');
 }
 
 // ─────────────────────────────────────────────────────────────
-// RENDER — OVERVIEW
+// DONUT CHART — small (no legend, inline)
 // ─────────────────────────────────────────────────────────────
+function drawSmallDonut(svgId, slices, size = 80) {
+  const el = document.getElementById(svgId);
+  if (!el) return;
+  const valid = slices.filter(s => s.value > 0);
+  if (!valid.length) { el.innerHTML = ''; return; }
 
+  const total = valid.reduce((s, x) => s + x.value, 0);
+  const r = 32, cx = size / 2, cy = size / 2, hole = 10;
+  let angle = -90, paths = '';
+
+  valid.forEach(s => {
+    const deg  = (s.value / total) * 360;
+    const rad1 = angle * Math.PI / 180;
+    const rad2 = (angle + deg) * Math.PI / 180;
+    const x1 = cx + r * Math.cos(rad1), y1 = cy + r * Math.sin(rad1);
+    const x2 = cx + r * Math.cos(rad2), y2 = cy + r * Math.sin(rad2);
+    paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${deg > 180 ? 1 : 0} 1 ${x2},${y2} Z" fill="${s.color}" opacity=".88"/>`;
+    angle += deg;
+  });
+  paths += `<circle cx="${cx}" cy="${cy}" r="${r - hole}" fill="var(--surface2)"/>`;
+  paths += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--text)" font-size="10" font-family="Space Mono,monospace" font-weight="700">${total}</text>`;
+
+  el.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  el.innerHTML = paths;
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER — OVERVIEW (charts inside Weekly Report tab)
+// ─────────────────────────────────────────────────────────────
 function renderOverview() {
-  const d       = DATA;
-  const total   = d.length;
-  const failed  = count(d, x => x.status === 'Failed');
-  const critical= count(d, x => x.status === 'Critical');
-  const observed= count(d, x => x.status === 'Observed');
-  const owners  = [...new Set(d.map(x => x.owner))].length;
+  const d     = DATA;
+  const total = d.length;
+  const DAYS  = getDays();
 
-  // KPI cards
+  if (total === 0) {
+    const empty = '<div style="color:var(--muted);font-size:.78rem;padding:8px 0;">Upload a CSV to see data</div>';
+    ['kpi-row','timeline','daily-bars','cat-bars','owner-bars',
+     'donut-status','donut-status-legend','donut-type','donut-type-legend',
+     'qa-donut-grid'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = empty;
+    });
+    return;
+  }
+
+  const passed   = count(d, x => x.status === 'Passed');
+  const observed = count(d, x => x.status === 'Observed');
+  const failed   = count(d, x => x.status === 'Failed');
+  const critical = count(d, x => x.status === 'Critical');
+  const errors   = observed + failed + critical;
+  const owners   = [...new Set(d.map(x => x.owner))].length;
+  const passRate = Math.round(passed / total * 100);
+
+  // ── KPI cards ──
   const kpis = [
-    { label:'Total Cases',    val: total,    sub: 'this week',                    color: 'var(--accent)' },
-    { label:'Observed',       val: observed, sub: `${Math.round(observed/total*100)}% of cases`, color: 'var(--observed)' },
-    { label:'Failed',         val: failed,   sub: `${Math.round(failed/total*100)}% of cases`,  color: 'var(--failed)' },
-    { label:'Critical',       val: critical, sub: 'high priority',                color: 'var(--critical)' },
-    { label:'Team Members',   val: owners,   sub: 'reviewed',                     color: 'var(--accent2)' },
+    { label:'Total Cases',  val: total,    sub: `${DAYS.length} day(s) loaded`,      color: 'var(--accent)' },
+    { label:'Passed',       val: passed,   sub: `${passRate}% pass rate`,             color: 'var(--passed)' },
+    { label:'Observed',     val: observed, sub: `${Math.round(observed/total*100)}% of ${total} cases`, color: 'var(--observed)' },
+    { label:'Failed',       val: failed,   sub: `${Math.round(failed/total*100)}% of ${total} cases`,   color: 'var(--failed)' },
+    { label:'Critical',     val: critical, sub: 'immediate action',                   color: 'var(--critical)' },
+    { label:'Team Members', val: owners,   sub: 'reviewed this week',                 color: 'var(--accent2)' },
   ];
-
   document.getElementById('kpi-row').innerHTML = kpis.map(k => `
     <div class="kpi" style="--kpi-color:${k.color}">
       <div class="kpi-label">${k.label}</div>
@@ -158,101 +245,278 @@ function renderOverview() {
       <div class="kpi-sub">${k.sub}</div>
     </div>`).join('');
 
-  // Day counts for this week
-  const byDay = groupBy(d, 'day');
-/*   const counts = DAYS.reduce((acc, day) => {
-    acc[day] = byDay[day]?.length || 0;
-    return acc;
-  }, {}); */
-  const counts = {
-    "Apr 6":  8,
-    "Apr 7":  byDay["Apr 7"]?.length  || 0,
-    "Apr 8":  byDay["Apr 8"]?.length  || 0,
-    "Apr 9":  byDay["Apr 9"]?.length  || 0,
-    "Apr 10": byDay["Apr 10"]?.length || 0,
-    "04/13/26": byDay["04/13/26"]?.length || 0,
-    "04/14/26": byDay["04/14/26"]?.length || 0,
-  };
+  // ── Timeline ──
+  const byDay  = groupBy(d, 'day');
+  const counts = {};
+  DAYS.forEach(day => counts[day] = byDay[day]?.length || 0);
+  const maxDay = Math.max(...Object.values(counts), 1);
 
-  // Timeline strip
   document.getElementById('timeline').innerHTML = DAYS.map(day => `
     <div class="tl-day">
       <div class="tl-day-label">${day}</div>
-      <div class="tl-day-count">${counts[day] || 0}</div>
+      <div class="tl-day-count">${counts[day]}</div>
     </div>`).join('');
 
-  // Stacked bar per day
-  const maxDay = Math.max(...Object.values(counts));
+  // ── Stacked bar per day ──
   document.getElementById('daily-bars').innerHTML = `<div class="bar-chart">${
     DAYS.map(day => {
-      const dc   = d.filter(x => x.day === day);
-      const f    = count(dc, x => x.status === 'Failed');
-      const cr   = count(dc, x => x.status === 'Critical');
-      const ob   = count(dc, x => x.status === 'Observed');
-      const tot  = counts[day] || 0;
+      const dc  = d.filter(x => x.day === day);
+      const pa  = count(dc, x => x.status === 'Passed');
+      const ob  = count(dc, x => x.status === 'Observed');
+      const fa  = count(dc, x => x.status === 'Failed');
+      const cr  = count(dc, x => x.status === 'Critical');
+      const tot = counts[day];
       return `<div class="bar-row">
-        <div class="bar-name" style="min-width:56px;">${day}</div>
-        <div class="bar-track" style="height:16px;">
-          <div style="display:flex;height:100%;">
-            <div style="width:${ob/maxDay*100}%;background:var(--observed);opacity:.7"></div>
-            <div style="width:${f/maxDay*100}%;background:var(--failed);opacity:.8"></div>
-            <div style="width:${cr/maxDay*100}%;background:var(--critical)"></div>
-          </div>
-        </div>
+        <div class="bar-name" style="min-width:72px;font-family:'Space Mono',monospace;font-size:.7rem;">${day}</div>
+        <div class="bar-track" style="height:16px;"><div style="display:flex;height:100%;">
+          <div title="Passed:${pa}"   style="width:${pa/maxDay*100}%;background:var(--passed);opacity:.65"></div>
+          <div title="Observed:${ob}" style="width:${ob/maxDay*100}%;background:var(--observed);opacity:.85"></div>
+          <div title="Failed:${fa}"   style="width:${fa/maxDay*100}%;background:var(--failed)"></div>
+          <div title="Critical:${cr}" style="width:${cr/maxDay*100}%;background:var(--critical)"></div>
+        </div></div>
         <div class="bar-count">${tot}</div>
       </div>`;
     }).join('')
-  }</div>`;
+  }
+  <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;">
+    ${['Passed','Observed','Failed','Critical'].map(s =>
+      `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;">
+        <span style="width:10px;height:10px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;opacity:.85"></span>${s}
+      </span>`).join('')}
+  </div></div>`;
 
-  // Status donut
+  // ── Status donut ──
   drawDonut('donut-status', 'donut-status-legend', [
-    { label:'Observed', value: observed, color:'var(--observed)' },
-    { label:'Failed',   value: failed,   color:'var(--failed)' },
-    { label:'Critical', value: critical, color:'var(--critical)' },
+    { label:'Passed',   value: passed,   color: STATUS_COLORS.Passed },
+    { label:'Observed', value: observed, color: STATUS_COLORS.Observed },
+    { label:'Failed',   value: failed,   color: STATUS_COLORS.Failed },
+    { label:'Critical', value: critical, color: STATUS_COLORS.Critical },
   ]);
 
-  // Category bar chart
+  // ── Bug Categories bar + percentage ──
   const catCount = {};
   d.forEach(r => r.categories.forEach(c => catCount[c] = (catCount[c] || 0) + 1));
-  const catColors = { Styling:'var(--accent2)', Content:'var(--accent)', Config:'var(--warn)', Linking:'var(--failed)', Question:'var(--muted)' };
-  const maxCat = Math.max(...Object.values(catCount));
 
-  document.getElementById('cat-bars').innerHTML = sortDesc(catCount).map(([cat, cnt]) => `
-    <div class="bar-row">
-      <div class="bar-name">${cat}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${cnt/maxCat*100}%;background:${catColors[cat] || 'var(--accent)'}"></div></div>
-      <div class="bar-count">${cnt}</div>
-    </div>`).join('');
+  if (!Object.keys(catCount).length) {
+    document.getElementById('cat-bars').innerHTML =
+      '<div style="color:var(--muted);font-size:.78rem;">No bug categories detected</div>';
+  } else {
+    const maxCat = Math.max(...Object.values(catCount), 1);
+    document.getElementById('cat-bars').innerHTML =
+      sortDesc(catCount).map(([cat, cnt]) => {
+        const pct = errors > 0 ? Math.round(cnt / errors * 100) : 0;
+        return `<div class="bar-row">
+          <div class="bar-name">${cat}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${cnt/maxCat*100}%;background:${CAT_COLORS[cat] || 'var(--accent)'}"></div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;min-width:68px;justify-content:flex-end;">
+            <span style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);">${pct}%</span>
+            <span class="bar-count">${cnt}</span>
+          </div>
+        </div>`;
+      }).join('') +
+      `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of total errors (${errors})</div>`;
+  }
 
-  // Owner bar chart
-  const ownerCount = {};
-  d.forEach(r => ownerCount[r.owner] = (ownerCount[r.owner] || 0) + 1);
-  const maxO = Math.max(...Object.values(ownerCount));
-  const ownerColors = ['var(--accent)','var(--accent2)','var(--warn)','var(--failed)','var(--critical)'];
+  // ── Top Bug Contributors ──
+  // Counts only errors (Observed + Failed + Critical), all members shown
+  const allOwners = [...new Set(d.map(x => x.owner))];
+  const bugsByOwner = {};
+  allOwners.forEach(o => {
+    bugsByOwner[o] = count(d.filter(x => x.owner === o), x => x.status !== 'Passed');
+  });
 
-  document.getElementById('owner-bars').innerHTML = sortDesc(ownerCount).slice(0, 8).map(([own, cnt], i) => `
-    <div class="bar-row">
+  const sortedByBugs = [...allOwners].sort((a, b) => bugsByOwner[b] - bugsByOwner[a]);
+  const maxBugs = Math.max(...Object.values(bugsByOwner), 1);
+    const totalOwners = sortedByBugs.length;
+  const getBarColor = (index, bugs) => {
+    if (bugs === 0) return 'var(--passed)';
+    const ratio = totalOwners <= 1 ? 0 : index / (totalOwners - 1);
+    const r = Math.round(255 * ratio < 0.5 ? 1 : 2 * (1 - ratio));
+    const g = Math.round(255 * (ratio < 0.5 ? 2 * ratio : 1));
+    return `rgb(${Math.round(255 - 155*ratio)}, ${Math.round(120 + 105*ratio)}, ${Math.round(40 + 120*ratio)})`;
+  };
+
+  document.getElementById('owner-bars').innerHTML = sortedByBugs.map((own, i) => {
+    const bugs = bugsByOwner[own];
+    if (bugs === 0) {
+      return `<div class="bar-row">
+        <div class="bar-name" style="color:var(--muted)">${own}</div>
+        <div style="flex:1;font-size:.68rem;font-family:'Space Mono',monospace;color:var(--passed);padding-left:8px;">✓ No errors — great job!</div>
+        <div class="bar-count" style="color:var(--passed)">0</div>
+      </div>`;
+    }
+    // Color by rank: top bug-makers get red/orange
+    return `<div class="bar-row">
       <div class="bar-name">${own}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${cnt/maxO*100}%;background:${ownerColors[i % ownerColors.length]}"></div></div>
-      <div class="bar-count">${cnt}</div>
-    </div>`).join('');
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${bugs/maxBugs*100}%;background:${getBarColor(i, bugs)}"></div>
+      </div>
+      <div class="bar-count">${bugs}</div>
+    </div>`;
+  }).join('');
 
-  // Type donut
-  const lpCount   = count(d, x => x.type === 'LP');
-  const postCount = count(d, x => x.type === 'Posting');
-  drawDonut('donut-type', 'donut-type-legend', [
-    { label:'LP',      value: lpCount,   color:'var(--lp)' },
-    { label:'Posting', value: postCount, color:'var(--posting)' },
-  ]);
+  // ── QA Shadow Workload main donut ──
+  const qaByCount = {};
+  d.forEach(r => { if (r.qa_by) qaByCount[r.qa_by] = (qaByCount[r.qa_by] || 0) + 1; });
+  const qaColors = ['var(--accent2)', 'var(--warn)', 'var(--accent)', 'var(--failed)'];
+  drawDonut('donut-type', 'donut-type-legend',
+    Object.entries(qaByCount).map(([name, val], i) => ({
+      label: name, value: val, color: qaColors[i % qaColors.length]
+    }))
+  );
+
+  // ── QA Shadow detail grid (by-day + by-shadow error donuts) ──
+  renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors);
+}
+
+// ─────────────────────────────────────────────────────────────
+// QA SHADOW DETAIL GRID
+// Row 1: one card per day  — cases donut + status breakdown
+// Row 2: one card per QA Shadow — errors found donut
+// ─────────────────────────────────────────────────────────────
+function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
+  const container = document.getElementById('qa-donut-grid');
+  if (!container) return;
+
+  const qaNames = Object.keys(qaByCount);
+
+  // Day cards
+  const dayCards = DAYS.map(day => {
+    const dc   = byDay[day] || [];
+    const pa   = count(dc, x => x.status === 'Passed');
+    const ob   = count(dc, x => x.status === 'Observed');
+    const fa   = count(dc, x => x.status === 'Failed');
+    const cr   = count(dc, x => x.status === 'Critical');
+    const errs = ob + fa + cr;
+    const id   = 'dday-' + day.replace(/\//g, '');
+
+    const qaSplit = {};
+    dc.forEach(r => { if (r.qa_by) qaSplit[r.qa_by] = (qaSplit[r.qa_by] || 0) + 1; });
+
+    return `<div class="qa-donut-card">
+      <div class="card-title">${day}</div>
+      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+          <svg id="${id}" width="80" height="80" viewBox="0 0 80 80"></svg>
+          <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;font-family:'Space Mono',monospace;">cases</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:.72rem;">
+          ${[['Passed',pa,'var(--passed)'],['Observed',ob,'var(--observed)'],['Failed',fa,'var(--failed)'],['Critical',cr,'var(--critical)']].map(([lbl,val,col])=>
+            val > 0 ? `<div style="display:flex;align-items:center;gap:5px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block"></span>
+              <span style="color:var(--muted)">${lbl}:</span>
+              <span style="font-family:'Space Mono',monospace;color:${col}">${val}</span>
+            </div>` : ''
+          ).join('')}
+          <div style="margin-top:3px;font-size:.63rem;font-family:'Space Mono',monospace;color:${errs > 0 ? 'var(--observed)' : 'var(--passed)'};">
+            ${errs > 0 ? `${errs} error(s)` : '✓ Clean day'}
+          </div>
+        </div>
+      </div>
+      ${Object.keys(qaSplit).length ? `
+        <div style="margin-top:10px;font-size:.62rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;">QA Shadow split</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${Object.entries(qaSplit).map(([name, c], i) => `
+            <div style="display:flex;align-items:center;gap:4px;font-size:.68rem;">
+              <span style="width:7px;height:7px;border-radius:50%;background:${qaColors[i % qaColors.length]};display:inline-block"></span>
+              <span style="color:var(--text)">${name}</span>
+              <span style="font-family:'Space Mono',monospace;color:var(--muted)">(${c})</span>
+            </div>`).join('')}
+        </div>` : ''}
+    </div>`;
+  });
+
+  // Per-QA-shadow error cards
+  const shadowCards = qaNames.map((name, i) => {
+    const sc   = d.filter(x => x.qa_by === name);
+    const pa   = count(sc, x => x.status === 'Passed');
+    const ob   = count(sc, x => x.status === 'Observed');
+    const fa   = count(sc, x => x.status === 'Failed');
+    const cr   = count(sc, x => x.status === 'Critical');
+    const errs = ob + fa + cr;
+    const id   = 'dshadow-' + name.replace(/\s/g, '');
+
+    return `<div class="qa-donut-card">
+      <div class="card-title">${name} — Errors Found</div>
+      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+          <svg id="${id}" width="80" height="80" viewBox="0 0 80 80"></svg>
+          <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;font-family:'Space Mono',monospace;">errors</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:.72rem;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--passed);display:inline-block"></span>
+            <span style="color:var(--muted)">Passed:</span>
+            <span style="font-family:'Space Mono',monospace;color:var(--passed)">${pa}</span>
+          </div>
+          ${ob > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--observed);display:inline-block"></span><span style="color:var(--muted)">Observed:</span><span style="font-family:'Space Mono',monospace;color:var(--observed)">${ob}</span></div>` : ''}
+          ${fa > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--failed);display:inline-block"></span><span style="color:var(--muted)">Failed:</span><span style="font-family:'Space Mono',monospace;color:var(--failed)">${fa}</span></div>` : ''}
+          ${cr > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--critical);display:inline-block"></span><span style="color:var(--muted)">Critical:</span><span style="font-family:'Space Mono',monospace;color:var(--critical)">${cr}</span></div>` : ''}
+          <div style="margin-top:3px;font-size:.63rem;font-family:'Space Mono',monospace;color:var(--muted);">${sc.length} total reviewed</div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = `
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">By day</div>
+    <div class="qa-donuts-row" id="qa-day-row">${dayCards.join('')}</div>
+    ${shadowCards.length ? `
+    <div style="font-size:.72rem;color:var(--muted);margin:20px 0 10px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">By QA Shadow</div>
+    <div class="qa-donuts-row">${shadowCards.join('')}</div>` : ''}
+  `;
+
+  // Draw all mini donuts after DOM is ready
+  requestAnimationFrame(() => {
+    DAYS.forEach(day => {
+      const dc  = (byDay[day] || []);
+      drawSmallDonut('dday-' + day.replace(/\//g, ''), [
+        { value: count(dc, x => x.status === 'Passed'),   color: STATUS_COLORS.Passed },
+        { value: count(dc, x => x.status === 'Observed'), color: STATUS_COLORS.Observed },
+        { value: count(dc, x => x.status === 'Failed'),   color: STATUS_COLORS.Failed },
+        { value: count(dc, x => x.status === 'Critical'), color: STATUS_COLORS.Critical },
+      ]);
+    });
+
+    qaNames.forEach(name => {
+      const sc   = d.filter(x => x.qa_by === name);
+      const ob   = count(sc, x => x.status === 'Observed');
+      const fa   = count(sc, x => x.status === 'Failed');
+      const cr   = count(sc, x => x.status === 'Critical');
+      const errs = ob + fa + cr;
+      drawSmallDonut('dshadow-' + name.replace(/\s/g, ''),
+        errs === 0
+          ? [{ value: count(sc, x => x.status === 'Passed'), color: STATUS_COLORS.Passed }]
+          : [
+              { value: ob, color: STATUS_COLORS.Observed },
+              { value: fa, color: STATUS_COLORS.Failed },
+              { value: cr, color: STATUS_COLORS.Critical },
+            ]
+      );
+    });
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
 // RENDER — CASE LOG
 // ─────────────────────────────────────────────────────────────
-
 let activeDay = 'All';
 
 function renderCases() {
+  const DAYS = getDays();
+
+  if (!DATA.length) {
+    document.getElementById('day-filters').innerHTML = '';
+    document.getElementById('case-count-label').textContent = 'No data loaded';
+    document.getElementById('case-tbody').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px;font-size:.82rem;">Upload a CSV file in the Import tab.</td></tr>`;
+    return;
+  }
+
+  if (activeDay !== 'All' && !DAYS.includes(activeDay)) activeDay = 'All';
+
   document.getElementById('day-filters').innerHTML = ['All', ...DAYS].map(d => `
     <div class="day-btn${d === activeDay ? ' active' : ''}" onclick="setDay('${d}')">${d}</div>`).join('');
 
@@ -261,70 +525,78 @@ function renderCases() {
 
   document.getElementById('case-tbody').innerHTML = rows.map(r => `
     <tr>
-      <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted)">${r.day}</td>
+      <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);white-space:nowrap">${r.day}</td>
       <td style="font-weight:600;white-space:nowrap">${r.owner}</td>
       <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--accent2)">${r.task_id}</td>
       <td><span class="status-pill pill-${r.status}">${r.status}</span></td>
-      <td><span class="type-pill type-${r.type}">${r.type}</span></td>
-      <td><div class="cat-tags">${r.categories.map(c => `<span class="cat-tag cat-${c}">${c}</span>`).join('')}</div></td>
-      <td style="font-size:.75rem;color:var(--muted);max-width:320px">${r.summary.replace(/\n/g, '<br>')}</td>
+      <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${r.qa_by || '—'}</td>
+      <td><div class="cat-tags">${r.categories.map(c => `<span class="cat-tag cat-${c}">${c}</span>`).join('') || '<span style="color:var(--muted);font-size:.65rem;">—</span>'}</div></td>
+      <td style="font-size:.75rem;color:var(--muted);max-width:300px">${r.summary}</td>
     </tr>`).join('');
 }
 
-function setDay(d) {
-  activeDay = d;
-  renderCases();
-}
+function setDay(d) { activeDay = d; renderCases(); }
 
 // ─────────────────────────────────────────────────────────────
 // RENDER — TEAM ANALYSIS
 // ─────────────────────────────────────────────────────────────
-
 function renderTeam() {
-  const ownerMap  = groupBy(DATA, 'owner');
-  const catColors = { Styling:'var(--accent2)', Content:'var(--accent)', Config:'var(--warn)', Linking:'var(--failed)', Question:'var(--muted)' };
+  if (!DATA.length) {
+    document.getElementById('owner-grid').innerHTML =
+      `<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:48px;font-size:.85rem;">Upload a CSV to see team analysis.</div>`;
+    return;
+  }
+
+  const ownerMap = groupBy(DATA, 'owner');
 
   const cards = Object.entries(ownerMap)
     .sort((a, b) => b[1].length - a[1].length)
     .map(([owner, cases]) => {
-      const obs      = count(cases, x => x.status === 'Observed');
-      const fail     = count(cases, x => x.status === 'Failed');
-      const crit     = count(cases, x => x.status === 'Critical');
-      const cats     = {};
+      const total    = cases.length;
+      const passed   = count(cases, x => x.status === 'Passed');
+      const observed = count(cases, x => x.status === 'Observed');
+      const failed   = count(cases, x => x.status === 'Failed');
+      const critical = count(cases, x => x.status === 'Critical');
+      const errors   = observed + failed + critical;
+      const passRate = Math.round(passed / total * 100);
+      const errRate  = Math.round(errors / total * 100);
+
+      const cats = {};
       cases.forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
-      const topCat   = sortDesc(cats)[0];
-      const failRate = Math.round((fail + crit) / cases.length * 100);
-      const trend    = failRate >= 50 ? 'risk' : failRate >= 25 ? 'watch' : 'ok';
-      const trendLabel = trend === 'risk' ? '⚠ At Risk' : trend === 'watch' ? '◈ Watch' : '✓ On Track';
-      const barColor = failRate >= 50 ? 'var(--failed)' : failRate >= 25 ? 'var(--warn)' : 'var(--accent)';
+
+      const trend      = errRate >= 40 ? 'risk' : errRate >= 20 ? 'watch' : 'ok';
+      const trendLabel = trend === 'risk' ? '⚠ Needs Attention' : trend === 'watch' ? '◈ Watch' : '✓ On Track';
+      const barColor   = errRate >= 40 ? 'var(--critical)' : errRate >= 20 ? 'var(--observed)' : 'var(--passed)';
 
       return `<div class="owner-card">
         <div class="owner-name">${owner}</div>
         <div class="owner-stats">
-          <div class="owner-stat" style="margin-right:14px">
-            <div class="owner-stat-val" style="color:var(--text)">${cases.length}</div>
-            <div class="owner-stat-lbl">Cases</div>
-          </div>
-          <div class="owner-stat" style="margin-right:14px">
-            <div class="owner-stat-val" style="color:var(--observed)">${obs}</div>
-            <div class="owner-stat-lbl">Observed</div>
-          </div>
-          <div class="owner-stat" style="margin-right:14px">
-            <div class="owner-stat-val" style="color:var(--failed)">${fail}</div>
-            <div class="owner-stat-lbl">Failed</div>
-          </div>
-          <div class="owner-stat">
-            <div class="owner-stat-val" style="color:var(--critical)">${crit}</div>
-            <div class="owner-stat-lbl">Critical</div>
-          </div>
+          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--text)">${total}</div><div class="owner-stat-lbl">Total</div></div>
+          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--passed)">${passed}</div><div class="owner-stat-lbl">Passed</div></div>
+          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--observed)">${observed}</div><div class="owner-stat-lbl">Observed</div></div>
+          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--failed)">${failed}</div><div class="owner-stat-lbl">Failed</div></div>
+          <div class="owner-stat"><div class="owner-stat-val" style="color:var(--critical)">${critical}</div><div class="owner-stat-lbl">Critical</div></div>
         </div>
-        ${topCat ? `<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Top issue: <span style="color:${catColors[topCat[0]] || 'var(--text)'}">${topCat[0]} (${topCat[1]})</span></div>` : ''}
+
         <div class="owner-bar-row">
-          <div class="owner-bar-lbl">Fail rate</div>
-          <div class="owner-bar-track"><div class="owner-bar-fill" style="width:${failRate}%;background:${barColor}"></div></div>
-          <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:30px;text-align:right">${failRate}%</div>
+          <div class="owner-bar-lbl">Error rate</div>
+          <div class="owner-bar-track"><div class="owner-bar-fill" style="width:${errRate}%;background:${barColor}"></div></div>
+          <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">${errors}/${total}</div>
         </div>
-        <div><span class="trend-badge trend-${trend}">${trendLabel}</span></div>
+        <div class="owner-bar-row" style="margin-top:4px">
+          <div class="owner-bar-lbl">Pass rate</div>
+          <div class="owner-bar-track"><div class="owner-bar-fill" style="width:${passRate}%;background:var(--passed);opacity:.7"></div></div>
+          <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">${passRate}%</div>
+        </div>
+
+        ${errors > 0
+          ? `<div style="margin-top:10px;">
+              <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;font-family:'Syne',sans-serif;font-weight:700;">Bug categories</div>
+              <div class="cat-tags">${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`<span class="cat-tag cat-${cat}" style="margin-right:3px">${cat} ×${n}</span>`).join('')}</div>
+            </div>`
+          : `<div style="margin-top:10px;font-size:.72rem;color:var(--passed);font-family:'Space Mono',monospace;">✓ Great job — no errors found</div>`}
+
+        <div style="margin-top:10px;"><span class="trend-badge trend-${trend}">${trendLabel}</span></div>
       </div>`;
     });
 
@@ -334,245 +606,121 @@ function renderTeam() {
 // ─────────────────────────────────────────────────────────────
 // RENDER — WEEKLY REPORT
 // ─────────────────────────────────────────────────────────────
-
 function renderReport() {
-  const d        = DATA;
-  const total    = d.length;
-  const fail     = count(d, x => x.status === 'Failed');
-  const crit     = count(d, x => x.status === 'Critical');
+  const d     = DATA;
+  const total = d.length;
+  const DAYS  = getDays();
+
+  if (!total) {
+     if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent = 'Upload a CSV to generate the daily report.';
+    document.getElementById('weekly-report').textContent = 'Upload a CSV to generate the weekly summary.';
+    return;
+  }
+
+  const passed   = count(d, x => x.status === 'Passed');
+  const observed = count(d, x => x.status === 'Observed');
+  const failed   = count(d, x => x.status === 'Failed');
+  const critical = count(d, x => x.status === 'Critical');
+  const errors   = observed + failed + critical;
+  const passRate = Math.round(passed / total * 100);
   const owners   = [...new Set(d.map(x => x.owner))];
+
   const catCount = {};
   d.forEach(r => r.categories.forEach(c => catCount[c] = (catCount[c] || 0) + 1));
 
-  const ownerMap      = groupBy(d, 'owner');
-  const atRisk        = Object.entries(ownerMap)
-    .filter(([, cases]) => count(cases, x => x.status === 'Failed' || x.status === 'Critical') / cases.length >= 0.5)
+  const qaByCount = {};
+  d.forEach(r => { if (r.qa_by) qaByCount[r.qa_by] = (qaByCount[r.qa_by] || 0) + 1; });
+  const qaShadows = Object.entries(qaByCount).map(([n,c]) => `${n} (${c})`).join(', ');
+
+  const ownerMap = groupBy(d, 'owner');
+  const atRisk = Object.entries(ownerMap)
+    .filter(([, cases]) => cases.length >= 3 && count(cases, x => x.status !== 'Passed') / cases.length >= 0.4)
     .map(([o]) => o);
-  const repeatedConfig = d.filter(x => x.categories.includes('Config')).length >= 5;
 
-  document.getElementById('daily-report').textContent =
-`QA Shadow – Daily EOD (${WEEK_RANGE})
+  const daysLabel = DAYS.length > 0
+    ? `${DAYS[0]}${DAYS.length > 1 ? ' – ' + DAYS[DAYS.length - 1] : ''}`
+    : WEEK_RANGE;
 
-• Reviewed: ${owners.length} people / ${total} cases
-• Main issues: Config mismatches (inventory filter / trim), Styling (empty space, mobile layout)
-• Pattern: ${repeatedConfig ? 'Repeated Config errors — inventory filter misconfiguration across multiple team members' : 'No dominant repeated pattern detected'}
-• At risk: ${atRisk.length > 0 ? atRisk.join(', ') : 'None'}
-• Queues: Stable (to be verified in WOMS)
-• Status: Under control / monitor Config errors`;
+if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent =
+`QA Shadow – Daily EOD (${daysLabel})
+
+• Reviewed: ${owners.length} members / ${total} cases
+• QA Shadows: ${qaShadows || 'N/A'}
+• Pass rate: ${passRate}% (${passed}/${total})
+• Errors: ${errors} — Observed: ${observed} · Failed: ${failed} · Critical: ${critical}
+• Top bugs: ${sortDesc(catCount).slice(0,3).map(([c,n])=>`${c} (${n}x)`).join(', ') || 'None'}
+• At risk: ${atRisk.length ? atRisk.join(', ') : 'None'}
+• Queues: Stable (verify in WOMS)
+• Status: ${critical > 0 ? '⚠ Critical — immediate follow-up needed' : errors === 0 ? '✓ Clean' : 'Under control'}`;
 
   document.getElementById('weekly-report').textContent =
-`QA Shadow – Weekly Summary
-Week ${WEEK_RANGE}
+`▎ QA SHADOW — WEEKLY SUMMARY
+▎ Week ${WEEK_RANGE}  ·  ${DAYS.length}/5 days loaded
+${'─'.repeat(52)}
+ COVERAGE
+  Team members : ${owners.length}
+  Total cases  : ${total}
+  QA Shadows   : ${qaShadows || 'N/A'}
+  Days worked  : ${DAYS.join('  ·  ')}
 
-## Coverage
-- Total people reviewed: ${owners.length}
-- Total cases reviewed: ${total}
+ RESULTS
+  ✓ Passed   ${String(passed).padStart(4)}   (${passRate}%)
+  ● Observed ${String(observed).padStart(4)}   (${Math.round(observed/total*100)}%)
+  ▲ Failed   ${String(failed).padStart(4)}   (${Math.round(failed/total*100)}%)
+  ✕ Critical ${String(critical).padStart(4)}   (${Math.round(critical/total*100)}%)
+${'─'.repeat(52)}
+ BUG PATTERNS
+${Object.keys(catCount).length
+  ? sortDesc(catCount).map(([c,n]) => `  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${errors>0?Math.round(n/errors*100):0}% of errors`).join('\n')
+  : '  No bugs recorded'}
+${'─'.repeat(52)}
+ TEAM PERFORMANCE  (top 8 by volume)
+${Object.entries(ownerMap).sort((a,b)=>b[1].length-a[1].length).slice(0,8)
+  .map(([o,cases])=>{
+    const errs = count(cases, x=>x.status!=='Passed');
+    const pr   = Math.round(count(cases,x=>x.status==='Passed')/cases.length*100);
+    return `  ${o.padEnd(22)} ${cases.length} cases  ${errs} error(s)  ${pr}% pass`;
+  }).join('\n')}
+${'─'.repeat(52)}
+ QUEUE & CONTROL
+  Status  : ${critical > 0 ? '⚠ At Risk' : 'Stable'}
+  WOMS    : Verify pending/rework queues
+  ${DAYS.length < 5 ? `${5-DAYS.length} day(s) pending — updates on re-upload` : 'Full week loaded'}
 
-## Main Patterns
-- Config (inventory filter, trim, campaigns) is the #1 recurring bug category.
-- Styling issues (empty space, mobile layout) are common but low severity.
-- Linking errors (missing # anchoring, broken CTAs) need systematic attention.
-
-## Top Issues
-${sortDesc(catCount).map(([c, n]) => `- ${c}: ${n} occurrences`).join('\n')}
-
-## Performance
-- Improved: Edmundo Morales, Javier Alcoba (0% fail rate)
-- Needs attention: ${atRisk.join(', ') || 'N/A'}
-- Most errors: Javier Callejas (${ownerMap['Javier Callejas']?.length || 0} cases), Alexander Sosa (${((ownerMap['Alexander Sosa'] || []).concat(ownerMap['Alexander Sosa '] || [])).length} cases)
-
-## Queue & Control
-- Overall status: Stable
-- Pending/rework issues: Requires daily WOMS verification
-- Notes: Critical cases (D-44881, D-36120, D-46425) must be followed up on fix.
-
-## Recommendations
-1. Host a Config session — inventory filter rules and trim setup.
-2. Review anchoring (#) standards in a team sync.
-3. QA Shadow next week to continue tracking Config bug trend.
-
-## Final Status
-- Overall: Under control
-- Critical bugs: ${crit} (follow up required)
-- Failed rate: ${Math.round(fail / total * 100)}%`;
-}
-
-// ─────────────────────────────────────────────────────────────
-// CSV IMPORT (file upload + Google Sheets URL)
-// ─────────────────────────────────────────────────────────────
-
-// function parseCSV(text) {
-//   const lines   = text.trim().split('\n');
-//   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-
-//   return lines.slice(1).map(line => {
-//     const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
-//     const obj  = {};
-//     headers.forEach((h, i) => obj[h] = vals[i] || '');
-
-//     const sum  = obj['Summary bugs'] || obj['summary'] || '';
-//     const cats = [];
-//     if (sum.includes('Styling'))  cats.push('Styling');
-//     if (sum.includes('Content'))  cats.push('Content');
-//     if (sum.includes('Config'))   cats.push('Config');
-//     if (sum.includes('Linking'))  cats.push('Linking');
-//     if (sum.includes('Question')) cats.push('Question');
-
-//     return {
-//       day:        obj['day']      || obj['Day']    || 'Imported',
-//       owner:      obj['Owner']    || obj['owner']  || 'Unknown',
-//       task_id:    obj['ID task']  || obj['task_id']|| '',
-//       status:     obj['Status']   || obj['status'] || 'Observed',
-//       type:       obj['Type']     || obj['type']   || 'LP',
-//       summary:    sum,
-//       categories: [...new Set(cats)]
-//     };
-//   }).filter(r => r.owner && r.owner !== 'Owner');
-// }
-// function parseCSV(text) {
-//   const lines = text.trim().split('\n'); // Divide las líneas por salto de línea
-//   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '')); // Las cabeceras
-
-//   return lines.slice(1).map(line => {
-//     const vals = line.split(',').map(v => v.trim().replace(/"/g, '')); // Extrae los valores de cada línea
-//     const obj = {};
-
-//     // Mapea las columnas del CSV a las claves esperadas en el sistema
-//     headers.forEach((h, i) => {
-//       obj[h] = vals[i] || '';  // Si no hay valor, se asigna una cadena vacía
-//     });
-
-//     // Adaptación a las claves esperadas por el sistema (puedes cambiarlo según sea necesario)
-//     const sum = obj['QA Comment'] || '';  // Mapea 'QA Comment' a 'summary' si es necesario
-//     const cats = [];
-//     if (sum.includes('Styling')) cats.push('Styling');
-//     if (sum.includes('Content')) cats.push('Content');
-//     if (sum.includes('Config')) cats.push('Config');
-//     if (sum.includes('Linking')) cats.push('Linking');
-//     if (sum.includes('Question')) cats.push('Question');
-
-//     return {
-//       day: obj['Date QA Completed'] || 'Imported', // Usamos la columna 'Date QA Completed' como el día
-//       // owner: obj['QA Completed by:'] || 'Unknown',  // Usamos 'QA Completed by:' como el propietario
-//       owner: extractNameFromEmail(obj['Name']) || 'Unknown',  // Usamos 'QA Completed by:' como el propietario
-//       task_id: obj['ID / Task / Case Number'] || '', // Mapeamos 'ID / Task / Case Number' a 'task_id'
-//       status: obj['QA Status'] || 'Observed', // Usamos 'QA Status' como el estado
-//       type: 'LP',  // Lo mantengo como 'LP' si no está especificado de otro modo
-//       summary: sum,
-//       categories: [...new Set(cats)]
-//     };
-//   }).filter(r => r.owner && r.owner !== 'Owner');  // Filtra las filas con propietario vacío
-// }
-function parseCSV(text) {
-  const lines = text.trim().split('\n'); // Divide las líneas por salto de línea
-  const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, '')); // Usamos ';' como delimitador
-
-  return lines.slice(1).map(line => {
-    const vals = line.split(';').map(v => v.trim().replace(/"/g, '')); // Usamos ';' como delimitador
-    const obj = {};
-
-    // Mapea las columnas del CSV a las claves esperadas en el sistema
-    headers.forEach((h, i) => {
-      obj[h] = vals[i] || '';  // Si no hay valor, se asigna una cadena vacía
-    });
-
-    // Adaptación a las claves esperadas por el sistema (puedes cambiarlo según sea necesario)
-    const sum = obj['QA Comment'] || '';  // Mapea 'QA Comment' a 'summary' si es necesario
-    const cats = [];
-    if (sum.includes('Styling')) cats.push('Styling');
-    if (sum.includes('Content')) cats.push('Content');
-    if (sum.includes('Config')) cats.push('Config');
-    if (sum.includes('Linking')) cats.push('Linking');
-    if (sum.includes('Question')) cats.push('Question');
-
-    return {
-      day: obj['Date QA Completed'] || 'Imported', // Usamos la columna 'Date QA Completed' como el día
-      owner: extractNameFromEmail(obj['Name']) || 'Unknown',  // Usamos 'Name' (correo) como propietario
-      task_id: obj['ID / Task / Case Number'] || '', // Mapeamos 'ID / Task / Case Number' a 'task_id'
-      status: obj['QA Status'] || 'Observed', // Usamos 'QA Status' como el estado
-      type: 'LP',  // Lo mantengo como 'LP' si no está especificado de otro modo
-      summary: sum,
-      categories: [...new Set(cats)]
-    };
-  }).filter(r => r.owner && r.owner !== 'Owner');  // Filtra las filas con propietario vacío
-}
-function extractNameFromEmail(email) {
-  const namePart = email.split('@')[0];  // Toma todo lo que está antes del '@'
-  const [firstName, lastName] = namePart.split('.');  // Divide por el punto para obtener nombre y apellido
-  return `${firstName} ${lastName}`;  // Retorna el nombre completo
-}
-
-document.getElementById('csv-file-input').addEventListener('change', function (e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function (ev) {
-    try {
-      const parsed = parseCSV(ev.target.result);
-      // DATA = [...DATA, ...parsed];
-      DATA = [...parsed];
-      console.log('Data:', DATA);
-      console.log('Parsed data:', parsed);
-      document.getElementById('import-status').textContent = `✓ Loaded ${parsed.length} new cases. Switch tabs to see updated data.`;
-      rerender();
-    } catch (err) {
-      document.getElementById('import-status').textContent = '✗ Parse error: ' + err.message;
-    }
-  };
-  reader.readAsText(file);
-});
-
-async function fetchGS() {
-  const url = document.getElementById('gs-url').value.trim();
-  if (!url) { document.getElementById('import-status').textContent = 'Please enter a URL'; return; }
-  document.getElementById('import-status').textContent = '⟳ Fetching…';
-  try {
-    const resp   = await fetch(url);
-    const text   = await resp.text();
-    const parsed = parseCSV(text);
-    DATA = [...DATA, ...parsed];
-    document.getElementById('import-status').textContent = `✓ Loaded ${parsed.length} cases from Google Sheets.`;
-    rerender();
-  } catch (err) {
-    document.getElementById('import-status').textContent = '✗ Error: ' + err.message + '. Make sure the sheet is published to web as CSV.';
-  }
+ NEEDS ATTENTION
+${atRisk.length ? atRisk.map(o=>`  ⚠ ${o}`).join('\n') : '  None'}
+${'─'.repeat(52)}
+ FINAL STATUS: ${critical > 0 ? '⚠ AT RISK' : errors > 0 ? 'UNDER CONTROL' : '✓ CLEAN WEEK'}`;
 }
 
 // ─────────────────────────────────────────────────────────────
 // TABS
 // ─────────────────────────────────────────────────────────────
-
 function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
   event.target.classList.add('active');
-  if (id === 'cases')  renderCases();
+  if (id === 'report') { renderReport(); renderOverview(); }
   if (id === 'team')   renderTeam();
-  if (id === 'report') {
-    renderReport();
-    renderOverview();
-  }
+  if (id === 'cases')  renderCases();
 }
 
 function copyText(id) {
   const txt = document.getElementById(id).textContent;
   navigator.clipboard.writeText(txt).then(() => {
-    const btn  = event.target;
-    const orig = btn.textContent;
+    const btn = event.target, orig = btn.textContent;
     btn.textContent = 'Copied ✓';
     setTimeout(() => btn.textContent = orig, 2000);
   });
 }
 
 function rerender() {
+  renderReport();
   renderOverview();
-  if (document.getElementById('panel-cases').classList.contains('active'))  renderCases();
-  if (document.getElementById('panel-team').classList.contains('active'))   renderTeam();
-  if (document.getElementById('panel-report').classList.contains('active')) {
-    renderReport();
-    renderOverview();
-  }
+  const active = document.querySelector('.panel.active')?.id?.replace('panel-', '');
+  if (active === 'team')  renderTeam();
+  if (active === 'cases') renderCases();
 }
 
 // ─────────────────────────────────────────────────────────────

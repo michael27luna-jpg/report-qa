@@ -46,7 +46,7 @@
               <th>Owner</th>
               <th>Task ID</th>
               <th>Status</th>
-              <th>Type</th>
+              <th>QA By</th>
               <th>Categories</th>
               <th>Summary</th>
             </tr>
@@ -151,14 +151,9 @@
 
   <!-- ════════════════════════ WEEKLY REPORT ════════════════════════ -->
   <div class="panel active" id="panel-report">
-    <div class="grid-2" style="margin-bottom:20px;">
-      <div>
-        <div class="card-title" style="margin-bottom:8px;">Daily Comment (Midday/EOD)</div>
-        <div class="report-box" id="daily-report"></div>
-        <button class="copy-btn" onclick="copyText('daily-report')">Copy ↗</button>
-      </div>
-      <div>
-        <div class="card-title" style="margin-bottom:8px;">Weekly Summary</div>
+    <div style="margin-bottom:20px;">
+      <div class="card-title" style="margin-bottom:12px;">Weekly Summary</div>
+      <div class="report-box-wrap">
         <div class="report-box" id="weekly-report"></div>
         <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
       </div>
@@ -176,7 +171,7 @@
       <div class="card">
         <div class="card-title">Status Distribution</div>
         <div class="donut-wrap">
-          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-status"></svg>
+          <svg class="donut-svg" width="160" height="160" viewBox="0 0 110 110" id="donut-status"></svg>
           <div class="donut-legend" id="donut-status-legend"></div>
         </div>
       </div>
@@ -192,11 +187,12 @@
         <div class="bar-chart" id="owner-bars"></div>
       </div>
       <div class="card">
-        <div class="card-title">LP vs Posting Split</div>
+        <div class="card-title">QA Shadow Workload</div>
         <div class="donut-wrap">
           <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-type"></svg>
           <div class="donut-legend" id="donut-type-legend"></div>
         </div>
+        <div id="qa-donut-grid" style="margin-top:16px;"></div>
       </div>
     </div>
   </div>

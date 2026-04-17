@@ -15,11 +15,12 @@
   --danger: #ff4d6d;
   --text: #e8eaf0;
   --muted: #6b7280;
-  --observed: #00e5a0;
-  --failed: #ff4d6d;
-  --critical: #ff7c29;
-  --lp: #5b6aff;
-  --posting: #ffb740;
+
+  /* ── Status colors (canonical) ── */
+  --passed:   #00e5a0;   /* green  */
+  --observed: #ffb740;   /* yellow */
+  --failed:   #ff7c29;   /* orange */
+  --critical: #ff4d6d;   /* red    */
 }
 
 /* ── RESET ── */
@@ -218,12 +219,13 @@ header {
 }
 
 .card-title {
-  font-size: .72rem;
-  letter-spacing: .1em;
+  font-size: .82rem;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text);
   margin-bottom: 16px;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
 }
 
 /* ── BAR CHART ── */
@@ -338,9 +340,10 @@ header {
   font-family: 'Space Mono', monospace;
 }
 
-.pill-Observed  { background: rgba(0, 229, 160, .12); color: var(--observed); }
-.pill-Failed    { background: rgba(255, 77, 109, .12); color: var(--failed); }
-.pill-Critical  { background: rgba(255, 124, 41, .15); color: var(--critical); }
+.pill-Passed   { background: rgba(0, 229, 160, .12);  color: var(--passed); }
+.pill-Observed { background: rgba(255, 183, 64, .12);  color: var(--observed); }
+.pill-Failed   { background: rgba(255, 124, 41, .15);  color: var(--failed); }
+.pill-Critical { background: rgba(255, 77, 109, .12);  color: var(--critical); }
 
 /* ── TYPE PILLS ── */
 .type-pill {
@@ -595,13 +598,15 @@ input[type="file"] { display: none; }
 .report-box {
   background: var(--surface2);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
   border-radius: 8px;
-  padding: 24px;
+  padding: 28px 32px;
   font-family: 'Space Mono', monospace;
-  font-size: .78rem;
-  line-height: 1.8;
+  font-size: .8rem;
+  line-height: 2;
   white-space: pre-wrap;
   color: var(--text);
+  letter-spacing: .01em;
 }
 
 .report-box strong { color: var(--accent); }
@@ -662,3 +667,36 @@ input[type="file"] { display: none; }
 .risk-high { color: var(--danger); }
 .risk-med  { color: var(--warn); }
 .risk-low  { color: var(--accent); }
+
+
+/* ── Label category tag ── */
+.cat-Label { background: rgba(192, 132, 252, .15); color: #c084fc; }
+
+/* ── QA Shadow donut section ── */
+.qa-donuts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.qa-donut-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.qa-donut-card .card-title {
+  font-size: .72rem;
+  margin-bottom: 12px;
+}
+
+/* ── Report box enhancements ── */
+.report-box-wrap {
+  position: relative;
+}
+
+.report-box-wrap .copy-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
