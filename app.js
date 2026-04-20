@@ -6,8 +6,8 @@
 // ─────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────
-const WEEK_NUMBER = '16';
-const WEEK_RANGE  = 'Apr 13–17, 2026';
+const WEEK_NUMBER = '';
+const WEEK_RANGE  = '';
 
 let DATA = [];  // populated via CSV upload
 
@@ -166,11 +166,17 @@ function drawDonut(svgId, legendId, slices) {
   paths += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--text)" font-size="16" font-family="Space Mono,monospace" font-weight="700">${total}</text>`;
 
   svgEl.innerHTML = paths;
-  if (legEl) legEl.innerHTML = valid.map(s => `
+if (legEl) legEl.innerHTML = valid.map(s => {
+    const pct = Math.round(s.value / total * 100);
+    return `
     <div class="legend-item">
       <div class="legend-dot" style="background:${s.color};width:13px;height:13px;"></div>
-      <span style="font-size:.85rem;">${s.label}<span style="color:var(--muted);font-family:'Space Mono',monospace;margin-left:5px;font-size:.8rem;">(${s.value})</span></span>
-    </div>`).join('');
+      <span style="font-size:.85rem;">${s.label}
+        <span style="color:var(--muted);font-family:'Space Mono',monospace;margin-left:5px;font-size:.8rem;">(${s.value})</span>
+        <span style="font-family:'Space Mono',monospace;font-size:.78rem;color:${s.color};margin-left:5px;">${pct}%</span>
+      </span>
+    </div>`;
+  }).join('');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -722,7 +728,12 @@ function rerender() {
   if (active === 'team')  renderTeam();
   if (active === 'cases') renderCases();
 }
-
+// ─────────────────────────────────────────────────────────────
+// PRINT / SAVE PDF
+// ─────────────────────────────────────────────────────────────
+function printReport() {
+  window.print();
+}
 // ─────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────
