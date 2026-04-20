@@ -19,9 +19,8 @@
   <header>
     <div class="header-left">
       <h1>QA <span>Shadow</span> Dashboard</h1>
-      <p>// Week of Apr 13 – Apr 17, 2026 &nbsp;|&nbsp; Cox Automotive</p>
     </div>
-    <div class="week-badge">WK 16 · 2026</div>
+    <div class="week-badge">2026</div>
   </header>
 
   <!-- ── TABS ── -->
@@ -155,7 +154,11 @@
       <div class="card-title" style="margin-bottom:12px;">Weekly Summary</div>
       <div class="report-box-wrap">
         <div class="report-box" id="weekly-report"></div>
+        <!-- <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button> -->
+         <div style="display:flex;gap:8px;margin-top:12px;">
         <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
+        <button class="copy-btn" onclick="printReport()" style="background:var(--accent);color:#000;border-color:var(--accent);">🖨 Print / Save PDF</button>
+      </div>
       </div>
     </div>
 

@@ -700,3 +700,42 @@ input[type="file"] { display: none; }
   top: 12px;
   right: 12px;
 }
+
+/* ── PRINT STYLES ── */
+@media print {
+  /* Ocultar todo excepto el panel del reporte */
+  header, .tabs, #panel-cases, #panel-team,
+  #panel-guidelines, #panel-import,
+  .copy-btn, button { display: none !important; }
+
+  /* Mostrar solo el reporte */
+  .shell { padding: 0 !important; max-width: 100% !important; }
+  .panel { display: none !important; }
+  #panel-report { display: block !important; padding: 0 !important; }
+
+  /* Fondo blanco para impresión */
+  body, .card, .kpi, .report-box, .owner-card,
+  .qa-donut-card, .tl-day { 
+    background: #fff !important; 
+    color: #000 !important;
+  }
+
+  body::before { display: none !important; }
+
+  /* Colores de texto legibles */
+  .card-title { color: #111 !important; }
+  .kpi-val { color: #111 !important; }
+  .kpi-label, .kpi-sub, .bar-name,
+  .bar-count, .muted { color: #444 !important; }
+  .report-box { color: #111 !important; border-left: 3px solid #00c48a; }
+
+  /* Saltos de página */
+  .card { page-break-inside: avoid; }
+  .grid-2 { page-break-inside: avoid; }
+
+  /* Tamaño A4 */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+}
