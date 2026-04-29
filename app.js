@@ -77,6 +77,17 @@ function parseCategories(comment) {
   if (u.includes('LINK') || u.includes('LINKING'))   cats.add('Linking');
   return [...cats];
 }
+// ─────────────────────────────────────────────────────────────
+// FIX COMMENT LOGIC
+// ─────────────────────────────────────────────────────────────
+function resolveFixStatus(status, fixComment) {
+  if (!fixComment || fixComment.trim() === '') return status;
+  const u = fixComment.toUpperCase();
+  // Match NA or N/A as standalone word/token, not as substring of other words
+  const naPattern = /\bN\/A\b|\bNA\d*\b/;
+  if (naPattern.test(u)) return 'Passed';
+  return status;
+}
 
 // ─────────────────────────────────────────────────────────────
 // CSV PARSER
@@ -91,16 +102,20 @@ function parseCSV(text) {
     const obj  = {};
     headers.forEach((h, i) => obj[h] = vals[i] || '');
 
-    const status  = obj['QA Status'] || 'Observed';
-    const comment = obj['QA Comment'] || '';
+    const rawStatus  = obj['QA Status'] || 'Observed';
+    const comment    = obj['QA Comment'] || '';
+    const fixComment = obj['QA Fix Comment'] || '';
+    const status     = resolveFixStatus(rawStatus, fixComment);
 
     return {
       day:        obj['Date QA Completed'] || '',
       owner:      extractNameFromEmail(obj['Name'] || ''),
       task_id:    obj['ID / Task / Case Number'] || '',
       status,
+      original_status: rawStatus,
       qa_by:      (obj['QA Completed by:'] || obj['QA Completed by'] || '').trim(),
       summary:    comment,
+      fix_comment: fixComment,
       categories: status === 'Passed' ? [] : parseCategories(comment),
     };
   }).filter(r => r.owner && r.owner !== 'Unknown' && r.task_id);
@@ -533,11 +548,20 @@ function renderCases() {
     <tr>
       <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);white-space:nowrap">${r.day}</td>
       <td style="font-weight:600;white-space:nowrap">${r.owner}</td>
-      <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--accent2)">${r.task_id}</td>
-      <td><span class="status-pill pill-${r.status}">${r.status}</span></td>
+      <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--accent2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.task_id}">${r.task_id}</td>
+      <td>
+        <span class="status-pill pill-${r.status}">${r.status}</span>
+        ${r.original_status !== r.status
+          ? `<span style="font-size:.6rem;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-top:3px;">was: ${r.original_status}</span>`
+          : ''}
+      </td>
       <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${r.qa_by || '—'}</td>
       <td><div class="cat-tags">${r.categories.map(c => `<span class="cat-tag cat-${c}">${c}</span>`).join('') || '<span style="color:var(--muted);font-size:.65rem;">—</span>'}</div></td>
       <td style="font-size:.75rem;color:var(--muted);max-width:300px">${r.summary}</td>
+      <td style="font-size:.75rem;max-width:200px">${r.fix_comment
+        ? `<span style="color:var(--passed);font-family:'Space Mono',monospace;">${r.fix_comment}</span>`
+        : '<span style="color:var(--muted);">—</span>'
+      }</td>
     </tr>`).join('');
 }
 
