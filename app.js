@@ -611,7 +611,7 @@ function renderTeam() {
         <div class="owner-bar-row">
           <div class="owner-bar-lbl">Error rate</div>
           <div class="owner-bar-track"><div class="owner-bar-fill" style="width:${errRate}%;background:${barColor}"></div></div>
-          <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">${errors}/${total}</div>
+          <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">${errors}/${total} (${errRate}%)</div>
         </div>
         <div class="owner-bar-row" style="margin-top:4px">
           <div class="owner-bar-lbl">Pass rate</div>
