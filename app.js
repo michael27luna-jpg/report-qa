@@ -80,12 +80,42 @@ function parseCategories(comment) {
 // ─────────────────────────────────────────────────────────────
 // FIX COMMENT LOGIC
 // ─────────────────────────────────────────────────────────────
-function resolveFixStatus(status, fixComment) {
+/* function resolveFixStatus(status, fixComment) {
   if (!fixComment || fixComment.trim() === '') return status;
   const u = fixComment.toUpperCase();
   // Match NA or N/A as standalone word/token, not as substring of other words
   const naPattern = /\bN\/A\b|\bNA\d*\b/;
   if (naPattern.test(u)) return 'Passed';
+  return status;
+} */
+function countBugsInSummary(summary) {
+  if (!summary) return 0;
+  // Each bug starts with M|D|M/D followed by | or /
+  const bugPattern = /(?:^|,\s*)(M\/D|M|D)\s*[|\/]/gi;
+  const matches = summary.match(bugPattern);
+  return matches ? matches.length : 1;
+}
+
+function countNAsInFix(fixComment) {
+  if (!fixComment) return 0;
+  // Match NA, NA1, NA2, N/A, N/A1 as whole words
+  const naPattern = /\bN\/?A\d*\b/gi;
+  const matches = fixComment.match(naPattern);
+  return matches ? matches.length : 0;
+}
+
+function resolveFixStatus(status, fixComment, summary) {
+  if (!fixComment || fixComment.trim() === '') return status;
+
+  const naCount  = countNAsInFix(fixComment);
+  if (naCount === 0) return status;
+
+  const bugCount = countBugsInSummary(summary);
+
+  // All bugs covered by NAs → Passed
+  if (naCount >= bugCount) return 'Passed';
+
+  // Partial NAs → keep original status
   return status;
 }
 
@@ -105,7 +135,8 @@ function parseCSV(text) {
     const rawStatus  = obj['QA Status'] || 'Observed';
     const comment    = obj['QA Comment'] || '';
     const fixComment = obj['QA Fix Comment'] || '';
-    const status     = resolveFixStatus(rawStatus, fixComment);
+/*     const status     = resolveFixStatus(rawStatus, fixComment); */
+    const status     = resolveFixStatus(rawStatus, fixComment, comment);
 
     return {
       day:        obj['Date QA Completed'] || '',
