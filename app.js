@@ -843,5 +843,13 @@ function printReport() {
 // ─────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────
+function renderAppVersion() {
+  const versionEl = document.getElementById('app-version');
+  if (!versionEl) return;
+
+  versionEl.textContent = `Version ${window.APP_VERSION || 'dev'}`;
+}
+
+renderAppVersion();
 renderReport();
 renderOverview();
