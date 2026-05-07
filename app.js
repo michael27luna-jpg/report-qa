@@ -625,9 +625,30 @@ function renderTeam() {
       const cats = {};
       cases.forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
 
-      const trend      = errRate >= 40 ? 'risk' : errRate >= 20 ? 'watch' : 'ok';
-      const trendLabel = trend === 'risk' ? '⚠ Needs Attention' : trend === 'watch' ? '◈ Watch' : '✓ On Track';
-      const barColor   = errRate >= 40 ? 'var(--critical)' : errRate >= 20 ? 'var(--observed)' : 'var(--passed)';
+      // const trend      = errRate >= 40 ? 'risk' : errRate >= 20 ? 'watch' : 'ok';
+      // const trendLabel = trend === 'risk' ? '⚠ Needs Attention' : trend === 'watch' ? '◈ Watch' : '✓ On Track';
+      // const barColor   = errRate >= 40 ? 'var(--critical)' : errRate >= 20 ? 'var(--observed)' : 'var(--passed)';
+
+      const trend =
+        errRate > 10
+          ? 'risk'
+          : errRate > 5
+            ? 'watch'
+            : 'ok';
+
+      const trendLabel =
+        trend === 'risk'
+          ? '⚠ Needs Attention'
+          : trend === 'watch'
+            ? '◈ Watch'
+            : '✓ On Track';
+
+      const barColor =
+        errRate > 10
+          ? 'var(--critical)'
+          : errRate > 5
+            ? 'var(--observed)'
+            : 'var(--passed)';
 
       return `<div class="owner-card">
         <div class="owner-name">${owner}</div>
