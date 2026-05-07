@@ -283,12 +283,42 @@ function renderOverview() {
 
   // ── KPI cards ──
   const kpis = [
-    { label:'Total Cases',  val: total,    sub: `${DAYS.length} day(s) loaded`,      color: 'var(--accent)' },
-    { label:'Passed',       val: passed,   sub: `${passRate}% pass rate`,             color: 'var(--passed)' },
-    { label:'Observed',     val: observed, sub: `${Math.round(observed/total*100)}% of ${total} cases`, color: 'var(--observed)' },
-    { label:'Failed',       val: failed,   sub: `${Math.round(failed/total*100)}% of ${total} cases`,   color: 'var(--failed)' },
-    { label:'Critical',     val: critical, sub: 'immediate action',                   color: 'var(--critical)' },
-    { label:'Team Members', val: owners,   sub: 'reviewed this week',                 color: 'var(--accent2)' },
+    {
+      label:'Total Cases',
+      val: total,
+      sub: `${DAYS.length} day(s) loaded`,
+      color: 'var(--accent)'
+    },
+    {
+      label:'Passed',
+      val: passed,
+      sub: `${((passed / total) * 100).toFixed(2)}% pass rate`,
+      color: 'var(--passed)'
+    },
+    {
+      label:'Observed',
+      val: observed,
+      sub: `${((observed / total) * 100).toFixed(2)}% of ${total} cases`,
+      color: 'var(--observed)'
+    },
+    {
+      label:'Failed',
+      val: failed,
+      sub: `${((failed / total) * 100).toFixed(2)}% of ${total} cases`,
+      color: 'var(--failed)'
+    },
+    {
+      label:'Critical',
+      val: critical,
+      sub: `${((critical / total) * 100).toFixed(2)}% of ${total} cases`,
+      color: 'var(--critical)'
+    },
+    {
+      label:'Team Members',
+      val: owners,
+      sub: 'reviewed this week',
+      color: 'var(--accent2)'
+    },
   ];
   document.getElementById('kpi-row').innerHTML = kpis.map(k => `
     <div class="kpi" style="--kpi-color:${k.color}">
