@@ -1,0 +1,25 @@
+{
+  "name": "report-qa",
+  "version": "1.0.1",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "standard-version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michael27luna-jpg/report-qa.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/michael27luna-jpg/report-qa/issues"
+  },
+  "homepage": "https://github.com/michael27luna-jpg/report-qa#readme",
+  "devDependencies": {
+    "standard-version": "^9.5.0"
+  }
+}
