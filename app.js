@@ -283,12 +283,42 @@ function renderOverview() {
 
   // ── KPI cards ──
   const kpis = [
-    { label:'Total Cases',  val: total,    sub: `${DAYS.length} day(s) loaded`,      color: 'var(--accent)' },
-    { label:'Passed',       val: passed,   sub: `${passRate}% pass rate`,             color: 'var(--passed)' },
-    { label:'Observed',     val: observed, sub: `${Math.round(observed/total*100)}% of ${total} cases`, color: 'var(--observed)' },
-    { label:'Failed',       val: failed,   sub: `${Math.round(failed/total*100)}% of ${total} cases`,   color: 'var(--failed)' },
-    { label:'Critical',     val: critical, sub: 'immediate action',                   color: 'var(--critical)' },
-    { label:'Team Members', val: owners,   sub: 'reviewed this week',                 color: 'var(--accent2)' },
+    {
+      label:'Total Cases',
+      val: total,
+      sub: `${DAYS.length} day(s) loaded`,
+      color: 'var(--accent)'
+    },
+    {
+      label:'Passed',
+      val: passed,
+      sub: `${((passed / total) * 100).toFixed(2)}% pass rate`,
+      color: 'var(--passed)'
+    },
+    {
+      label:'Observed',
+      val: observed,
+      sub: `${((observed / total) * 100).toFixed(2)}% of ${total} cases`,
+      color: 'var(--observed)'
+    },
+    {
+      label:'Failed',
+      val: failed,
+      sub: `${((failed / total) * 100).toFixed(2)}% of ${total} cases`,
+      color: 'var(--failed)'
+    },
+    {
+      label:'Critical',
+      val: critical,
+      sub: `${((critical / total) * 100).toFixed(2)}% of ${total} cases`,
+      color: 'var(--critical)'
+    },
+    {
+      label:'Team Members',
+      val: owners,
+      sub: 'reviewed this week',
+      color: 'var(--accent2)'
+    },
   ];
   document.getElementById('kpi-row').innerHTML = kpis.map(k => `
     <div class="kpi" style="--kpi-color:${k.color}">
@@ -625,9 +655,30 @@ function renderTeam() {
       const cats = {};
       cases.forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
 
-      const trend      = errRate >= 40 ? 'risk' : errRate >= 20 ? 'watch' : 'ok';
-      const trendLabel = trend === 'risk' ? '⚠ Needs Attention' : trend === 'watch' ? '◈ Watch' : '✓ On Track';
-      const barColor   = errRate >= 40 ? 'var(--critical)' : errRate >= 20 ? 'var(--observed)' : 'var(--passed)';
+      // const trend      = errRate >= 40 ? 'risk' : errRate >= 20 ? 'watch' : 'ok';
+      // const trendLabel = trend === 'risk' ? '⚠ Needs Attention' : trend === 'watch' ? '◈ Watch' : '✓ On Track';
+      // const barColor   = errRate >= 40 ? 'var(--critical)' : errRate >= 20 ? 'var(--observed)' : 'var(--passed)';
+
+      const trend =
+        errRate > 10
+          ? 'risk'
+          : errRate > 5
+            ? 'watch'
+            : 'ok';
+
+      const trendLabel =
+        trend === 'risk'
+          ? '⚠ Needs Attention'
+          : trend === 'watch'
+            ? '◈ Watch'
+            : '✓ On Track';
+
+      const barColor =
+        errRate > 10
+          ? 'var(--critical)'
+          : errRate > 5
+            ? 'var(--observed)'
+            : 'var(--passed)';
 
       return `<div class="owner-card">
         <div class="owner-name">${owner}</div>
@@ -792,5 +843,13 @@ function printReport() {
 // ─────────────────────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────────────────────
+function renderAppVersion() {
+  const versionEl = document.getElementById('app-version');
+  if (!versionEl) return;
+
+  versionEl.textContent = `Version ${window.APP_VERSION || 'dev'}`;
+}
+
+renderAppVersion();
 renderReport();
 renderOverview();
