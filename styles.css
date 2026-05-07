@@ -164,7 +164,7 @@ header {
 
 .kpi-label {
   font-size: .7rem;
-  color: var(--muted);
+  color: var(--text);
   letter-spacing: .1em;
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -179,7 +179,7 @@ header {
 
 .kpi-sub {
   font-size: .72rem;
-  color: var(--muted);
+  color: var(--text);
   margin-top: 4px;
 }
 
@@ -635,12 +635,27 @@ input[type="file"] { display: none; }
   gap: 0;
   margin-bottom: 20px;
   border-radius: 6px;
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid var(--border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.timeline::-webkit-scrollbar {
+  height: 4px;
+}
+
+.timeline::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timeline::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .tl-day {
-  flex: 1;
+  flex: 0 0 90px;
   text-align: center;
   padding: 10px 6px;
 }

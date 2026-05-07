@@ -149,7 +149,7 @@ function parseCSV(text) {
       fix_comment: fixComment,
       categories: status === 'Passed' ? [] : parseCategories(comment),
     };
-  }).filter(r => r.owner && r.owner !== 'Unknown' && r.task_id);
+  }).filter(r => r.owner && r.owner !== 'Unknown' && r.task_id && r.status !== 'In progress' && r.status !== 'In Progress');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -746,12 +746,43 @@ function renderReport() {
 
   const ownerMap = groupBy(d, 'owner');
   const atRisk = Object.entries(ownerMap)
-    .filter(([, cases]) => cases.length >= 3 && count(cases, x => x.status !== 'Passed') / cases.length >= 0.4)
+    .filter(([, cases]) => {
+      const errRate = Math.round(count(cases, x => x.status !== 'Passed') / cases.length * 100);
+      return errRate > 10;
+    })
     .map(([o]) => o);
+
+  // Pending cases: has a bug (non-Passed) but no fix_comment yet
+  const pendingCases = count(d, x => x.status !== 'Passed' && (!x.fix_comment || x.fix_comment.trim() === ''));
+  const queueStatus =
+    pendingCases > 20 ? '🚨 At Risk'  :
+    pendingCases >= 10 ? '⚠ Watch'    :
+                         '✓ Stable';
 
   const daysLabel = DAYS.length > 0
     ? `${DAYS[0]}${DAYS.length > 1 ? ' – ' + DAYS[DAYS.length - 1] : ''}`
     : WEEK_RANGE;
+ // ── Final Status logic ──
+  const criticalPct  = total > 0 ? (critical / total) * 100 : 0;
+  const failedPct    = total > 0 ? (failed   / total) * 100 : 0;
+  const observedPct  = total > 0 ? (observed / total) * 100 : 0;
+
+  const severityScore =
+    (criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0) +
+    (failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0) +
+    (observedPct > 8  ? 2 : observedPct > 4   ? 1 : 0);
+
+  const pendingScore =
+    pendingCases > 20 ? 3 :
+    pendingCases >= 10 ? 2 : 1;
+
+  const finalScore = severityScore + pendingScore;
+
+  const finalStatus =
+    finalScore >= 7 ? '🚨 AT RISK' :
+    finalScore >= 4 ? '⚠ NEEDS ATTENTION' :
+    errors === 0    ? '✓ CLEAN WEEK' :
+                      'UNDER CONTROL';
 
 if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent =
 `QA Shadow – Daily EOD (${daysLabel})
@@ -795,14 +826,17 @@ ${Object.entries(ownerMap).sort((a,b)=>b[1].length-a[1].length).slice(0,8)
   }).join('\n')}
 ${'─'.repeat(52)}
  QUEUE & CONTROL
-  Status  : ${critical > 0 ? '⚠ At Risk' : 'Stable'}
+  Status  : ${queueStatus} (${pendingCases} pending cases to fix)
   WOMS    : Verify pending/rework queues
   ${DAYS.length < 5 ? `${5-DAYS.length} day(s) pending — updates on re-upload` : 'Full week loaded'}
 
  NEEDS ATTENTION
 ${atRisk.length ? atRisk.map(o=>`  ⚠ ${o}`).join('\n') : '  None'}
 ${'─'.repeat(52)}
- FINAL STATUS: ${critical > 0 ? '⚠ AT RISK' : errors > 0 ? 'UNDER CONTROL' : '✓ CLEAN WEEK'}`;
+ FINAL STATUS: ${finalStatus}
+  Critical : ${criticalPct.toFixed(2)}% (threshold 1%)
+  Failed   : ${failedPct.toFixed(2)}% (threshold 3%)
+  Observed : ${observedPct.toFixed(2)}% (threshold 8%)`;
 }
 
 // ─────────────────────────────────────────────────────────────
