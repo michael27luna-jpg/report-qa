@@ -27,6 +27,7 @@
   <div class="tabs">
     <div class="tab active"  onclick="showPanel('report')">Weekly Report</div>
     <div class="tab"         onclick="showPanel('team')">Team Analysis</div>
+    <div class="tab"         onclick="showPanel('analytics')">Analytics</div>
     <div class="tab"         onclick="showPanel('guidelines')">Guidelines</div>
     <div class="tab"         onclick="showPanel('cases')">Case Log</div>
     <div class="tab"         onclick="showPanel('import')">+ Import Data</div>
@@ -34,7 +35,105 @@
 
   <!-- ════════════════════════ CASE LOG ════════════════════════ -->
   <div class="panel" id="panel-cases">
-    <div class="day-filters" id="day-filters"></div>
+
+    <!-- Search -->
+    <div style="margin-bottom:12px;">
+      <input
+        id="case-search"
+        type="text"
+        placeholder="🔍  Search by owner, task ID, summary or fix comment..."
+        oninput="filterCases()"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+               padding:10px 16px;border-radius:6px;font-family:'Space Mono',monospace;font-size:.8rem;
+               outline:none;transition:border-color .2s;"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border)'"
+      />
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <!-- Date -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-date" onclick="toggleDropdown('date')">
+          📅 Date <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-date">
+          <div class="date-picker-wrap">
+            <div class="date-picker-header">
+              <span class="date-picker-nav" onclick="datePickerNav(-1)">‹</span>
+              <span id="date-picker-month-label"></span>
+              <span class="date-picker-nav" onclick="datePickerNav(1)">›</span>
+            </div>
+            <div class="date-picker-grid" id="date-picker-grid"></div>
+            <div class="date-picker-actions">
+              <button class="date-picker-clear" onclick="clearDateFilter()">Clear</button>
+              <button class="date-picker-apply" onclick="applyDateFilter()">Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-status" onclick="toggleDropdown('status')">
+          ● Status <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-status">
+          <div class="filter-option" onclick="toggleFilterOption('status','Passed')"     id="fopt-status-Passed">
+            <div class="filter-checkbox"></div><span class="filter-option-label">✓ Passed</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Observed')"   id="fopt-status-Observed">
+            <div class="filter-checkbox"></div><span class="filter-option-label">● Observed</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Failed')"     id="fopt-status-Failed">
+            <div class="filter-checkbox"></div><span class="filter-option-label">▲ Failed</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Critical')"   id="fopt-status-Critical">
+            <div class="filter-checkbox"></div><span class="filter-option-label">✕ Critical</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Pending')"    id="fopt-status-Pending">
+            <div class="filter-checkbox"></div><span class="filter-option-label">⏳ Pending</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Responded')"  id="fopt-status-Responded">
+            <div class="filter-checkbox"></div><span class="filter-option-label">💬 Responded</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- QA By -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-qaby" onclick="toggleDropdown('qaby')">
+          👤 QA By <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-qaby">
+          <div class="filter-dropdown-search">
+            <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+            <input type="text" placeholder="Search..." oninput="searchDropdown('qaby', this.value)"/>
+          </div>
+          <div id="filter-options-qaby"></div>
+        </div>
+      </div>
+
+      <!-- Category -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-category" onclick="toggleDropdown('category')">
+          🏷 Category <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-category">
+          <div id="filter-options-category"></div>
+        </div>
+      </div>
+
+      <!-- Clear All -->
+      <button class="filter-clear-all" id="filter-clear-all" onclick="clearAllFilters()">
+        × Clear All
+      </button>
+    </div>
+
+    <!-- Active filter pills -->
+    <div class="filter-pills" id="filter-pills"></div>
+
     <div class="card">
       <div class="card-title">Bug Log — <span id="case-count-label">All Days</span></div>
       <div class="scroll-x">
@@ -60,6 +159,56 @@
   <!-- ════════════════════════ TEAM ════════════════════════ -->
   <div class="panel" id="panel-team">
     <div class="owner-grid" id="owner-grid"></div>
+  </div>
+
+  <!-- ════════════════════════ ANALYTICS ════════════════════════ -->
+  <div class="panel" id="panel-analytics">
+
+    <!-- Section 1: Team Volume -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;">Team Volume Over Time</div>
+        <div class="analytics-toggle">
+          <button class="atoggle active" data-gran="day"   onclick="setAnalyticsGranularity('day')">Day</button>
+          <button class="atoggle"        data-gran="week"  onclick="setAnalyticsGranularity('week')">Week</button>
+          <button class="atoggle"        data-gran="month" onclick="setAnalyticsGranularity('month')">Month</button>
+        </div>
+      </div>
+      <div id="analytics-vol-chart"></div>
+    </div>
+
+    <!-- Section 2: Member Analysis -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px;">Member Analysis</div>
+
+      <!-- Person filter -->
+      <div style="margin-bottom:20px;">
+        <div class="filter-wrap" id="analytics-person-wrap">
+          <div class="filter-btn" id="analytics-person-btn" onclick="toggleAnalyticsPersonDropdown()">
+            👤 Person <span class="filter-btn-arrow">▾</span>
+          </div>
+          <div class="filter-dropdown" id="analytics-person-dropdown">
+            <div class="filter-dropdown-search">
+              <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+              <input type="text" placeholder="Search..." oninput="searchAnalyticsPerson(this.value)"/>
+            </div>
+            <div id="analytics-person-options"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini KPI strip -->
+      <div id="analytics-member-stats" style="margin-bottom:24px;"></div>
+
+      <!-- Chart B: Error Rate Trend (first as requested) -->
+      <div id="analytics-member-error"></div>
+
+      <div style="border-top:1px solid var(--border);margin:24px 0;"></div>
+
+      <!-- Chart A: Reviewer Activity -->
+      <div id="analytics-member-reviewer"></div>
+    </div>
+
   </div>
 
   <!-- ════════════════════════ GUIDELINES ════════════════════════ -->
@@ -155,11 +304,10 @@
       <div class="card-title" style="margin-bottom:12px;">Weekly Summary</div>
       <div class="report-box-wrap">
         <div class="report-box" id="weekly-report"></div>
-        <!-- <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button> -->
-         <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
-        <button class="copy-btn" onclick="printReport()" style="background:var(--accent);color:#000;border-color:var(--accent);">🖨 Print / Save PDF</button>
-      </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
+          <button class="copy-btn" onclick="printReport()" style="background:var(--accent);color:#000;border-color:var(--accent);">🖨 Print / Save PDF</button>
+        </div>
       </div>
     </div>
 
@@ -223,40 +371,9 @@
     <div class="card" style="margin-bottom:16px;">
       <!-- <div class="card-title">Google Sheets CSV Link</div> -->
       <div class="card-title"> Status</div>
-      <!-- <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">
-        Publish your sheet to the web
-        (<strong style="color:var(--text)">File → Share → Publish to web → CSV</strong>)
-        and paste the link below.
-      </p>
-      <div class="gs-link-row">
-        <input class="gs-input" id="gs-url" type="text"
-          placeholder="https://docs.google.com/spreadsheets/d/…/pub?output=csv"/>
-        <button class="btn btn-accent" onclick="fetchGS()">Load Sheet</button>
-      </div> -->
       <div id="import-status" style="font-size:.78rem;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;"></div>
     </div>
 
-    <!-- <div class="card">
-      <div class="card-title">Expected Google Sheet Column Format</div>
-      <div class="scroll-x">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Column A</th>
-              <th>Column B</th>
-              <th>Column C</th>
-              <th>Column D</th>
-              <th>Column E</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Owner</td><td>ID task</td><td>Status</td><td>Summary bugs</td><td>Type</td></tr>
-            <tr><td>Jesus Macedo</td><td>D-12345</td><td>Failed</td><td>D | Issue | Config | inventory config</td><td>LP</td></tr>
-            <tr><td>Javier Callejas</td><td>D-67890</td><td>Observed</td><td>M | Issue | Styling | empty space</td><td>LP</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div> -->
     <div class="card">
       <div class="card-title">Expected Google Sheet Column Format</div>
       <div class="scroll-x">
@@ -293,5 +410,9 @@
 <!-- JavaScript -->
 <script src="version.js"></script>
 <script src="app.js"></script>
+<div id="info-popup" class="info-popup">
+  <div class="info-popup-title" id="info-popup-title"></div>
+  <div id="info-popup-body"></div>
+</div>
 </body>
 </html>
