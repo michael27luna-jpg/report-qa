@@ -158,9 +158,78 @@
 
   <!-- ════════════════════════ TEAM ════════════════════════ -->
   <div class="panel" id="panel-team">
+
+    <!-- Search -->
+    <!-- <div style="margin-bottom:12px;">
+      <input
+        id="team-search"
+        type="text"
+        placeholder="🔍 Search by team member name..."
+        oninput="renderTeam()"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+              padding:10px 16px;border-radius:6px;font-family:'Space Mono',monospace;font-size:.8rem;
+              outline:none;transition:border-color .2s;"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border)'"
+      />
+    </div> -->
+
+    <!-- Filter bar -->
+    <div class="filter-bar" style="margin-bottom:12px;">
+
+      <!-- Team Member -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="team-filter-btn-member" onclick="toggleTeamDropdown('member')">
+          👤 Team Member <span class="filter-btn-arrow">▾</span>
+        </div>
+
+        <div class="filter-dropdown" id="team-filter-dropdown-member">
+          <div class="filter-dropdown-search">
+            <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+            <input type="text" placeholder="Search..." oninput="renderTeamMemberOptions(this.value)"/>
+          </div>
+          <div id="team-filter-options-member"></div>
+        </div>
+      </div>
+
+      <!-- Trend Status -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="team-filter-btn-trend" onclick="toggleTeamDropdown('trend')">
+          ● Status <span class="filter-btn-arrow">▾</span>
+        </div>
+
+        <div class="filter-dropdown" id="team-filter-dropdown-trend">
+          <div class="filter-option" onclick="toggleTeamTrendFilter('risk')" id="team-fopt-trend-risk">
+            <div class="filter-checkbox"></div>
+            <span class="filter-option-label">⚠ Needs Attention</span>
+          </div>
+
+          <div class="filter-option" onclick="toggleTeamTrendFilter('watch')" id="team-fopt-trend-watch">
+            <div class="filter-checkbox"></div>
+            <span class="filter-option-label">◈ Watch</span>
+          </div>
+
+          <div class="filter-option" onclick="toggleTeamTrendFilter('ok')" id="team-fopt-trend-ok">
+            <div class="filter-checkbox"></div>
+            <span class="filter-option-label">✓ On Track</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clear -->
+      <button class="filter-clear-all" id="team-filter-clear-all" onclick="clearTeamFilters()">
+        × Clear All
+      </button>
+    </div>
+
+    <div class="filter-pills" id="team-filter-pills"></div>
+
+    <div style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);margin-bottom:12px;">
+      <span id="team-count-label">All team members</span>
+    </div>
+
     <div class="owner-grid" id="owner-grid"></div>
   </div>
-
   <!-- ════════════════════════ ANALYTICS ════════════════════════ -->
   <div class="panel" id="panel-analytics">
 
@@ -357,7 +426,7 @@
       <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;">
         Export your Google Sheet as CSV (<strong style="color:var(--text)">File → Download → CSV</strong>)
         then upload below. Columns expected:
-        <code style="color:var(--accent)">Owner, ID task, Status, Summary bugs, Type, day</code>
+        <code style="color:var(--accent); font-size:12px;">Name, ID / Task / Case Number,	QA Status,	QA Comment,	QA Completed by,	Date QA Completed,	QA Fix Comment</code>
       </p>
       <label class="import-area" for="csv-file-input">
         <div class="import-icon">📂</div>

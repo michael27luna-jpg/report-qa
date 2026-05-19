@@ -1033,6 +1033,146 @@ function filterCases() {
         }</td>
       </tr>`).join('');
 }
+// ─────────────────────────────────────────────────────────────
+// TEAM ANALYSIS FILTERS
+// ─────────────────────────────────────────────────────────────
+const teamFilters = {
+  members: [],
+  trends: []
+};
+
+function getTeamTrend(errRate) {
+  if (errRate > 10) return 'risk';
+  if (errRate > 5) return 'watch';
+  return 'ok';
+}
+
+function getTeamTrendLabel(trend) {
+  if (trend === 'risk') return '⚠ Needs Attention';
+  if (trend === 'watch') return '◈ Watch';
+  return '✓ On Track';
+}
+
+function toggleTeamDropdown(name) {
+  ['member', 'trend'].forEach(n => {
+    if (n === name) return;
+    document.getElementById(`team-filter-dropdown-${n}`)?.classList.remove('open');
+    document.getElementById(`team-filter-btn-${n}`)?.classList.remove('open');
+  });
+
+  const dd = document.getElementById(`team-filter-dropdown-${name}`);
+  const btn = document.getElementById(`team-filter-btn-${name}`);
+  if (!dd || !btn) return;
+
+  const isOpen = dd.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+
+  if (name === 'member' && isOpen) renderTeamMemberOptions();
+}
+
+function renderTeamMemberOptions(searchTerm = '') {
+  const container = document.getElementById('team-filter-options-member');
+  if (!container) return;
+
+  const owners = [...new Set(DATA.map(x => x.owner).filter(Boolean))].sort();
+
+  const filtered = searchTerm
+    ? owners.filter(o => o.toLowerCase().includes(searchTerm.toLowerCase()))
+    : owners;
+
+  const countMap = {};
+  DATA.forEach(r => {
+    if (r.owner) countMap[r.owner] = (countMap[r.owner] || 0) + 1;
+  });
+
+  container.innerHTML = filtered.map(owner => `
+    <div class="filter-option${teamFilters.members.includes(owner) ? ' selected' : ''}"
+         onclick="toggleTeamMemberFilter('${owner.replace(/'/g, "\\'")}')"
+         id="team-fopt-member-${owner.replace(/\s/g,'-')}">
+      <div class="filter-checkbox"></div>
+      <span class="filter-option-label">${owner}</span>
+      <span class="filter-option-count">${countMap[owner] || 0}</span>
+    </div>
+  `).join('');
+}
+
+function toggleTeamMemberFilter(owner) {
+  const idx = teamFilters.members.indexOf(owner);
+
+  if (idx === -1) teamFilters.members.push(owner);
+  else teamFilters.members.splice(idx, 1);
+
+  updateTeamFilterUI();
+  renderTeam();
+}
+
+function toggleTeamTrendFilter(trend) {
+  const idx = teamFilters.trends.indexOf(trend);
+
+  if (idx === -1) teamFilters.trends.push(trend);
+  else teamFilters.trends.splice(idx, 1);
+
+  updateTeamFilterUI();
+  renderTeam();
+}
+
+function updateTeamFilterUI() {
+  const pills = [];
+
+  teamFilters.members.forEach(owner => {
+    pills.push({
+      label: `👤 ${owner}`,
+      remove: () => toggleTeamMemberFilter(owner)
+    });
+  });
+
+  teamFilters.trends.forEach(trend => {
+    pills.push({
+      label: getTeamTrendLabel(trend),
+      remove: () => toggleTeamTrendFilter(trend)
+    });
+  });
+
+  const pillsEl = document.getElementById('team-filter-pills');
+  if (pillsEl) {
+    pillsEl.innerHTML = pills.map((p, i) => `
+      <div class="filter-pill">
+        ${p.label}
+        <span class="filter-pill-remove" onclick="removeTeamPill(${i})">×</span>
+      </div>
+    `).join('');
+
+    pillsEl.classList.toggle('visible', pills.length > 0);
+  }
+
+  window._teamFilterPillRemovers = pills.map(p => p.remove);
+
+  document.getElementById('team-filter-btn-member')?.classList.toggle('active', teamFilters.members.length > 0);
+  document.getElementById('team-filter-btn-trend')?.classList.toggle('active', teamFilters.trends.length > 0);
+
+  ['risk', 'watch', 'ok'].forEach(t => {
+    document.getElementById(`team-fopt-trend-${t}`)?.classList.toggle('selected', teamFilters.trends.includes(t));
+  });
+
+  document.getElementById('team-filter-clear-all')?.classList.toggle('visible', pills.length > 0 || !!document.getElementById('team-search')?.value);
+}
+
+function removeTeamPill(i) {
+  if (window._teamFilterPillRemovers?.[i]) window._teamFilterPillRemovers[i]();
+}
+
+function clearTeamFilters() {
+  teamFilters.members = [];
+  teamFilters.trends = [];
+
+  const searchEl = document.getElementById('team-search');
+  if (searchEl) searchEl.value = '';
+
+  document.querySelectorAll('[id^="team-fopt-"]').forEach(el => el.classList.remove('selected'));
+
+  updateTeamFilterUI();
+  renderTeam();
+}
 
 // ─────────────────────────────────────────────────────────────
 // RENDER — TEAM ANALYSIS
@@ -1044,10 +1184,11 @@ function renderTeam() {
     return;
   }
 
+  const search = (document.getElementById('team-search')?.value || '').toLowerCase().trim();
+
   const ownerMap = groupBy(DATA, 'owner');
 
-  const cards = Object.entries(ownerMap)
-    .sort((a, b) => b[1].length - a[1].length)
+  let teamRows = Object.entries(ownerMap)
     .map(([owner, cases]) => {
       const total    = cases.length;
       const passed   = count(cases, x => x.status === 'Passed');
@@ -1058,65 +1199,149 @@ function renderTeam() {
       const passRate = Math.round(passed / total * 100);
       const errRate  = Math.round(errors / total * 100);
 
-      const cats = {};
-      cases.forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
+      const trend = getTeamTrend(errRate);
 
-      // const trend      = errRate >= 40 ? 'risk' : errRate >= 20 ? 'watch' : 'ok';
-      // const trendLabel = trend === 'risk' ? '⚠ Needs Attention' : trend === 'watch' ? '◈ Watch' : '✓ On Track';
-      // const barColor   = errRate >= 40 ? 'var(--critical)' : errRate >= 20 ? 'var(--observed)' : 'var(--passed)';
-
-      const trend =
-        errRate > 10
-          ? 'risk'
-          : errRate > 5
-            ? 'watch'
-            : 'ok';
-
-      const trendLabel =
-        trend === 'risk'
-          ? '⚠ Needs Attention'
-          : trend === 'watch'
-            ? '◈ Watch'
-            : '✓ On Track';
-
-      const barColor =
-        errRate > 10
-          ? 'var(--critical)'
-          : errRate > 5
-            ? 'var(--observed)'
-            : 'var(--passed)';
-
-      return `<div class="owner-card">
-        <div class="owner-name">${owner}</div>
-        <div class="owner-stats">
-          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--text)">${total}</div><div class="owner-stat-lbl">Total</div></div>
-          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--passed)">${passed}</div><div class="owner-stat-lbl">Passed</div></div>
-          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--observed)">${observed}</div><div class="owner-stat-lbl">Observed</div></div>
-          <div class="owner-stat" style="margin-right:12px"><div class="owner-stat-val" style="color:var(--failed)">${failed}</div><div class="owner-stat-lbl">Failed</div></div>
-          <div class="owner-stat"><div class="owner-stat-val" style="color:var(--critical)">${critical}</div><div class="owner-stat-lbl">Critical</div></div>
-        </div>
-
-        <div class="owner-bar-row">
-          <div class="owner-bar-lbl">Error rate</div>
-          <div class="owner-bar-track"><div class="owner-bar-fill" style="width:${errRate}%;background:${barColor}"></div></div>
-          <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">${errors}/${total} (${errRate}%)</div>
-        </div>
-        <div class="owner-bar-row" style="margin-top:4px">
-          <div class="owner-bar-lbl">Pass rate</div>
-          <div class="owner-bar-track"><div class="owner-bar-fill" style="width:${passRate}%;background:var(--passed);opacity:.7"></div></div>
-          <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">${passRate}%</div>
-        </div>
-
-        ${errors > 0
-          ? `<div style="margin-top:10px;">
-              <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;font-family:'Syne',sans-serif;font-weight:700;">Bug categories</div>
-              <div class="cat-tags">${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`<span class="cat-tag cat-${cat}" style="margin-right:3px">${cat} ×${n}</span>`).join('')}</div>
-            </div>`
-          : `<div style="margin-top:10px;font-size:.72rem;color:var(--passed);font-family:'Space Mono',monospace;">✓ Great job — no errors found</div>`}
-
-        <div style="margin-top:10px;"><span class="trend-badge trend-${trend}">${trendLabel}</span></div>
-      </div>`;
+      return {
+        owner,
+        cases,
+        total,
+        passed,
+        observed,
+        failed,
+        critical,
+        errors,
+        passRate,
+        errRate,
+        trend
+      };
     });
+
+  // General search by name
+  if (search) {
+    teamRows = teamRows.filter(x => x.owner.toLowerCase().includes(search));
+  }
+
+  // Member filter
+  if (teamFilters.members.length) {
+    teamRows = teamRows.filter(x => teamFilters.members.includes(x.owner));
+  }
+
+  // Trend filter: Needs Attention / Watch / On Track
+  if (teamFilters.trends.length) {
+    teamRows = teamRows.filter(x => teamFilters.trends.includes(x.trend));
+  }
+
+  teamRows.sort((a, b) => b.total - a.total);
+
+  renderTeamMemberOptions();
+  updateTeamFilterUI();
+
+  const hasFilters = search || teamFilters.members.length || teamFilters.trends.length;
+
+  const countLabel = document.getElementById('team-count-label');
+  if (countLabel) {
+    countLabel.textContent = `${teamRows.length} team member(s)${hasFilters ? ' filtered' : ''}`;
+  }
+
+  if (!teamRows.length) {
+    document.getElementById('owner-grid').innerHTML =
+      `<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:48px;font-size:.85rem;">No team members match your filters.</div>`;
+    return;
+  }
+
+  const cards = teamRows.map(item => {
+    const {
+      owner,
+      cases,
+      total,
+      passed,
+      observed,
+      failed,
+      critical,
+      errors,
+      passRate,
+      errRate,
+      trend
+    } = item;
+
+    const cats = {};
+    cases.forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
+
+    const trendLabel = getTeamTrendLabel(trend);
+
+    const barColor =
+      trend === 'risk'
+        ? 'var(--critical)'
+        : trend === 'watch'
+          ? 'var(--observed)'
+          : 'var(--passed)';
+
+    return `<div class="owner-card">
+      <div class="owner-name">${owner}</div>
+
+      <div class="owner-stats">
+        <div class="owner-stat" style="margin-right:12px">
+          <div class="owner-stat-val" style="color:var(--text)">${total}</div>
+          <div class="owner-stat-lbl">Total</div>
+        </div>
+
+        <div class="owner-stat" style="margin-right:12px">
+          <div class="owner-stat-val" style="color:var(--passed)">${passed}</div>
+          <div class="owner-stat-lbl">Passed</div>
+        </div>
+
+        <div class="owner-stat" style="margin-right:12px">
+          <div class="owner-stat-val" style="color:var(--observed)">${observed}</div>
+          <div class="owner-stat-lbl">Observed</div>
+        </div>
+
+        <div class="owner-stat" style="margin-right:12px">
+          <div class="owner-stat-val" style="color:var(--failed)">${failed}</div>
+          <div class="owner-stat-lbl">Failed</div>
+        </div>
+
+        <div class="owner-stat">
+          <div class="owner-stat-val" style="color:var(--critical)">${critical}</div>
+          <div class="owner-stat-lbl">Critical</div>
+        </div>
+      </div>
+
+      <div class="owner-bar-row">
+        <div class="owner-bar-lbl">Error rate</div>
+        <div class="owner-bar-track">
+          <div class="owner-bar-fill" style="width:${errRate}%;background:${barColor}"></div>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">
+          ${errors}/${total} (${errRate}%)
+        </div>
+      </div>
+
+      <div class="owner-bar-row" style="margin-top:4px">
+        <div class="owner-bar-lbl">Pass rate</div>
+        <div class="owner-bar-track">
+          <div class="owner-bar-fill" style="width:${passRate}%;background:var(--passed);opacity:.7"></div>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">
+          ${passRate}%
+        </div>
+      </div>
+
+      ${errors > 0
+        ? `<div style="margin-top:10px;">
+            <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;font-family:'Syne',sans-serif;font-weight:700;">Bug categories</div>
+            <div class="cat-tags">
+              ${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,n]) =>
+                `<span class="cat-tag cat-${cat}" style="margin-right:3px">${cat} ×${n}</span>`
+              ).join('')}
+            </div>
+          </div>`
+        : `<div style="margin-top:10px;font-size:.72rem;color:var(--passed);font-family:'Space Mono',monospace;">✓ Great job — no errors found</div>`}
+
+      <div style="margin-top:10px;">
+        <span class="trend-badge trend-${trend}">${trendLabel}</span>
+      </div>
+    </div>`;
+  });
 
   document.getElementById('owner-grid').innerHTML = cards.join('');
 }
