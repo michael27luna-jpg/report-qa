@@ -125,6 +125,20 @@
         </div>
       </div>
 
+      <!-- Owner -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-owner" onclick="toggleDropdown('owner')">
+          👥 Owner <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-owner">
+          <div class="filter-dropdown-search">
+            <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+            <input type="text" placeholder="Search..." oninput="searchDropdown('owner', this.value)"/>
+          </div>
+          <div id="filter-options-owner"></div>
+        </div>
+      </div>
+
       <!-- Clear All -->
       <button class="filter-clear-all" id="filter-clear-all" onclick="clearAllFilters()">
         × Clear All
