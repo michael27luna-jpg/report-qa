@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.4.0...v1.5.0) (2026-05-20)
+
+
+### Features
+
+* filters added owner ([c994c14](https://github.com/michael27luna-jpg/report-qa/commit/c994c146020e84e755fa1ce44802058f1442c765))
+
 ## [1.4.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.2.1...v1.4.0) (2026-05-19)
 
 
