@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.1](https://github.com/michael27luna-jpg/report-qa/compare/v1.8.0...v1.8.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* correct team performance report ([4cb6174](https://github.com/michael27luna-jpg/report-qa/commit/4cb61742ff4c4693064701d45f90f15183fb0738))
+
 ## [1.8.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.8.0) (2026-05-28)
 
 
