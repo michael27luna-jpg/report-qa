@@ -1557,7 +1557,7 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
       .sort((a,b) => b[1].length - a[1].length)
       .map(([o, cases]) => {
         const totalCases = cases.length;
-        const errs = count(cases, x => x.status !== 'Passed');
+        const errs = count(cases, x => x.status === 'Failed' || x.status === 'Critical');
         const pr = Math.round(count(cases, x => x.status === 'Passed') / totalCases * 100);
         const errRate = Math.round(errs / totalCases * 100);
 
