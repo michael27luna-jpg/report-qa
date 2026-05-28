@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.6.0) (2026-05-28)
+
+
+### Features
+
+* team performance merge ([af82919](https://github.com/michael27luna-jpg/report-qa/commit/af82919de11da40b1af9c16075f9098cb2ff685c))
+
 ### [1.5.1](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.5.1) (2026-05-28)
 
 ## [1.5.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.3.1...v1.5.0) (2026-05-27)
