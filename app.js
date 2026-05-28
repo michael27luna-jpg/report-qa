@@ -13,13 +13,13 @@ let DATA = [];  // populated via CSV upload
 
 // ─────────────────────────────────────────────────────────────
 // STATUS & CATEGORY COLORS  (single source of truth)
-// Passed=green, Observed=yellow, Failed=orange, Critical=red
+// Passed=green, Opportunity=yellow, Failed=orange, Critical=red
 // ─────────────────────────────────────────────────────────────
 const STATUS_COLORS = {
-  Passed:   'var(--passed)',
-  Observed: 'var(--observed)',
-  Failed:   'var(--failed)',
-  Critical: 'var(--critical)',
+  Passed:      'var(--passed)',
+  Opportunity: 'var(--observed)',
+  Failed:      'var(--failed)',
+  Critical:    'var(--critical)',
 };
 
 const CAT_COLORS = {
@@ -132,7 +132,9 @@ function parseCSV(text) {
     const obj  = {};
     headers.forEach((h, i) => obj[h] = vals[i] || '');
 
-    const rawStatus  = obj['QA Status'] || 'Observed';
+    const rawRaw    = obj['QA Status'] || 'Opportunity';
+    // Normalize legacy "Observed" → "Opportunity"
+    const rawStatus = rawRaw === 'Observed' ? 'Opportunity' : rawRaw;
     const comment    = obj['QA Comment'] || '';
     const fixComment = obj['QA Fix Comment'] || '';
 /*     const status     = resolveFixStatus(rawStatus, fixComment); */
@@ -281,13 +283,13 @@ function renderOverview() {
     return;
   }
 
-  const passed   = count(d, x => x.status === 'Passed');
-  const observed = count(d, x => x.status === 'Observed');
-  const failed   = count(d, x => x.status === 'Failed');
-  const critical = count(d, x => x.status === 'Critical');
-  const errors   = observed + failed + critical;
-  const owners   = [...new Set(d.map(x => x.owner))].length;
-  const passRate = Math.round(passed / total * 100);
+  const passed      = count(d, x => x.status === 'Passed');
+  const opportunity = count(d, x => x.status === 'Opportunity');
+  const failed      = count(d, x => x.status === 'Failed');
+  const critical    = count(d, x => x.status === 'Critical');
+  const errors      = failed + critical;
+  const owners      = [...new Set(d.map(x => x.owner))].length;
+  const passRate    = Math.round(passed / total * 100);
 
   // ── KPI cards ──
   const kpis = [
@@ -304,9 +306,9 @@ function renderOverview() {
       color: 'var(--passed)'
     },
     {
-      label:'Observed',
-      val: observed,
-      sub: `${((observed / total) * 100).toFixed(2)}% of ${total} cases`,
+      label:'Opportunity',
+      val: opportunity,
+      sub: `${((opportunity / total) * 100).toFixed(2)}% of ${total} cases`,
       color: 'var(--observed)'
     },
     {
@@ -352,24 +354,24 @@ function renderOverview() {
     DAYS.map(day => {
       const dc  = d.filter(x => x.day === day);
       const pa  = count(dc, x => x.status === 'Passed');
-      const ob  = count(dc, x => x.status === 'Observed');
+      const op  = count(dc, x => x.status === 'Opportunity');
       const fa  = count(dc, x => x.status === 'Failed');
       const cr  = count(dc, x => x.status === 'Critical');
       const tot = counts[day];
       return `<div class="bar-row">
         <div class="bar-name" style="min-width:72px;font-family:'Space Mono',monospace;font-size:.7rem;">${day}</div>
         <div class="bar-track" style="height:16px;"><div style="display:flex;height:100%;">
-          <div title="Passed:${pa}"   style="width:${pa/maxDay*100}%;background:var(--passed);opacity:.65"></div>
-          <div title="Observed:${ob}" style="width:${ob/maxDay*100}%;background:var(--observed);opacity:.85"></div>
-          <div title="Failed:${fa}"   style="width:${fa/maxDay*100}%;background:var(--failed)"></div>
-          <div title="Critical:${cr}" style="width:${cr/maxDay*100}%;background:var(--critical)"></div>
+          <div title="Passed:${pa}"      style="width:${pa/maxDay*100}%;background:var(--passed);opacity:.65"></div>
+          <div title="Opportunity:${op}" style="width:${op/maxDay*100}%;background:var(--observed);opacity:.85"></div>
+          <div title="Failed:${fa}"      style="width:${fa/maxDay*100}%;background:var(--failed)"></div>
+          <div title="Critical:${cr}"    style="width:${cr/maxDay*100}%;background:var(--critical)"></div>
         </div></div>
         <div class="bar-count">${tot}</div>
       </div>`;
     }).join('')
   }
   <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;">
-    ${['Passed','Observed','Failed','Critical'].map(s =>
+    ${['Passed','Opportunity','Failed','Critical'].map(s =>
       `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;">
         <span style="width:10px;height:10px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;opacity:.85"></span>${s}
       </span>`).join('')}
@@ -377,10 +379,10 @@ function renderOverview() {
 
   // ── Status donut ──
   drawDonut('donut-status', 'donut-status-legend', [
-    { label:'Passed',   value: passed,   color: STATUS_COLORS.Passed },
-    { label:'Observed', value: observed, color: STATUS_COLORS.Observed },
-    { label:'Failed',   value: failed,   color: STATUS_COLORS.Failed },
-    { label:'Critical', value: critical, color: STATUS_COLORS.Critical },
+    { label:'Passed',      value: passed,      color: STATUS_COLORS.Passed },
+    { label:'Opportunity', value: opportunity, color: STATUS_COLORS.Opportunity },
+    { label:'Failed',      value: failed,      color: STATUS_COLORS.Failed },
+    { label:'Critical',    value: critical,    color: STATUS_COLORS.Critical },
   ]);
 
   // ── Bug Categories bar + percentage ──
@@ -410,11 +412,11 @@ function renderOverview() {
   }
 
   // ── Top Bug Contributors ──
-  // Counts only errors (Observed + Failed + Critical), all members shown
+  // Counts only errors (Failed + Critical), Opportunity not included
   const allOwners = [...new Set(d.map(x => x.owner))];
   const bugsByOwner = {};
   allOwners.forEach(o => {
-    bugsByOwner[o] = count(d.filter(x => x.owner === o), x => x.status !== 'Passed');
+    bugsByOwner[o] = count(d.filter(x => x.owner === o), x => x.status === 'Failed' || x.status === 'Critical');
   });
 
   const sortedByBugs = [...allOwners].sort((a, b) => bugsByOwner[b] - bugsByOwner[a]);
@@ -464,7 +466,7 @@ function renderOverview() {
         ${qaSorted.map(([name, cnt]) => {
           const personCases = d.filter(x => x.qa_by === name);
           const pa = count(personCases, x => x.status === 'Passed');
-          const ob = count(personCases, x => x.status === 'Observed');
+          const op = count(personCases, x => x.status === 'Opportunity');
           const fa = count(personCases, x => x.status === 'Failed');
           const cr = count(personCases, x => x.status === 'Critical');
           // Min width for Critical so it's always visible when > 0
@@ -473,10 +475,10 @@ function renderOverview() {
             <div class="bar-name">${name}</div>
             <div class="bar-track" style="height:14px;">
               <div style="display:flex;height:100%;border-radius:2px;overflow:hidden;">
-                <div title="Passed: ${pa}"   style="width:${pa/qaMax*100}%;background:var(--passed);opacity:.8"></div>
-                <div title="Observed: ${ob}" style="width:${ob/qaMax*100}%;background:var(--observed);opacity:.9"></div>
-                <div title="Failed: ${fa}"   style="width:${fa/qaMax*100}%;background:var(--failed)"></div>
-                <div title="Critical: ${cr}" style="width:${crWidth}%;background:var(--critical)"></div>
+                <div title="Passed: ${pa}"      style="width:${pa/qaMax*100}%;background:var(--passed);opacity:.8"></div>
+                <div title="Opportunity: ${op}" style="width:${op/qaMax*100}%;background:var(--observed);opacity:.9"></div>
+                <div title="Failed: ${fa}"      style="width:${fa/qaMax*100}%;background:var(--failed)"></div>
+                <div title="Critical: ${cr}"    style="width:${crWidth}%;background:var(--critical)"></div>
               </div>
             </div>
             <div class="bar-count">${cnt}</div>
@@ -484,7 +486,7 @@ function renderOverview() {
         }).join('')}
       </div>
       <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;justify-content:center;">
-        ${['Passed','Observed','Failed','Critical'].map(s =>
+        ${['Passed','Opportunity','Failed','Critical'].map(s =>
           `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;">
             <span style="width:10px;height:10px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;opacity:.85"></span>${s}
           </span>`).join('')}
@@ -511,10 +513,10 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
   const dayCards = DAYS.map(day => {
     const dc   = byDay[day] || [];
     const pa   = count(dc, x => x.status === 'Passed');
-    const ob   = count(dc, x => x.status === 'Observed');
+    const op   = count(dc, x => x.status === 'Opportunity');
     const fa   = count(dc, x => x.status === 'Failed');
     const cr   = count(dc, x => x.status === 'Critical');
-    const errs = ob + fa + cr;
+    const errs = fa + cr;
     const id   = 'dday-' + day.replace(/\//g, '');
 
     const qaSplit = {};
@@ -528,7 +530,7 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
           <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;font-family:'Space Mono',monospace;">cases</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;font-size:.72rem;">
-          ${[['Passed',pa,'var(--passed)'],['Observed',ob,'var(--observed)'],['Failed',fa,'var(--failed)'],['Critical',cr,'var(--critical)']].map(([lbl,val,col])=>
+          ${[['Passed',pa,'var(--passed)'],['Opportunity',op,'var(--observed)'],['Failed',fa,'var(--failed)'],['Critical',cr,'var(--critical)']].map(([lbl,val,col])=>
             val > 0 ? `<div style="display:flex;align-items:center;gap:5px;">
               <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block"></span>
               <span style="color:var(--muted)">${lbl}:</span>
@@ -557,10 +559,10 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
   const shadowCards = qaNames.map((name, i) => {
     const sc   = d.filter(x => x.qa_by === name);
     const pa   = count(sc, x => x.status === 'Passed');
-    const ob   = count(sc, x => x.status === 'Observed');
+    const op   = count(sc, x => x.status === 'Opportunity');
     const fa   = count(sc, x => x.status === 'Failed');
     const cr   = count(sc, x => x.status === 'Critical');
-    const errs = ob + fa + cr;
+    const errs = fa + cr;
     const id   = 'dshadow-' + name.replace(/\s/g, '');
 
     return `<div class="qa-donut-card">
@@ -576,7 +578,7 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
             <span style="color:var(--muted)">Passed:</span>
             <span style="font-family:'Space Mono',monospace;color:var(--passed)">${pa}</span>
           </div>
-          ${ob > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--observed);display:inline-block"></span><span style="color:var(--muted)">Observed:</span><span style="font-family:'Space Mono',monospace;color:var(--observed)">${ob}</span></div>` : ''}
+          ${op > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--observed);display:inline-block"></span><span style="color:var(--muted)">Opportunity:</span><span style="font-family:'Space Mono',monospace;color:var(--observed)">${op}</span></div>` : ''}
           ${fa > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--failed);display:inline-block"></span><span style="color:var(--muted)">Failed:</span><span style="font-family:'Space Mono',monospace;color:var(--failed)">${fa}</span></div>` : ''}
           ${cr > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--critical);display:inline-block"></span><span style="color:var(--muted)">Critical:</span><span style="font-family:'Space Mono',monospace;color:var(--critical)">${cr}</span></div>` : ''}
           <div style="margin-top:3px;font-size:.63rem;font-family:'Space Mono',monospace;color:var(--muted);">${sc.length} total reviewed</div>
@@ -598,24 +600,24 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
     DAYS.forEach(day => {
       const dc  = (byDay[day] || []);
       drawSmallDonut('dday-' + day.replace(/\//g, ''), [
-        { value: count(dc, x => x.status === 'Passed'),   color: STATUS_COLORS.Passed },
-        { value: count(dc, x => x.status === 'Observed'), color: STATUS_COLORS.Observed },
-        { value: count(dc, x => x.status === 'Failed'),   color: STATUS_COLORS.Failed },
-        { value: count(dc, x => x.status === 'Critical'), color: STATUS_COLORS.Critical },
+        { value: count(dc, x => x.status === 'Passed'),      color: STATUS_COLORS.Passed },
+        { value: count(dc, x => x.status === 'Opportunity'), color: STATUS_COLORS.Opportunity },
+        { value: count(dc, x => x.status === 'Failed'),      color: STATUS_COLORS.Failed },
+        { value: count(dc, x => x.status === 'Critical'),    color: STATUS_COLORS.Critical },
       ]);
     });
 
     qaNames.forEach(name => {
       const sc   = d.filter(x => x.qa_by === name);
-      const ob   = count(sc, x => x.status === 'Observed');
+      const op   = count(sc, x => x.status === 'Opportunity');
       const fa   = count(sc, x => x.status === 'Failed');
       const cr   = count(sc, x => x.status === 'Critical');
-      const errs = ob + fa + cr;
+      const errs = fa + cr;
       drawSmallDonut('dshadow-' + name.replace(/\s/g, ''),
         errs === 0
           ? [{ value: count(sc, x => x.status === 'Passed'), color: STATUS_COLORS.Passed }]
           : [
-              { value: ob, color: STATUS_COLORS.Observed },
+              { value: op, color: STATUS_COLORS.Opportunity },
               { value: fa, color: STATUS_COLORS.Failed },
               { value: cr, color: STATUS_COLORS.Critical },
             ]
@@ -634,6 +636,7 @@ const activeFilters = {
   dateTo:     null,   // 'MM/DD/YY'
   status:     [],     // multi: ['Passed','Failed',...]
   qaby:       [],     // multi: ['Cidar','Michael',...]
+  owner:      [],
   category:   [],     // multi: ['Config','Styling',...]
 };
 
@@ -648,7 +651,7 @@ let dpSelecting = false;
 // DROPDOWN TOGGLE
 // ─────────────────────────────────────────────────────────────
 function toggleDropdown(name) {
-  const allDropdowns = ['date','status','qaby','category'];
+  const allDropdowns = ['date','status','qaby','owner','category'];
   allDropdowns.forEach(n => {
     if (n === name) return;
     document.getElementById(`filter-dropdown-${n}`)?.classList.remove('open');
@@ -661,6 +664,7 @@ function toggleDropdown(name) {
 
   if (name === 'date' && isOpen) renderDatePicker();
   if (name === 'qaby' && isOpen) renderDropdownOptions('qaby');
+  if (name === 'owner' && isOpen) renderDropdownOptions('owner');
   if (name === 'category' && isOpen) renderDropdownOptions('category');
 }
 
@@ -686,6 +690,8 @@ function renderDropdownOptions(name, searchTerm = '') {
   let options = [];
   if (name === 'qaby') {
     options = [...new Set(DATA.map(x => x.qa_by).filter(Boolean))].sort();
+  } else if (name === 'owner') {
+    options = [...new Set(DATA.map(x => x.owner).filter(Boolean))].sort();
   } else if (name === 'category') {
     options = [...new Set(DATA.flatMap(x => x.categories))].sort();
   }
@@ -695,13 +701,16 @@ function renderDropdownOptions(name, searchTerm = '') {
     : options;
 
   const active = activeFilters[name] || activeFilters.qaby || activeFilters.category;
-  const sel    = name === 'qaby' ? activeFilters.qaby : activeFilters.category;
+  // const sel    = name === 'qaby' ? activeFilters.qaby : activeFilters.category;
+  const sel = activeFilters[name] || [];
 
   // Count per option
   const countMap = {};
   DATA.forEach(r => {
     if (name === 'qaby') {
       if (r.qa_by) countMap[r.qa_by] = (countMap[r.qa_by] || 0) + 1;
+    } else if (name === 'owner') {
+      if (r.owner) countMap[r.owner] = (countMap[r.owner] || 0) + 1;
     } else {
       r.categories.forEach(c => countMap[c] = (countMap[c] || 0) + 1);
     }
@@ -728,6 +737,7 @@ function toggleFilterOption(name, value) {
   let arr;
   if (name === 'status')   arr = activeFilters.status;
   if (name === 'qaby')     arr = activeFilters.qaby;
+  if (name === 'owner')    arr = activeFilters.owner;
   if (name === 'category') arr = activeFilters.category;
 
   const idx = arr.indexOf(value);
@@ -880,6 +890,12 @@ function updateFilterUI() {
   });
   document.getElementById('filter-btn-qaby').classList.toggle('active', activeFilters.qaby.length > 0);
 
+  // Owner pills
+  activeFilters.owner.forEach(o => {
+    pills.push({ label: `👥 ${o}`, remove: () => { toggleFilterOption('owner', o); } });
+  });
+  document.getElementById('filter-btn-owner').classList.toggle('active', activeFilters.owner.length > 0);
+
   // Category pills
   activeFilters.category.forEach(c => {
     pills.push({ label: `🏷 ${c}`, remove: () => { toggleFilterOption('category', c); } });
@@ -913,6 +929,7 @@ function clearAllFilters() {
   activeFilters.dateTo   = null;
   activeFilters.status   = [];
   activeFilters.qaby     = [];
+  activeFilters.owner    = [];
   activeFilters.category = [];
 
   // Reset visual state of all options
@@ -939,6 +956,7 @@ function renderCases() {
 
   // Build dynamic dropdown options
   renderDropdownOptions('qaby');
+  renderDropdownOptions('owner');
   renderDropdownOptions('category');
 
   // Init date picker to first month in data
@@ -988,6 +1006,11 @@ function filterCases() {
     rows = rows.filter(x => activeFilters.qaby.includes(x.qa_by));
   }
 
+  // ── Owner filter (multi) ──
+  if (activeFilters.owner.length) {
+    rows = rows.filter(x => activeFilters.owner.includes(x.owner));
+  }
+
   // ── Category filter (multi) ──
   if (activeFilters.category.length) {
     rows = rows.filter(x => activeFilters.category.some(c => x.categories.includes(c)));
@@ -1005,7 +1028,8 @@ function filterCases() {
   }
 
   const hasActiveFilters = activeFilters.dateFrom || activeFilters.status.length ||
-                           activeFilters.qaby.length || activeFilters.category.length;
+                        activeFilters.qaby.length || activeFilters.owner.length ||
+                        activeFilters.category.length;
   const filterLabel = hasActiveFilters ? ' (filtered)' : '';
 
   document.getElementById('case-count-label').textContent =
@@ -1190,14 +1214,15 @@ function renderTeam() {
 
   let teamRows = Object.entries(ownerMap)
     .map(([owner, cases]) => {
-      const total    = cases.length;
-      const passed   = count(cases, x => x.status === 'Passed');
-      const observed = count(cases, x => x.status === 'Observed');
-      const failed   = count(cases, x => x.status === 'Failed');
-      const critical = count(cases, x => x.status === 'Critical');
-      const errors   = observed + failed + critical;
-      const passRate = Math.round(passed / total * 100);
-      const errRate  = Math.round(errors / total * 100);
+      const total       = cases.length;
+      const passed      = count(cases, x => x.status === 'Passed');
+      const opportunity = count(cases, x => x.status === 'Opportunity');
+      const failed      = count(cases, x => x.status === 'Failed');
+      const critical    = count(cases, x => x.status === 'Critical');
+      const errors      = failed + critical;
+      const passRate    = Math.round(passed / total * 100);
+      const errRate     = Math.round(errors / total * 100);
+      const oppRate     = Math.round(opportunity / total * 100);
 
       const trend = getTeamTrend(errRate);
 
@@ -1206,12 +1231,13 @@ function renderTeam() {
         cases,
         total,
         passed,
-        observed,
+        opportunity,
         failed,
         critical,
         errors,
         passRate,
         errRate,
+        oppRate,
         trend
       };
     });
@@ -1255,12 +1281,13 @@ function renderTeam() {
       cases,
       total,
       passed,
-      observed,
+      opportunity,
       failed,
       critical,
       errors,
       passRate,
       errRate,
+      oppRate,
       trend
     } = item;
 
@@ -1291,8 +1318,8 @@ function renderTeam() {
         </div>
 
         <div class="owner-stat" style="margin-right:12px">
-          <div class="owner-stat-val" style="color:var(--observed)">${observed}</div>
-          <div class="owner-stat-lbl">Observed</div>
+          <div class="owner-stat-val" style="color:var(--observed)">${opportunity}</div>
+          <div class="owner-stat-lbl">Opportunity</div>
         </div>
 
         <div class="owner-stat" style="margin-right:12px">
@@ -1313,6 +1340,16 @@ function renderTeam() {
         </div>
         <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">
           ${errors}/${total} (${errRate}%)
+        </div>
+      </div>
+
+      <div class="owner-bar-row" style="margin-top:4px">
+        <div class="owner-bar-lbl">Opp. rate</div>
+        <div class="owner-bar-track">
+          <div class="owner-bar-fill" style="width:${oppRate}%;background:var(--observed);opacity:.75"></div>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">
+          ${opportunity}/${total} (${oppRate}%)
         </div>
       </div>
 
@@ -1360,13 +1397,13 @@ function renderReport() {
     return;
   }
 
-  const passed   = count(d, x => x.status === 'Passed');
-  const observed = count(d, x => x.status === 'Observed');
-  const failed   = count(d, x => x.status === 'Failed');
-  const critical = count(d, x => x.status === 'Critical');
-  const errors   = observed + failed + critical;
-  const passRate = Math.round(passed / total * 100);
-  const owners   = [...new Set(d.map(x => x.owner))];
+  const passed      = count(d, x => x.status === 'Passed');
+  const opportunity = count(d, x => x.status === 'Opportunity');
+  const failed      = count(d, x => x.status === 'Failed');
+  const critical    = count(d, x => x.status === 'Critical');
+  const errors      = failed + critical;
+  const passRate    = Math.round(passed / total * 100);
+  const owners      = [...new Set(d.map(x => x.owner))];
 
   const catCount = {};
   d.forEach(r => r.categories.forEach(c => catCount[c] = (catCount[c] || 0) + 1));
@@ -1378,7 +1415,7 @@ function renderReport() {
   const ownerMap = groupBy(d, 'owner');
   const atRisk = Object.entries(ownerMap)
     .filter(([, cases]) => {
-      const errRate = Math.round(count(cases, x => x.status !== 'Passed') / cases.length * 100);
+      const errRate = Math.round(count(cases, x => x.status === 'Failed' || x.status === 'Critical') / cases.length * 100);
       return errRate > 10;
     })
     .map(([o]) => o);
@@ -1394,14 +1431,14 @@ function renderReport() {
     ? `${DAYS[0]}${DAYS.length > 1 ? ' – ' + DAYS[DAYS.length - 1] : ''}`
     : WEEK_RANGE;
  // ── Final Status logic ──
-  const criticalPct  = total > 0 ? (critical / total) * 100 : 0;
-  const failedPct    = total > 0 ? (failed   / total) * 100 : 0;
-  const observedPct  = total > 0 ? (observed / total) * 100 : 0;
+  const criticalPct    = total > 0 ? (critical    / total) * 100 : 0;
+  const failedPct      = total > 0 ? (failed      / total) * 100 : 0;
+  const opportunityPct = total > 0 ? (opportunity / total) * 100 : 0;
 
+  // Opportunity no longer affects severity score — tracked separately
   const severityScore =
     (criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0) +
-    (failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0) +
-    (observedPct > 8  ? 2 : observedPct > 4   ? 1 : 0);
+    (failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0);
 
   const pendingScore =
     pendingCases > 20 ? 3 :
@@ -1421,7 +1458,8 @@ if (document.getElementById('daily-report')) document.getElementById('daily-repo
 • Reviewed: ${owners.length} members / ${total} cases
 • QA Shadows: ${qaShadows || 'N/A'}
 • Pass rate: ${passRate}% (${passed}/${total})
-• Errors: ${errors} — Observed: ${observed} · Failed: ${failed} · Critical: ${critical}
+• Opportunities: ${opportunity}
+• Errors: ${errors} — Failed: ${failed} · Critical: ${critical}
 • Top bugs: ${sortDesc(catCount).slice(0,3).map(([c,n])=>`${c} (${n}x)`).join(', ') || 'None'}
 • At risk: ${atRisk.length ? atRisk.join(', ') : 'None'}
 • Queues: Stable (verify in WOMS)
@@ -1437,7 +1475,6 @@ if (document.getElementById('daily-report')) document.getElementById('daily-repo
 
   const criticalPts  = criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0;
   const failedPts    = failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0;
-  const observedPts  = observedPct > 8  ? 2 : observedPct > 4   ? 1 : 0;
 
   const finalRows = [
     // ── Severity ──
@@ -1452,10 +1489,8 @@ if (document.getElementById('daily-report')) document.getElementById('daily-repo
     ['  > 1.5% – ≤ 3%  →  +1 pt', '',                  'info-popup-threshold'],
     ['  ≤ 1.5%  →  +0 pts',        '',                  'info-popup-threshold'],
 
-    [`Observed  ${observedPct.toFixed(2)}%`,  `● +${observedPts} pts`,  observedPts >= 2 ? 'info-popup-risk' : observedPts >= 1 ? 'info-popup-warn' : 'info-popup-ok'],
-    ['  > 8%  →  +2 pts',          '',                  'info-popup-threshold'],
-    ['  > 4% – ≤ 8%  →  +1 pt',   '',                  'info-popup-threshold'],
-    ['  ≤ 4%  →  +0 pts',          '',                  'info-popup-threshold'],
+    [`Opportunity ${opportunityPct.toFixed(2)}%`, '● informational', 'info-popup-warn'],
+    ['  (not counted in severity score)', '', 'info-popup-threshold'],
 
     // ── Pending ──
     ['── PENDING ──',              '',                  ''],
@@ -1498,10 +1533,10 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
     L(''),
 
     TTL(' RESULTS'),
-    L(`  ✓ Passed   ${String(passed).padStart(4)}   (${passRate}%)`, 'var(--passed)'),
-    L(`  ● Observed ${String(observed).padStart(4)}   (${Math.round(observed/total*100)}%)`, 'var(--observed)'),
-    L(`  ▲ Failed   ${String(failed).padStart(4)}   (${Math.round(failed/total*100)}%)`, 'var(--failed)'),
-    L(`  ✕ Critical ${String(critical).padStart(4)}   (${Math.round(critical/total*100)}%)`, 'var(--critical)'),
+    L(`  ✓ Passed      ${String(passed).padStart(4)}   (${passRate}%)`, 'var(--passed)'),
+    L(`  ● Opportunity ${String(opportunity).padStart(4)}   (${Math.round(opportunity/total*100)}%)`, 'var(--observed)'),
+    L(`  ▲ Failed      ${String(failed).padStart(4)}   (${Math.round(failed/total*100)}%)`, 'var(--failed)'),
+    L(`  ✕ Critical    ${String(critical).padStart(4)}   (${Math.round(critical/total*100)}%)`, 'var(--critical)'),
     SEP(),
 
     TTL(' BUG PATTERNS'),
@@ -1510,12 +1545,37 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
       : [L('  No bugs recorded', 'var(--text)')]),
     SEP(),
 
-    TTL(' TEAM PERFORMANCE  (top 8 by volume)'),
-    ...Object.entries(ownerMap).sort((a,b)=>b[1].length-a[1].length).slice(0,8).map(([o,cases]) => {
-      const errs = count(cases, x=>x.status!=='Passed');
-      const pr   = Math.round(count(cases,x=>x.status==='Passed')/cases.length*100);
-      return L(`  ${o.padEnd(22)} ${cases.length} cases  ${errs} error(s)  ${pr}% pass`, 'var(--text)');
-    }),
+    // TTL(' TEAM PERFORMANCE  (top 8 by volume)'),
+    // ...Object.entries(ownerMap).sort((a,b)=>b[1].length-a[1].length).slice(0,8).map(([o,cases]) => {
+    //   const errs = count(cases, x=>x.status!=='Passed');
+    //   const pr   = Math.round(count(cases,x=>x.status==='Passed')/cases.length*100);
+    //   return L(`  ${o.padEnd(22)} ${cases.length} cases  ${errs} error(s)  ${pr}% pass`, 'var(--text)');
+    // }),
+    // SEP(),
+    TTL(' TEAM PERFORMANCE'),
+    ...Object.entries(ownerMap)
+      .sort((a,b) => b[1].length - a[1].length)
+      .map(([o, cases]) => {
+        const totalCases = cases.length;
+        const errs = count(cases, x => x.status !== 'Passed');
+        const pr = Math.round(count(cases, x => x.status === 'Passed') / totalCases * 100);
+        const errRate = Math.round(errs / totalCases * 100);
+
+        const attention =
+          errRate > 10 ? '⚠ Needs Attention' :
+          errRate > 5  ? '◈ Watch' :
+                        '✓ On Track';
+
+        const color =
+          errRate > 10 ? 'var(--failed)' :
+          errRate > 5  ? 'var(--observed)' :
+                        'var(--passed)';
+
+        return L(
+          `  ${o.padEnd(22)} ${String(totalCases).padStart(3)} cases  ${String(errs).padStart(2)} error(s)  ${String(pr).padStart(3)}% pass  ${attention}`,
+          color
+        );
+      }),
     SEP(),
 
     TTL(' QUEUE &amp; CONTROL', INFO('queue-info-btn')),
@@ -1524,14 +1584,14 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
     L(`  ${DAYS.length < 5 ? `${5-DAYS.length} day(s) pending — updates on re-upload` : 'Full week loaded'}`, 'var(--text)'),
     L(''),
 
-    TTL(' NEEDS ATTENTION'),
-    ...(atRisk.length ? atRisk.map(o => L(`  ⚠ ${o}`, 'var(--observed)')) : [L('  None', 'var(--text)')]),
-    SEP(),
+    // TTL(' NEEDS ATTENTION'),
+    // ...(atRisk.length ? atRisk.map(o => L(`  ⚠ ${o}`, 'var(--observed)')) : [L('  None', 'var(--text)')]),
+    // SEP(),
 
     TTL(` FINAL STATUS: ${finalStatus}`, INFO('final-info-btn')),
-    L(`  Critical : ${criticalPct.toFixed(2)}% (threshold 1%)`, criticalPct > 1 ? 'var(--critical)' : 'var(--passed)'),
-    L(`  Failed   : ${failedPct.toFixed(2)}% (threshold 3%)`,   failedPct   > 3 ? 'var(--failed)'   : 'var(--passed)'),
-    L(`  Observed : ${observedPct.toFixed(2)}% (threshold 8%)`, observedPct > 8 ? 'var(--observed)' : 'var(--passed)'),
+    L(`  Critical    : ${criticalPct.toFixed(2)}% (threshold 1%)`,    criticalPct    > 1  ? 'var(--critical)' : 'var(--passed)'),
+    L(`  Failed      : ${failedPct.toFixed(2)}% (threshold 3%)`,      failedPct      > 3  ? 'var(--failed)'   : 'var(--passed)'),
+    L(`  Opportunity : ${opportunityPct.toFixed(2)}% (informational)`, opportunityPct > 8  ? 'var(--observed)' : 'var(--passed)'),
   ].join('');
 
   // Bind tooltip icons — hover (stays open while hovering popup)
@@ -1617,10 +1677,10 @@ function hideChartTip() {
 function _statusTipHtml(pd) {
   if (pd.total === 0) return `<div class="ct-period">${pd.label}</div><div class="ct-empty">No data</div>`;
   const statuses = [
-    { label: 'Passed',   val: pd.passed,   color: 'var(--passed)'   },
-    { label: 'Observed', val: pd.observed, color: 'var(--observed)'  },
-    { label: 'Failed',   val: pd.failed,   color: 'var(--failed)'   },
-    { label: 'Critical', val: pd.critical, color: 'var(--critical)'  },
+    { label: 'Passed',      val: pd.passed,      color: 'var(--passed)'   },
+    { label: 'Opportunity', val: pd.opportunity, color: 'var(--observed)'  },
+    { label: 'Failed',      val: pd.failed,      color: 'var(--failed)'   },
+    { label: 'Critical',    val: pd.critical,    color: 'var(--critical)'  },
   ];
   const rows = statuses.filter(s => s.val > 0)
     .map(s => `<div class="ct-row"><span class="ct-dot" style="background:${s.color}"></span><span class="ct-name">${s.label}</span><span class="ct-val">${s.val}</span></div>`)
@@ -1741,17 +1801,17 @@ function renderVolChart() {
     const key   = gran === 'day' ? toCanon(p) : p;
     const cases = DATA.filter(x => getPeriodKey(x.day, gran) === p);
     dataLookup.set(key, {
-      label:    gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
-      total:    cases.length,
-      passed:   count(cases, x => x.status === 'Passed'),
-      observed: count(cases, x => x.status === 'Observed'),
-      failed:   count(cases, x => x.status === 'Failed'),
-      critical: count(cases, x => x.status === 'Critical'),
+      label:       gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
+      total:       cases.length,
+      passed:      count(cases, x => x.status === 'Passed'),
+      opportunity: count(cases, x => x.status === 'Opportunity'),
+      failed:      count(cases, x => x.status === 'Failed'),
+      critical:    count(cases, x => x.status === 'Critical'),
     });
   });
 
   const periodData = periods.map(p =>
-    dataLookup.get(p) || { label: gran === 'day' ? p.slice(0, 5) : p, total: 0, passed: 0, observed: 0, failed: 0, critical: 0 }
+    dataLookup.get(p) || { label: gran === 'day' ? p.slice(0, 5) : p, total: 0, passed: 0, opportunity: 0, failed: 0, critical: 0 }
   );
 
   if (rangeEl) rangeEl.textContent = formatAnalyticsDateRange(actualPeriods, gran);
@@ -1800,7 +1860,7 @@ function renderVolChart() {
   if (!window._chartTips) window._chartTips = {};
 
   const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">
-    ${['Critical','Failed','Observed','Passed'].map(s =>
+    ${['Critical','Failed','Opportunity','Passed'].map(s =>
       `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`
     ).join('')}</div>`;
 
@@ -1813,10 +1873,10 @@ function renderVolChart() {
       const key = `vol_${i}`;
       window._chartTips[key] = _statusTipHtml(pd);
       const segs = [
-        { val: pd.critical, color: 'var(--critical)' },
-        { val: pd.failed,   color: 'var(--failed)'   },
-        { val: pd.observed, color: 'var(--observed)'  },
-        { val: pd.passed,   color: 'var(--passed)'    },
+        { val: pd.critical,    color: 'var(--critical)' },
+        { val: pd.failed,      color: 'var(--failed)'   },
+        { val: pd.opportunity, color: 'var(--observed)'  },
+        { val: pd.passed,      color: 'var(--passed)'    },
       ];
       let yOff = pad.top + chartH, topY = pad.top + chartH, barRects = '';
       segs.forEach(s => {
@@ -1849,7 +1909,7 @@ function renderVolChart() {
       window._chartTips[key] = _statusTipHtml(pd);
       linePts.push(`${x},${y}`);
       areaPts.push(`${x},${y}`);
-      const errs = pd.observed + pd.failed + pd.critical;
+      const errs = pd.failed + pd.critical;
       const errRate = pd.total > 0 ? errs / pd.total : 0;
       const col = errRate === 0 ? 'var(--passed)' : errRate > 0.3 ? 'var(--critical)' : errRate > 0.15 ? 'var(--failed)' : 'var(--observed)';
       dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
@@ -1944,7 +2004,7 @@ function renderMemberStats() {
   const ownCases    = DATA.filter(x => x.owner === analyticsSelectedMember);
   const reviewed    = DATA.filter(x => ownerMatchesQaBy(analyticsSelectedMember, x.qa_by));
   const total       = ownCases.length;
-  const errors      = count(ownCases, x => x.status !== 'Passed');
+  const errors      = count(ownCases, x => x.status === 'Failed' || x.status === 'Critical');
   const errRate     = total > 0 ? Math.round(errors / total * 100) : 0;
 
   const periods = getSortedPeriods(gran).filter(p =>
@@ -1955,8 +2015,8 @@ function renderMemberStats() {
   if (periods.length >= 2) {
     const firstCases = ownCases.filter(x => getPeriodKey(x.day, gran) === periods[0]);
     const lastCases  = ownCases.filter(x => getPeriodKey(x.day, gran) === periods[periods.length-1]);
-    const r0 = firstCases.length > 0 ? Math.round(count(firstCases, x => x.status !== 'Passed') / firstCases.length * 100) : 0;
-    const r1 = lastCases.length  > 0 ? Math.round(count(lastCases,  x => x.status !== 'Passed') / lastCases.length  * 100) : 0;
+    const r0 = firstCases.length > 0 ? Math.round(count(firstCases, x => x.status === 'Failed' || x.status === 'Critical') / firstCases.length * 100) : 0;
+    const r1 = lastCases.length  > 0 ? Math.round(count(lastCases,  x => x.status === 'Failed' || x.status === 'Critical') / lastCases.length  * 100) : 0;
     const delta = r1 - r0;
     const col   = delta <= 0 ? 'var(--passed)' : 'var(--critical)';
     const sign  = delta <= 0 ? '' : '+';
@@ -2013,7 +2073,7 @@ function renderMemberErrorChart() {
   actualPeriods.forEach(p => {
     const key   = gran === 'day' ? toCanon(p) : p;
     const cases = ownCases.filter(x => getPeriodKey(x.day, gran) === p);
-    const errs  = count(cases, x => x.status !== 'Passed');
+    const errs  = count(cases, x => x.status === 'Failed' || x.status === 'Critical');
     const rate  = cases.length > 0 ? Math.round(errs / cases.length * 100) : 0;
     dataLookup.set(key, { label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran), total: cases.length, errs, rate });
   });
@@ -2081,7 +2141,7 @@ function renderMemberErrorChart() {
   const header = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
     <div style="font-size:.72rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Error Rate Over Time — ${analyticsSelectedMember}</div>
     ${trendHtml}</div>`;
-  const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">% of own cases that had errors (Observed + Failed + Critical)</div>`;
+  const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">% of own cases that had errors (Failed + Critical only)</div>`;
 
   let rightContent = '', xLbls = '';
 
@@ -2167,17 +2227,17 @@ function renderMemberReviewerChart() {
     const key   = gran === 'day' ? toCanon(p) : p;
     const cases = reviewed.filter(x => getPeriodKey(x.day, gran) === p);
     dataLookup.set(key, {
-      label:    gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
-      total:    cases.length,
-      passed:   count(cases, x => x.status === 'Passed'),
-      observed: count(cases, x => x.status === 'Observed'),
-      failed:   count(cases, x => x.status === 'Failed'),
-      critical: count(cases, x => x.status === 'Critical'),
+      label:       gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
+      total:       cases.length,
+      passed:      count(cases, x => x.status === 'Passed'),
+      opportunity: count(cases, x => x.status === 'Opportunity'),
+      failed:      count(cases, x => x.status === 'Failed'),
+      critical:    count(cases, x => x.status === 'Critical'),
     });
   });
 
   const periodData = periods.map(p =>
-    dataLookup.get(p) || { label: gran === 'day' ? p.slice(0, 5) : p, total: 0, passed: 0, observed: 0, failed: 0, critical: 0 }
+    dataLookup.get(p) || { label: gran === 'day' ? p.slice(0, 5) : p, total: 0, passed: 0, opportunity: 0, failed: 0, critical: 0 }
   );
 
   const maxTotal = Math.max(...periodData.map(p => p.total), 1);
@@ -2225,7 +2285,7 @@ function renderMemberReviewerChart() {
 
   const chartHeader = `<div style="font-size:.72rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Cases Reviewed by ${analyticsSelectedMember}</div>`;
   const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">
-    ${['Critical','Failed','Observed','Passed'].map(s =>
+    ${['Critical','Failed','Opportunity','Passed'].map(s =>
       `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`
     ).join('')}</div>`;
 
@@ -2238,10 +2298,10 @@ function renderMemberReviewerChart() {
       const key = `rev_${i}`;
       window._chartTips[key] = _statusTipHtml(pd);
       const segs = [
-        { val: pd.critical, color: 'var(--critical)' },
-        { val: pd.failed,   color: 'var(--failed)'   },
-        { val: pd.observed, color: 'var(--observed)'  },
-        { val: pd.passed,   color: 'var(--passed)'    },
+        { val: pd.critical,    color: 'var(--critical)' },
+        { val: pd.failed,      color: 'var(--failed)'   },
+        { val: pd.opportunity, color: 'var(--observed)'  },
+        { val: pd.passed,      color: 'var(--passed)'    },
       ];
       let yOff = pad.top + chartH, topY = pad.top + chartH, barRects = '';
       segs.forEach(s => {
@@ -2274,7 +2334,7 @@ function renderMemberReviewerChart() {
       window._chartTips[key] = _statusTipHtml(pd);
       linePts.push(`${x},${y}`);
       areaPts.push(`${x},${y}`);
-      const errs = pd.observed + pd.failed + pd.critical;
+      const errs = pd.failed + pd.critical;
       const errRate = pd.total > 0 ? errs / pd.total : 0;
       const col = errRate === 0 ? 'var(--passed)' : errRate > 0.3 ? 'var(--critical)' : errRate > 0.15 ? 'var(--failed)' : 'var(--observed)';
       dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;

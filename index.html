@@ -83,8 +83,8 @@
           <div class="filter-option" onclick="toggleFilterOption('status','Passed')"     id="fopt-status-Passed">
             <div class="filter-checkbox"></div><span class="filter-option-label">✓ Passed</span>
           </div>
-          <div class="filter-option" onclick="toggleFilterOption('status','Observed')"   id="fopt-status-Observed">
-            <div class="filter-checkbox"></div><span class="filter-option-label">● Observed</span>
+          <div class="filter-option" onclick="toggleFilterOption('status','Opportunity')" id="fopt-status-Opportunity">
+            <div class="filter-checkbox"></div><span class="filter-option-label">● Opportunity</span>
           </div>
           <div class="filter-option" onclick="toggleFilterOption('status','Failed')"     id="fopt-status-Failed">
             <div class="filter-checkbox"></div><span class="filter-option-label">▲ Failed</span>
@@ -122,6 +122,20 @@
         </div>
         <div class="filter-dropdown" id="filter-dropdown-category">
           <div id="filter-options-category"></div>
+        </div>
+      </div>
+
+      <!-- Owner -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-owner" onclick="toggleDropdown('owner')">
+          👥 Owner <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-owner">
+          <div class="filter-dropdown-search">
+            <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+            <input type="text" placeholder="Search..." oninput="searchDropdown('owner', this.value)"/>
+          </div>
+          <div id="filter-options-owner"></div>
         </div>
       </div>
 
@@ -296,7 +310,7 @@
           <div class="card-title">Bug Classification</div>
 
           <div class="guide-section">
-            <h3>🟢 Observed</h3>
+            <h3>🟢 Opportunity</h3>
             <ul class="guide-list">
               <li class="ok"><span class="guide-icon">🎨</span>Styling issues (spacing, layout, responsive)</li>
             </ul>
@@ -465,10 +479,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Observed</td><td>D/M | Issue | Label | Page title year wrong</td><td>Michael</td><td>04/13/26</td><td></td></tr>
+            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Opportunity</td><td>D/M | Issue | Label | Page title year wrong</td><td>Michael</td><td>04/13/26</td><td></td></tr>
             <tr><td>jesus.macedo@coxautoinc.com</td><td>D-47099</td><td>Passed</td><td>well done</td><td>Michael</td><td>04/13/26</td><td></td></tr>
-            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Observed</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td><td>Fixed</td></tr>
-            <tr><td>nicole.gongora@coxautoinc.com</td><td>D-47999</td><td>Observed</td><td>D/M | Question | Content | Content isn't in the page</td><td>Cidar</td><td>04/13/26</td><td>Talked with client, fixed</td></tr>
+            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Opportunity</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td><td>Fixed</td></tr>
+            <tr><td>nicole.gongora@coxautoinc.com</td><td>D-47999</td><td>Opportunity</td><td>D/M | Question | Content | Content isn't in the page</td><td>Cidar</td><td>04/13/26</td><td>Talked with client, fixed</td></tr>
           </tbody>
         </table>
       </div>
