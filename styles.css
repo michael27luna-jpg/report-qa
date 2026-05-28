@@ -629,6 +629,21 @@ input[type="file"] { display: none; }
 /* ── SCROLL TABLE WRAPPER ── */
 .scroll-x { overflow-x: auto; }
 
+/* ── ANALYTICS CHART SCROLLABLE AREAS ── */
+.vol-scroll, .err-scroll, .rev-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.vol-scroll::-webkit-scrollbar,
+.err-scroll::-webkit-scrollbar,
+.rev-scroll::-webkit-scrollbar { height: 4px; }
+.vol-scroll::-webkit-scrollbar-track,
+.err-scroll::-webkit-scrollbar-track,
+.rev-scroll::-webkit-scrollbar-track { background: transparent; }
+.vol-scroll::-webkit-scrollbar-thumb,
+.err-scroll::-webkit-scrollbar-thumb,
+.rev-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
 /* ── TIMELINE ── */
 .timeline {
   display: flex;
@@ -1174,6 +1189,84 @@ input[type="file"] { display: none; }
   background: var(--accent);
   color: #000;
   font-weight: 700;
+}
+
+/* ── Chart type buttons (Bar / Line) ── */
+.atype {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.atype:hover { color: var(--text); }
+.atype.active {
+  background: var(--accent2);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── Analytics chart tooltip ── */
+#analytics-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 140px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem;
+}
+.ct-period {
+  color: rgba(255,255,255,0.45);
+  font-size: .62rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+}
+.ct-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.ct-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.ct-name {
+  flex: 1;
+  color: rgba(255,255,255,0.65);
+}
+.ct-val {
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+}
+.ct-total {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 6px;
+  color: rgba(255,255,255,0.85);
+  font-weight: 700;
+}
+.ct-empty {
+  color: var(--muted);
+  font-size: .68rem;
+  text-align: center;
+  padding: 4px 0;
 }
 
 /* ── Member chips ── */
