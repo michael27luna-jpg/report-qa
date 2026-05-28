@@ -2,11 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.7.0) (2026-05-28)
+
+
+### Features
+
+* observed changed to opportunity ([7949826](https://github.com/michael27luna-jpg/report-qa/commit/79498265b8b430ff6b5dd64cea8efd209279c858))
+
+## [1.6.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.6.0) (2026-05-28)
+
+
+### Features
+
+* team performance merge ([af82919](https://github.com/michael27luna-jpg/report-qa/commit/af82919de11da40b1af9c16075f9098cb2ff685c))
+
+### [1.5.1](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.5.1) (2026-05-28)
+
 ## [1.5.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.3.1...v1.5.0) (2026-05-27)
 
 
 ### Features
 
+* filters added owner ([c994c14](https://github.com/michael27luna-jpg/report-qa/commit/c994c146020e84e755fa1ce44802058f1442c765))
 * filters added team analysis ([070c286](https://github.com/michael27luna-jpg/report-qa/commit/070c2864dec5225f5120ee6fac662fc64e86abcf))
 
 ## [1.4.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.2.1...v1.4.0) (2026-05-19)

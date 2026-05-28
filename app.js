@@ -636,6 +636,7 @@ const activeFilters = {
   dateTo:     null,   // 'MM/DD/YY'
   status:     [],     // multi: ['Passed','Failed',...]
   qaby:       [],     // multi: ['Cidar','Michael',...]
+  owner:      [],
   category:   [],     // multi: ['Config','Styling',...]
 };
 
@@ -650,7 +651,7 @@ let dpSelecting = false;
 // DROPDOWN TOGGLE
 // ─────────────────────────────────────────────────────────────
 function toggleDropdown(name) {
-  const allDropdowns = ['date','status','qaby','category'];
+  const allDropdowns = ['date','status','qaby','owner','category'];
   allDropdowns.forEach(n => {
     if (n === name) return;
     document.getElementById(`filter-dropdown-${n}`)?.classList.remove('open');
@@ -663,6 +664,7 @@ function toggleDropdown(name) {
 
   if (name === 'date' && isOpen) renderDatePicker();
   if (name === 'qaby' && isOpen) renderDropdownOptions('qaby');
+  if (name === 'owner' && isOpen) renderDropdownOptions('owner');
   if (name === 'category' && isOpen) renderDropdownOptions('category');
 }
 
@@ -688,6 +690,8 @@ function renderDropdownOptions(name, searchTerm = '') {
   let options = [];
   if (name === 'qaby') {
     options = [...new Set(DATA.map(x => x.qa_by).filter(Boolean))].sort();
+  } else if (name === 'owner') {
+    options = [...new Set(DATA.map(x => x.owner).filter(Boolean))].sort();
   } else if (name === 'category') {
     options = [...new Set(DATA.flatMap(x => x.categories))].sort();
   }
@@ -697,13 +701,16 @@ function renderDropdownOptions(name, searchTerm = '') {
     : options;
 
   const active = activeFilters[name] || activeFilters.qaby || activeFilters.category;
-  const sel    = name === 'qaby' ? activeFilters.qaby : activeFilters.category;
+  // const sel    = name === 'qaby' ? activeFilters.qaby : activeFilters.category;
+  const sel = activeFilters[name] || [];
 
   // Count per option
   const countMap = {};
   DATA.forEach(r => {
     if (name === 'qaby') {
       if (r.qa_by) countMap[r.qa_by] = (countMap[r.qa_by] || 0) + 1;
+    } else if (name === 'owner') {
+      if (r.owner) countMap[r.owner] = (countMap[r.owner] || 0) + 1;
     } else {
       r.categories.forEach(c => countMap[c] = (countMap[c] || 0) + 1);
     }
@@ -730,6 +737,7 @@ function toggleFilterOption(name, value) {
   let arr;
   if (name === 'status')   arr = activeFilters.status;
   if (name === 'qaby')     arr = activeFilters.qaby;
+  if (name === 'owner')    arr = activeFilters.owner;
   if (name === 'category') arr = activeFilters.category;
 
   const idx = arr.indexOf(value);
@@ -882,6 +890,12 @@ function updateFilterUI() {
   });
   document.getElementById('filter-btn-qaby').classList.toggle('active', activeFilters.qaby.length > 0);
 
+  // Owner pills
+  activeFilters.owner.forEach(o => {
+    pills.push({ label: `👥 ${o}`, remove: () => { toggleFilterOption('owner', o); } });
+  });
+  document.getElementById('filter-btn-owner').classList.toggle('active', activeFilters.owner.length > 0);
+
   // Category pills
   activeFilters.category.forEach(c => {
     pills.push({ label: `🏷 ${c}`, remove: () => { toggleFilterOption('category', c); } });
@@ -915,6 +929,7 @@ function clearAllFilters() {
   activeFilters.dateTo   = null;
   activeFilters.status   = [];
   activeFilters.qaby     = [];
+  activeFilters.owner    = [];
   activeFilters.category = [];
 
   // Reset visual state of all options
@@ -941,6 +956,7 @@ function renderCases() {
 
   // Build dynamic dropdown options
   renderDropdownOptions('qaby');
+  renderDropdownOptions('owner');
   renderDropdownOptions('category');
 
   // Init date picker to first month in data
@@ -990,6 +1006,11 @@ function filterCases() {
     rows = rows.filter(x => activeFilters.qaby.includes(x.qa_by));
   }
 
+  // ── Owner filter (multi) ──
+  if (activeFilters.owner.length) {
+    rows = rows.filter(x => activeFilters.owner.includes(x.owner));
+  }
+
   // ── Category filter (multi) ──
   if (activeFilters.category.length) {
     rows = rows.filter(x => activeFilters.category.some(c => x.categories.includes(c)));
@@ -1007,7 +1028,8 @@ function filterCases() {
   }
 
   const hasActiveFilters = activeFilters.dateFrom || activeFilters.status.length ||
-                           activeFilters.qaby.length || activeFilters.category.length;
+                        activeFilters.qaby.length || activeFilters.owner.length ||
+                        activeFilters.category.length;
   const filterLabel = hasActiveFilters ? ' (filtered)' : '';
 
   document.getElementById('case-count-label').textContent =
@@ -1523,13 +1545,37 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
       : [L('  No bugs recorded', 'var(--text)')]),
     SEP(),
 
-    TTL(' TEAM PERFORMANCE  (top 8 by volume)'),
-    ...Object.entries(ownerMap).sort((a,b)=>b[1].length-a[1].length).slice(0,8).map(([o,cases]) => {
-      const errs = count(cases, x => x.status === 'Failed' || x.status === 'Critical');
-      const opps = count(cases, x => x.status === 'Opportunity');
-      const pr   = Math.round(count(cases, x => x.status === 'Passed') / cases.length * 100);
-      return L(`  ${o.padEnd(22)} ${cases.length} cases  ${errs} err  ${opps} opp  ${pr}% pass`, 'var(--text)');
-    }),
+    // TTL(' TEAM PERFORMANCE  (top 8 by volume)'),
+    // ...Object.entries(ownerMap).sort((a,b)=>b[1].length-a[1].length).slice(0,8).map(([o,cases]) => {
+    //   const errs = count(cases, x=>x.status!=='Passed');
+    //   const pr   = Math.round(count(cases,x=>x.status==='Passed')/cases.length*100);
+    //   return L(`  ${o.padEnd(22)} ${cases.length} cases  ${errs} error(s)  ${pr}% pass`, 'var(--text)');
+    // }),
+    // SEP(),
+    TTL(' TEAM PERFORMANCE'),
+    ...Object.entries(ownerMap)
+      .sort((a,b) => b[1].length - a[1].length)
+      .map(([o, cases]) => {
+        const totalCases = cases.length;
+        const errs = count(cases, x => x.status !== 'Passed');
+        const pr = Math.round(count(cases, x => x.status === 'Passed') / totalCases * 100);
+        const errRate = Math.round(errs / totalCases * 100);
+
+        const attention =
+          errRate > 10 ? '⚠ Needs Attention' :
+          errRate > 5  ? '◈ Watch' :
+                        '✓ On Track';
+
+        const color =
+          errRate > 10 ? 'var(--failed)' :
+          errRate > 5  ? 'var(--observed)' :
+                        'var(--passed)';
+
+        return L(
+          `  ${o.padEnd(22)} ${String(totalCases).padStart(3)} cases  ${String(errs).padStart(2)} error(s)  ${String(pr).padStart(3)}% pass  ${attention}`,
+          color
+        );
+      }),
     SEP(),
 
     TTL(' QUEUE &amp; CONTROL', INFO('queue-info-btn')),
@@ -1538,9 +1584,9 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
     L(`  ${DAYS.length < 5 ? `${5-DAYS.length} day(s) pending — updates on re-upload` : 'Full week loaded'}`, 'var(--text)'),
     L(''),
 
-    TTL(' NEEDS ATTENTION'),
-    ...(atRisk.length ? atRisk.map(o => L(`  ⚠ ${o}`, 'var(--observed)')) : [L('  None', 'var(--text)')]),
-    SEP(),
+    // TTL(' NEEDS ATTENTION'),
+    // ...(atRisk.length ? atRisk.map(o => L(`  ⚠ ${o}`, 'var(--observed)')) : [L('  None', 'var(--text)')]),
+    // SEP(),
 
     TTL(` FINAL STATUS: ${finalStatus}`, INFO('final-info-btn')),
     L(`  Critical    : ${criticalPct.toFixed(2)}% (threshold 1%)`,    criticalPct    > 1  ? 'var(--critical)' : 'var(--passed)'),
