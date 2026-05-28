@@ -341,7 +341,7 @@ header {
 }
 
 .pill-Passed   { background: rgba(0, 229, 160, .12);  color: var(--passed); }
-.pill-Observed { background: rgba(255, 183, 64, .12);  color: var(--observed); }
+.pill-Opportunity { background: rgba(255, 183, 64, .12);  color: var(--observed); }
 .pill-Failed   { background: rgba(255, 124, 41, .15);  color: var(--failed); }
 .pill-Critical { background: rgba(255, 77, 109, .12);  color: var(--critical); }
 
