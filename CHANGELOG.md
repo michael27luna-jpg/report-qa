@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.8.0) (2026-05-28)
+
+
+### Features
+
+* filters added owner ([c994c14](https://github.com/michael27luna-jpg/report-qa/commit/c994c146020e84e755fa1ce44802058f1442c765))
+* observed changed to opportunity ([7949826](https://github.com/michael27luna-jpg/report-qa/commit/79498265b8b430ff6b5dd64cea8efd209279c858))
+* team performance merge ([af82919](https://github.com/michael27luna-jpg/report-qa/commit/af82919de11da40b1af9c16075f9098cb2ff685c))
+
 ## [1.7.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.5.0...v1.7.0) (2026-05-28)
 
 
