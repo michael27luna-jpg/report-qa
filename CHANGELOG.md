@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.9.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.8.1...v1.9.0) (2026-06-01)
+
+
+### Features
+
+* add Type and Date logic ([fdcd948](https://github.com/michael27luna-jpg/report-qa/commit/fdcd948e3b1608a12cfa3c3f2c65f822a086d6c0))
+
 ### [1.8.1](https://github.com/michael27luna-jpg/report-qa/compare/v1.8.0...v1.8.1) (2026-05-28)
 
 
