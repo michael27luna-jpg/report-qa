@@ -21,6 +21,10 @@
   --observed: #ffb740;   /* yellow */
   --failed:   #ff7c29;   /* orange */
   --critical: #ff4d6d;   /* red    */
+
+  /* ── Type colors ── */
+  --lp:      #5b6aff;   /* accent2 — blue  */
+  --posting: #ffb740;   /* warn    — amber */
 }
 
 /* ── RESET ── */
@@ -131,6 +135,14 @@ header {
 }
 
 .panel.active { display: block; }
+
+#panel-cases {
+  max-width: 1700px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 4px;
+  padding-right: 4px;
+}
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
@@ -357,6 +369,7 @@ header {
 
 .type-LP      { background: rgba(91, 106, 255, .12); color: var(--lp); }
 .type-Posting { background: rgba(255, 183, 64, .12); color: var(--posting); }
+.type-Unknown { background: rgba(107, 114, 128, .1); color: var(--muted); }
 
 /* ── CATEGORY TAGS ── */
 .cat-tags {

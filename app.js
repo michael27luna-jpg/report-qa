@@ -30,6 +30,8 @@ const CAT_COLORS = {
   Label:    '#c084fc',
 };
 
+const TYPE_COLORS = { LP: 'var(--lp)', Posting: 'var(--posting)', Unknown: 'var(--muted)' };
+
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
 // ─────────────────────────────────────────────────────────────
@@ -55,15 +57,30 @@ function extractNameFromEmail(email) {
     .join(' ');
 }
 
+// Normaliza cualquier fecha m/d/yy o m/d/yyyy a un formato canónico m/d/yy
+function normalizeDate(str) {
+  if (!str || !str.includes('/')) return str || '';
+  const [m, d, y] = str.split('/');
+  if (!m || !d || !y) return str;
+  const yy = y.length === 4 ? y.slice(-2) : y.padStart(2, '0');
+  return `${parseInt(m, 10)}/${parseInt(d, 10)}/${yy}`;
+}
+
+// Convierte m/d/yy o m/d/yyyy a un objeto Date, sin importar el largo del año
+function parseMDY(str) {
+  const [m, d, y] = String(str).split('/');
+  const year = y && y.length === 4 ? y : `20${y}`;
+  return new Date(`${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+}
+
 function getDays() {
   const days = [...new Set(DATA.map(x => x.day))];
-  return days.sort((a, b) => {
-    const parse = d => {
-      const [m, dd, yy] = d.split('/');
-      return new Date(`20${yy}-${String(m).padStart(2,'0')}-${String(dd).padStart(2,'0')}`);
-    };
-    return parse(a) - parse(b);
-  });
+  return days.sort((a, b) => parseMDY(a) - parseMDY(b));
+}
+
+function getCompletedDates() {
+  const dates = [...new Set(DATA.map(x => x.completed_date).filter(Boolean))];
+  return dates.sort((a, b) => parseMDY(a) - parseMDY(b));
 }
 
 function parseCategories(comment) {
@@ -77,6 +94,19 @@ function parseCategories(comment) {
   if (u.includes('LINK') || u.includes('LINKING'))   cats.add('Linking');
   return [...cats];
 }
+// ─────────────────────────────────────────────────────────────
+// TYPE NORMALIZATION
+// ─────────────────────────────────────────────────────────────
+function normalizeType(raw) {
+  if (!raw) return 'Unknown';
+  const s = raw.trim().toLowerCase();
+  if (s === 'posting case' || s === 'posting html')                return 'Posting';
+  if (s === 'seo landing page' || s === 'just posting landing page' || s === 'oem landing page') return 'LP';
+  if (s.includes('landing page')) return 'LP';
+  if (s.includes('posting'))      return 'Posting';
+  return 'Unknown';
+}
+
 // ─────────────────────────────────────────────────────────────
 // FIX COMMENT LOGIC
 // ─────────────────────────────────────────────────────────────
@@ -126,6 +156,7 @@ function parseCSV(text) {
   const lines = text.trim().split('\n');
   if (lines.length < 2) return [];
   const headers = lines[0].split(';').map(h => h.trim().replace(/"/g, ''));
+  window._hasDateColumn = headers.includes('Date');
 
   return lines.slice(1).map(line => {
     const vals = line.split(';').map(v => v.trim().replace(/"/g, ''));
@@ -141,7 +172,8 @@ function parseCSV(text) {
     const status     = resolveFixStatus(rawStatus, fixComment, comment);
 
     return {
-      day:        obj['Date QA Completed'] || '',
+      day:            normalizeDate(obj['Date QA Completed'] || ''),
+      completed_date: normalizeDate(obj['Date'] || ''),
       owner:      extractNameFromEmail(obj['Name'] || ''),
       task_id:    obj['ID / Task / Case Number'] || '',
       status,
@@ -150,6 +182,7 @@ function parseCSV(text) {
       summary:    comment,
       fix_comment: fixComment,
       categories: status === 'Passed' ? [] : parseCategories(comment),
+      type:       normalizeType(obj['Type'] || obj['Case Type']),
     };
   }).filter(r => r.owner && r.owner !== 'Unknown' && r.task_id && r.status !== 'In progress' && r.status !== 'In Progress');
 }
@@ -276,6 +309,7 @@ function renderOverview() {
     const empty = '<div style="color:var(--muted);font-size:.78rem;padding:8px 0;">Upload a CSV to see data</div>';
     ['kpi-row','timeline','daily-bars','cat-bars','owner-bars',
      'donut-status','donut-status-legend','donut-type','donut-type-legend',
+     'donut-casetype','donut-casetype-legend',
      'qa-donut-grid'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = empty;
@@ -290,6 +324,20 @@ function renderOverview() {
   const errors      = failed + critical;
   const owners      = [...new Set(d.map(x => x.owner))].length;
   const passRate    = Math.round(passed / total * 100);
+
+  // ── Type KPI data ──
+  const postingCases  = d.filter(x => x.type === 'Posting');
+  const lpCases       = d.filter(x => x.type === 'LP');
+  const postingTotal  = postingCases.length;
+  const lpTotal       = lpCases.length;
+  const postingErrors = count(postingCases, x => x.status === 'Failed' || x.status === 'Critical');
+  const lpErrors      = count(lpCases,      x => x.status === 'Failed' || x.status === 'Critical');
+  const postingErrRate = postingTotal > 0 ? Math.round(postingErrors / postingTotal * 100) : null;
+  const lpErrRate      = lpTotal      > 0 ? Math.round(lpErrors      / lpTotal      * 100) : null;
+  const postingKpiColor = postingErrRate === null ? 'var(--accent2)'
+    : postingErrRate > 10 ? 'var(--critical)' : postingErrRate > 5 ? 'var(--failed)' : 'var(--accent2)';
+  const lpKpiColor = lpErrRate === null ? 'var(--accent2)'
+    : lpErrRate > 10 ? 'var(--critical)' : lpErrRate > 5 ? 'var(--failed)' : 'var(--accent2)';
 
   // ── KPI cards ──
   const kpis = [
@@ -328,6 +376,18 @@ function renderOverview() {
       val: owners,
       sub: 'reviewed this week',
       color: 'var(--accent2)'
+    },
+    {
+      label: 'Posting Err. Rate',
+      val:   postingErrRate !== null ? `${postingErrRate}%` : '—',
+      sub:   postingTotal > 0 ? `${postingErrors}/${postingTotal} cases` : 'No Posting cases',
+      color: postingKpiColor,
+    },
+    {
+      label: 'LP Err. Rate',
+      val:   lpErrRate !== null ? `${lpErrRate}%` : '—',
+      sub:   lpTotal > 0 ? `${lpErrors}/${lpTotal} cases` : 'No LP cases',
+      color: lpKpiColor,
     },
   ];
   document.getElementById('kpi-row').innerHTML = kpis.map(k => `
@@ -385,9 +445,23 @@ function renderOverview() {
     { label:'Critical',    value: critical,    color: STATUS_COLORS.Critical },
   ]);
 
-  // ── Bug Categories bar + percentage ──
-  const catCount = {};
-  d.forEach(r => r.categories.forEach(c => catCount[c] = (catCount[c] || 0) + 1));
+  // ── Cases by Type donut ──
+  const typeCount = { LP: 0, Posting: 0, Unknown: 0 };
+  d.forEach(r => { typeCount[r.type] = (typeCount[r.type] || 0) + 1; });
+  drawDonut('donut-casetype', 'donut-casetype-legend', [
+    { label: 'Landing Page', value: typeCount.LP,      color: TYPE_COLORS.LP },
+    { label: 'Posting',      value: typeCount.Posting, color: TYPE_COLORS.Posting },
+    { label: 'Unknown',      value: typeCount.Unknown, color: TYPE_COLORS.Unknown },
+  ]);
+
+  // ── Bug Categories bar + percentage (stacked by type) ──
+  const catCount  = {};
+  const catByType = {};
+  d.forEach(r => r.categories.forEach(c => {
+    catCount[c] = (catCount[c] || 0) + 1;
+    if (!catByType[c]) catByType[c] = { LP: 0, Posting: 0, Unknown: 0 };
+    catByType[c][r.type] = (catByType[c][r.type] || 0) + 1;
+  }));
 
   if (!Object.keys(catCount).length) {
     document.getElementById('cat-bars').innerHTML =
@@ -397,10 +471,15 @@ function renderOverview() {
     document.getElementById('cat-bars').innerHTML =
       sortDesc(catCount).map(([cat, cnt]) => {
         const pct = errors > 0 ? Math.round(cnt / errors * 100) : 0;
+        const bt  = catByType[cat] || { LP: 0, Posting: 0, Unknown: 0 };
         return `<div class="bar-row">
           <div class="bar-name">${cat}</div>
           <div class="bar-track">
-            <div class="bar-fill" style="width:${cnt/maxCat*100}%;background:${CAT_COLORS[cat] || 'var(--accent)'}"></div>
+            <div style="display:flex;height:100%;">
+              ${bt.LP      > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP/maxCat*100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
+              ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting/maxCat*100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
+              ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown/maxCat*100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
+            </div>
           </div>
           <div style="display:flex;gap:6px;align-items:center;min-width:68px;justify-content:flex-end;">
             <span style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);">${pct}%</span>
@@ -408,29 +487,30 @@ function renderOverview() {
           </div>
         </div>`;
       }).join('') +
-      `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of total errors (${errors})</div>`;
+      `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of total errors (${errors})</div>` +
+      `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+        ${['LP','Posting','Unknown'].map(t =>
+          `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
+            <span style="width:8px;height:8px;border-radius:2px;background:${TYPE_COLORS[t]};display:inline-block;opacity:.85"></span>${t === 'LP' ? 'Landing Page' : t}
+          </span>`).join('')}
+      </div>`;
   }
 
-  // ── Top Bug Contributors ──
-  // Counts only errors (Failed + Critical), Opportunity not included
-  const allOwners = [...new Set(d.map(x => x.owner))];
-  const bugsByOwner = {};
+  // ── Top Bug Contributors (stacked by type) ──
+  const allOwners      = [...new Set(d.map(x => x.owner))];
+  const bugsByOwner     = {};
+  const bugsByOwnerType = {};
   allOwners.forEach(o => {
-    bugsByOwner[o] = count(d.filter(x => x.owner === o), x => x.status === 'Failed' || x.status === 'Critical');
+    const ownerErrors = d.filter(x => x.owner === o && (x.status === 'Failed' || x.status === 'Critical'));
+    bugsByOwner[o]     = ownerErrors.length;
+    bugsByOwnerType[o] = { LP: 0, Posting: 0, Unknown: 0 };
+    ownerErrors.forEach(r => { bugsByOwnerType[o][r.type] = (bugsByOwnerType[o][r.type] || 0) + 1; });
   });
 
   const sortedByBugs = [...allOwners].sort((a, b) => bugsByOwner[b] - bugsByOwner[a]);
   const maxBugs = Math.max(...Object.values(bugsByOwner), 1);
-    const totalOwners = sortedByBugs.length;
-  const getBarColor = (index, bugs) => {
-    if (bugs === 0) return 'var(--passed)';
-    const ratio = totalOwners <= 1 ? 0 : index / (totalOwners - 1);
-    const r = Math.round(255 * ratio < 0.5 ? 1 : 2 * (1 - ratio));
-    const g = Math.round(255 * (ratio < 0.5 ? 2 * ratio : 1));
-    return `rgb(${Math.round(255 - 155*ratio)}, ${Math.round(120 + 105*ratio)}, ${Math.round(40 + 120*ratio)})`;
-  };
 
-  document.getElementById('owner-bars').innerHTML = sortedByBugs.map((own, i) => {
+  document.getElementById('owner-bars').innerHTML = sortedByBugs.map(own => {
     const bugs = bugsByOwner[own];
     if (bugs === 0) {
       return `<div class="bar-row">
@@ -439,15 +519,25 @@ function renderOverview() {
         <div class="bar-count" style="color:var(--passed)">0</div>
       </div>`;
     }
-    // Color by rank: top bug-makers get red/orange
+    const bt = bugsByOwnerType[own];
     return `<div class="bar-row">
       <div class="bar-name">${own}</div>
       <div class="bar-track">
-        <div class="bar-fill" style="width:${bugs/maxBugs*100}%;background:${getBarColor(i, bugs)}"></div>
+        <div style="display:flex;height:100%;">
+          ${bt.LP      > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP/maxBugs*100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
+          ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting/maxBugs*100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
+          ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown/maxBugs*100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
+        </div>
       </div>
       <div class="bar-count">${bugs}</div>
     </div>`;
-  }).join('');
+  }).join('') +
+  `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+    ${['LP','Posting','Unknown'].map(t =>
+      `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
+        <span style="width:8px;height:8px;border-radius:2px;background:${TYPE_COLORS[t]};display:inline-block;opacity:.85"></span>${t === 'LP' ? 'Landing Page' : t}
+      </span>`).join('')}
+  </div>`;
 
   // ── QA Shadow Workload — bar chart (sorted desc) ──
   const qaByCount = {};
@@ -632,26 +722,35 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
 
 // ── Filter state ──
 const activeFilters = {
-  dateFrom:   null,   // 'MM/DD/YY'
-  dateTo:     null,   // 'MM/DD/YY'
+  dateFrom:            null,   // 'MM/DD/YY'
+  dateTo:              null,   // 'MM/DD/YY'
+  dateCompletedFrom:   null,   // 'MM/DD/YY'
+  dateCompletedTo:     null,   // 'MM/DD/YY'
   status:     [],     // multi: ['Passed','Failed',...]
   qaby:       [],     // multi: ['Cidar','Michael',...]
   owner:      [],
   category:   [],     // multi: ['Config','Styling',...]
+  type:       [],     // multi: ['LP','Posting','Unknown']
 };
 
-// ── Date picker state ──
+// ── Date picker state — QA Date ──
 let dpYear  = new Date().getFullYear();
 let dpMonth = new Date().getMonth();
 let dpStart = null;  // 'MM/DD/YY'
 let dpEnd   = null;  // 'MM/DD/YY'
 let dpSelecting = false;
 
+// ── Date picker state — Completed Date ──
+let dpYearDC  = new Date().getFullYear();
+let dpMonthDC = new Date().getMonth();
+let dpStartDC = null;  // 'MM/DD/YY'
+let dpEndDC   = null;  // 'MM/DD/YY'
+
 // ─────────────────────────────────────────────────────────────
 // DROPDOWN TOGGLE
 // ─────────────────────────────────────────────────────────────
 function toggleDropdown(name) {
-  const allDropdowns = ['date','status','qaby','owner','category'];
+  const allDropdowns = ['datecompleted','date','status','qaby','owner','category','type'];
   allDropdowns.forEach(n => {
     if (n === name) return;
     document.getElementById(`filter-dropdown-${n}`)?.classList.remove('open');
@@ -662,10 +761,12 @@ function toggleDropdown(name) {
   const isOpen = dd.classList.toggle('open');
   btn.classList.toggle('open', isOpen);
 
-  if (name === 'date' && isOpen) renderDatePicker();
-  if (name === 'qaby' && isOpen) renderDropdownOptions('qaby');
-  if (name === 'owner' && isOpen) renderDropdownOptions('owner');
-  if (name === 'category' && isOpen) renderDropdownOptions('category');
+  if (name === 'datecompleted' && isOpen) renderDatePickerDC();
+  if (name === 'date' && isOpen)          renderDatePicker();
+  if (name === 'qaby' && isOpen)          renderDropdownOptions('qaby');
+  if (name === 'owner' && isOpen)         renderDropdownOptions('owner');
+  if (name === 'category' && isOpen)      renderDropdownOptions('category');
+  if (name === 'type' && isOpen)          renderDropdownOptions('type');
 }
 
 // Close dropdowns when clicking outside
@@ -694,6 +795,8 @@ function renderDropdownOptions(name, searchTerm = '') {
     options = [...new Set(DATA.map(x => x.owner).filter(Boolean))].sort();
   } else if (name === 'category') {
     options = [...new Set(DATA.flatMap(x => x.categories))].sort();
+  } else if (name === 'type') {
+    options = [...new Set(DATA.map(x => x.type).filter(Boolean))].sort();
   }
 
   const filtered = searchTerm
@@ -711,6 +814,8 @@ function renderDropdownOptions(name, searchTerm = '') {
       if (r.qa_by) countMap[r.qa_by] = (countMap[r.qa_by] || 0) + 1;
     } else if (name === 'owner') {
       if (r.owner) countMap[r.owner] = (countMap[r.owner] || 0) + 1;
+    } else if (name === 'type') {
+      if (r.type) countMap[r.type] = (countMap[r.type] || 0) + 1;
     } else {
       r.categories.forEach(c => countMap[c] = (countMap[c] || 0) + 1);
     }
@@ -739,6 +844,7 @@ function toggleFilterOption(name, value) {
   if (name === 'qaby')     arr = activeFilters.qaby;
   if (name === 'owner')    arr = activeFilters.owner;
   if (name === 'category') arr = activeFilters.category;
+  if (name === 'type')     arr = activeFilters.type;
 
   const idx = arr.indexOf(value);
   if (idx === -1) arr.push(value);
@@ -768,11 +874,7 @@ function renderDatePicker() {
   const daysInMonth = new Date(dpYear, dpMonth + 1, 0).getDate();
   const dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
-  const parseDay = str => {
-    if (!str) return null;
-    const [m, d, y] = str.split('/');
-    return new Date(`20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
-  };
+  const parseDay = str => str ? parseMDY(str) : null;
 
   const fmtKey = (y, m, d) => {
     const mm = String(m+1).padStart(2,'0');
@@ -828,11 +930,7 @@ function datePickerClick(key, event) {
     dpEnd   = null;
   } else {
     // Set end — ensure start <= end
-    const parseDay = str => {
-      const [m,d,y] = str.split('/');
-      return new Date(`20${y}-${m}-${d}`);
-    };
-    if (parseDay(key) < parseDay(dpStart)) {
+    if (parseMDY(key) < parseMDY(dpStart)) {
       dpEnd   = dpStart;
       dpStart = key;
     } else {
@@ -861,13 +959,121 @@ function clearDateFilter() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// DATE PICKER — COMPLETED DATE
+// ─────────────────────────────────────────────────────────────
+function renderDatePickerDC() {
+  const DATES    = getCompletedDates();
+  const datesSet = new Set(DATES);
+  const months   = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+
+  document.getElementById('date-picker-month-label-dc').textContent =
+    `${months[dpMonthDC]} ${dpYearDC}`;
+
+  const firstDay    = new Date(dpYearDC, dpMonthDC, 1).getDay();
+  const daysInMonth = new Date(dpYearDC, dpMonthDC + 1, 0).getDate();
+  const dayLabels   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  const parseDay = str => str ? parseMDY(str) : null;
+
+  const fmtKey = (y, m, d) => {
+    const mm = String(m+1).padStart(2,'0');
+    const dd = String(d).padStart(2,'0');
+    const yy = String(y).slice(-2);
+    return `${mm}/${dd}/${yy}`;
+  };
+
+  const startDate = parseDay(dpStartDC);
+  const endDate   = parseDay(dpEndDC);
+
+  let html = dayLabels.map(l => `<div class="date-picker-day-label">${l}</div>`).join('');
+
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="date-picker-day empty"></div>`;
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key     = fmtKey(dpYearDC, dpMonthDC, day);
+    const hasData = datesSet.has(key);
+    const date    = new Date(dpYearDC, dpMonthDC, day);
+
+    let cls = 'date-picker-day';
+    if (!hasData) cls += ' no-data';
+    else cls += ' has-data';
+
+    if (startDate && endDate) {
+      if (date >= startDate && date <= endDate) cls += ' in-range';
+    }
+    if (dpStartDC === key) cls += ' range-start';
+    if (dpEndDC   === key) cls += ' range-end';
+
+    const click = hasData ? `onclick="datePickerClickDC('${key}', event)"` : '';
+    html += `<div class="${cls}" ${click}>${day}</div>`;
+  }
+
+  document.getElementById('date-picker-grid-dc').innerHTML = html;
+}
+
+function datePickerNavDC(dir) {
+  dpMonthDC += dir;
+  if (dpMonthDC > 11) { dpMonthDC = 0;  dpYearDC++; }
+  if (dpMonthDC < 0)  { dpMonthDC = 11; dpYearDC--; }
+  renderDatePickerDC();
+}
+
+function datePickerClickDC(key, event) {
+  if (event) event.stopPropagation();
+  if (!dpStartDC || (dpStartDC && dpEndDC)) {
+    dpStartDC = key;
+    dpEndDC   = null;
+  } else {
+    if (parseMDY(key) < parseMDY(dpStartDC)) {
+      dpEndDC   = dpStartDC;
+      dpStartDC = key;
+    } else {
+      dpEndDC = key;
+    }
+  }
+  renderDatePickerDC();
+}
+
+function applyDateFilterDC() {
+  activeFilters.dateCompletedFrom = dpStartDC;
+  activeFilters.dateCompletedTo   = dpEndDC || dpStartDC;
+  toggleDropdown('datecompleted');
+  updateFilterUI();
+  filterCases();
+}
+
+function clearDateFilterDC() {
+  dpStartDC = null;
+  dpEndDC   = null;
+  activeFilters.dateCompletedFrom = null;
+  activeFilters.dateCompletedTo   = null;
+  renderDatePickerDC();
+  updateFilterUI();
+  filterCases();
+}
+
+// ─────────────────────────────────────────────────────────────
 // FILTER UI — pills + button states + clear all
 // ─────────────────────────────────────────────────────────────
 function updateFilterUI() {
   const pills    = [];
   const hasAny   = () => pills.length > 0;
 
-  // Date pill
+  // Completed Date pill
+  if (activeFilters.dateCompletedFrom) {
+    const label = activeFilters.dateCompletedFrom === activeFilters.dateCompletedTo
+      ? activeFilters.dateCompletedFrom
+      : `${activeFilters.dateCompletedFrom} – ${activeFilters.dateCompletedTo}`;
+    pills.push({ label: `📆 ${label}`, remove: () => clearDateFilterDC() });
+    document.getElementById('filter-btn-datecompleted').classList.add('active');
+  } else {
+    document.getElementById('filter-btn-datecompleted').classList.remove('active');
+  }
+
+  // QA Date pill
   if (activeFilters.dateFrom) {
     const label = activeFilters.dateFrom === activeFilters.dateTo
       ? activeFilters.dateFrom
@@ -902,6 +1108,12 @@ function updateFilterUI() {
   });
   document.getElementById('filter-btn-category').classList.toggle('active', activeFilters.category.length > 0);
 
+  // Type pills
+  activeFilters.type.forEach(t => {
+    pills.push({ label: `📋 ${t}`, remove: () => { toggleFilterOption('type', t); } });
+  });
+  document.getElementById('filter-btn-type').classList.toggle('active', activeFilters.type.length > 0);
+
   // Render pills
   const pillsEl = document.getElementById('filter-pills');
   pillsEl.innerHTML = pills.map((p, i) => `
@@ -927,10 +1139,15 @@ function clearAllFilters() {
   dpEnd   = null;
   activeFilters.dateFrom = null;
   activeFilters.dateTo   = null;
+  dpStartDC = null;
+  dpEndDC   = null;
+  activeFilters.dateCompletedFrom = null;
+  activeFilters.dateCompletedTo   = null;
   activeFilters.status   = [];
   activeFilters.qaby     = [];
   activeFilters.owner    = [];
   activeFilters.category = [];
+  activeFilters.type     = [];
 
   // Reset visual state of all options
   document.querySelectorAll('.filter-option').forEach(el => el.classList.remove('selected'));
@@ -950,7 +1167,7 @@ function renderCases() {
   if (!DATA.length) {
     document.getElementById('case-count-label').textContent = 'No data loaded';
     document.getElementById('case-tbody').innerHTML =
-      `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:.82rem;">Upload a CSV file in the Import tab.</td></tr>`;
+      `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px;font-size:.82rem;">Upload a CSV file in the Import tab.</td></tr>`;
     return;
   }
 
@@ -958,13 +1175,22 @@ function renderCases() {
   renderDropdownOptions('qaby');
   renderDropdownOptions('owner');
   renderDropdownOptions('category');
+  renderDropdownOptions('type');
 
-  // Init date picker to first month in data
+  // Init QA Date picker to first month in data
   const DAYS = getDays();
   if (DAYS.length && !dpStart) {
     const [m, , y] = DAYS[0].split('/');
     dpMonth = parseInt(m) - 1;
     dpYear  = 2000 + parseInt(y);
+  }
+
+  // Init Completed Date picker to first month in data
+  const CDATES = getCompletedDates();
+  if (CDATES.length && !dpStartDC) {
+    const [m, , y] = CDATES[0].split('/');
+    dpMonthDC = parseInt(m) - 1;
+    dpYearDC  = 2000 + parseInt(y);
   }
 
   updateFilterUI();
@@ -978,16 +1204,23 @@ function filterCases() {
   const search = (document.getElementById('case-search')?.value || '').toLowerCase().trim();
   let rows = [...DATA];
 
-  // ── Date range filter ──
-  if (activeFilters.dateFrom) {
-    const parseD = str => {
-      const [m,d,y] = str.split('/');
-      return new Date(`20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
-    };
-    const from = parseD(activeFilters.dateFrom);
-    const to   = parseD(activeFilters.dateTo || activeFilters.dateFrom);
+  // ── Completed Date range filter ──
+  if (activeFilters.dateCompletedFrom) {
+    const from = parseMDY(activeFilters.dateCompletedFrom);
+    const to   = parseMDY(activeFilters.dateCompletedTo || activeFilters.dateCompletedFrom);
     rows = rows.filter(x => {
-      const d = parseD(x.day);
+      if (!x.completed_date) return false;
+      const d = parseMDY(x.completed_date);
+      return d >= from && d <= to;
+    });
+  }
+
+  // ── QA Date range filter ──
+  if (activeFilters.dateFrom) {
+    const from = parseMDY(activeFilters.dateFrom);
+    const to   = parseMDY(activeFilters.dateTo || activeFilters.dateFrom);
+    rows = rows.filter(x => {
+      const d = parseMDY(x.day);
       return d >= from && d <= to;
     });
   }
@@ -1016,6 +1249,11 @@ function filterCases() {
     rows = rows.filter(x => activeFilters.category.some(c => x.categories.includes(c)));
   }
 
+  // ── Type filter (multi) ──
+  if (activeFilters.type.length) {
+    rows = rows.filter(x => activeFilters.type.includes(x.type));
+  }
+
   // ── Text search ──
   if (search) {
     rows = rows.filter(r =>
@@ -1027,18 +1265,20 @@ function filterCases() {
     );
   }
 
-  const hasActiveFilters = activeFilters.dateFrom || activeFilters.status.length ||
-                        activeFilters.qaby.length || activeFilters.owner.length ||
-                        activeFilters.category.length;
+  const hasActiveFilters = activeFilters.dateCompletedFrom || activeFilters.dateFrom ||
+                        activeFilters.status.length || activeFilters.qaby.length ||
+                        activeFilters.owner.length || activeFilters.category.length ||
+                        activeFilters.type.length;
   const filterLabel = hasActiveFilters ? ' (filtered)' : '';
 
   document.getElementById('case-count-label').textContent =
     `${rows.length} cases${filterLabel}${search ? ` matching "${search}"` : ''}`;
 
   document.getElementById('case-tbody').innerHTML = rows.length === 0
-    ? `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px;font-size:.82rem;">No cases match your filters.</td></tr>`
+    ? `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px;font-size:.82rem;">No cases match your filters.</td></tr>`
     : rows.map(r => `
       <tr>
+        <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);white-space:nowrap">${r.completed_date || '—'}</td>
         <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);white-space:nowrap">${r.day}</td>
         <td style="font-weight:600;white-space:nowrap">${r.owner}</td>
         <td style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--accent2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.task_id}">${r.task_id}</td>
@@ -1048,6 +1288,7 @@ function filterCases() {
             ? `<span style="font-size:.6rem;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-top:3px;">was: ${r.original_status}</span>`
             : ''}
         </td>
+        <td><span class="type-pill type-${r.type}">${r.type}</span></td>
         <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${r.qa_by || '—'}</td>
         <td><div class="cat-tags">${r.categories.map(c => `<span class="cat-tag cat-${c}">${c}</span>`).join('') || '<span style="color:var(--muted);font-size:.65rem;">—</span>'}</div></td>
         <td style="font-size:.75rem;color:var(--muted);max-width:300px">${r.summary}</td>
@@ -1220,7 +1461,7 @@ function renderTeam() {
       const failed      = count(cases, x => x.status === 'Failed');
       const critical    = count(cases, x => x.status === 'Critical');
       const errors      = failed + critical;
-      const passRate    = Math.round(passed / total * 100);
+      const passRate    = Math.round((passed + opportunity) / total * 100);
       const errRate     = Math.round(errors / total * 100);
       const oppRate     = Math.round(opportunity / total * 100);
 
@@ -1294,6 +1535,15 @@ function renderTeam() {
     const cats = {};
     cases.forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
 
+    const postingIssues = count(cases, c =>
+      c.type === 'Posting' &&
+      (c.status === 'Opportunity' || c.status === 'Failed' || c.status === 'Critical')
+    );
+    const lpIssues = count(cases, c =>
+      c.type === 'LP' &&
+      (c.status === 'Opportunity' || c.status === 'Failed' || c.status === 'Critical')
+    );
+
     const trendLabel = getTeamTrendLabel(trend);
 
     const barColor =
@@ -1327,13 +1577,23 @@ function renderTeam() {
           <div class="owner-stat-lbl">Failed</div>
         </div>
 
-        <div class="owner-stat">
+        <div class="owner-stat" style="margin-right:12px">
           <div class="owner-stat-val" style="color:var(--critical)">${critical}</div>
           <div class="owner-stat-lbl">Critical</div>
         </div>
       </div>
 
       <div class="owner-bar-row">
+        <div class="owner-bar-lbl">Pass rate</div>
+        <div class="owner-bar-track">
+          <div class="owner-bar-fill" style="width:${passRate}%;background:var(--passed);opacity:.7"></div>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">
+          ${passed + opportunity}/${total} (${passRate}%)
+        </div>
+      </div>
+
+      <div class="owner-bar-row" style="margin-top:4px">
         <div class="owner-bar-lbl">Error rate</div>
         <div class="owner-bar-track">
           <div class="owner-bar-fill" style="width:${errRate}%;background:${barColor}"></div>
@@ -1343,23 +1603,15 @@ function renderTeam() {
         </div>
       </div>
 
-      <div class="owner-bar-row" style="margin-top:4px">
+      <div style="border-top:1px solid var(--border);margin:8px 0;"></div>
+
+      <div class="owner-bar-row">
         <div class="owner-bar-lbl">Opp. rate</div>
         <div class="owner-bar-track">
           <div class="owner-bar-fill" style="width:${oppRate}%;background:var(--observed);opacity:.75"></div>
         </div>
         <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">
           ${opportunity}/${total} (${oppRate}%)
-        </div>
-      </div>
-
-      <div class="owner-bar-row" style="margin-top:4px">
-        <div class="owner-bar-lbl">Pass rate</div>
-        <div class="owner-bar-track">
-          <div class="owner-bar-fill" style="width:${passRate}%;background:var(--passed);opacity:.7"></div>
-        </div>
-        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);min-width:40px;text-align:right">
-          ${passRate}%
         </div>
       </div>
 
@@ -1375,6 +1627,16 @@ function renderTeam() {
         : `<div style="margin-top:10px;font-size:.72rem;color:var(--passed);font-family:'Space Mono',monospace;">✓ Great job — no errors found</div>`}
 
       <div style="margin-top:10px;">
+        <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;font-family:'Syne',sans-serif;font-weight:700;">Bug by Type</div>
+        <div class="cat-tags">
+          <span class="cat-tag type-LP" style="margin-right:3px">LP Error ×${lpIssues}</span>
+          <span class="cat-tag type-Posting" style="margin-right:3px">Posting Error ×${postingIssues}</span>
+        </div>
+      </div>
+
+        <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:15px 0 0 0;font-family:'Syne',sans-serif;font-weight:700;">Status</div>
+      
+      <div>
         <span class="trend-badge trend-${trend}">${trendLabel}</span>
       </div>
     </div>`;
@@ -1402,7 +1664,7 @@ function renderReport() {
   const failed      = count(d, x => x.status === 'Failed');
   const critical    = count(d, x => x.status === 'Critical');
   const errors      = failed + critical;
-  const passRate    = Math.round(passed / total * 100);
+  const passRate    = Math.round((passed + opportunity) / total * 100);
   const owners      = [...new Set(d.map(x => x.owner))];
 
   const catCount = {};
@@ -1457,7 +1719,7 @@ if (document.getElementById('daily-report')) document.getElementById('daily-repo
 
 • Reviewed: ${owners.length} members / ${total} cases
 • QA Shadows: ${qaShadows || 'N/A'}
-• Pass rate: ${passRate}% (${passed}/${total})
+• Pass rate: ${passRate}% (${passed + opportunity}/${total})
 • Opportunities: ${opportunity}
 • Errors: ${errors} — Failed: ${failed} · Critical: ${critical}
 • Top bugs: ${sortDesc(catCount).slice(0,3).map(([c,n])=>`${c} (${n}x)`).join(', ') || 'None'}
@@ -1696,10 +1958,8 @@ function _rateTipHtml(pd) {
 
 function getPeriodKey(dayStr, gran) {
   if (!dayStr) return '';
-  const parts = dayStr.split('/');
-  if (parts.length !== 3) return dayStr;
-  const [m, d, y] = parts;
-  const date = new Date(`20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
+  if (dayStr.split('/').length !== 3) return dayStr;
+  const date = parseMDY(dayStr);
   if (gran === 'day')   return dayStr;
   if (gran === 'month') return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
   // week → key = Monday of that week
@@ -1729,8 +1989,7 @@ function getSortedPeriods(gran) {
         const [yr, mo] = k.split('-');
         return new Date(parseInt(yr), parseInt(mo)-1, 1);
       }
-      const [mo, dy, yy] = k.split('/');
-      return new Date(`20${yy}-${mo.padStart(2,'0')}-${dy.padStart(2,'0')}`);
+      return parseMDY(k);
     };
     return parse(a) - parse(b);
   });
@@ -1740,16 +1999,17 @@ function getSortedPeriods(gran) {
 // ANALYTICS — CHART HELPERS
 // ─────────────────────────────────────────────────────────────
 function getAllWorkingDays(firstKey, lastKey) {
-  const parseKey = k => {
-    const [mo, dy, yy] = k.split('/');
-    return new Date(`20${yy}-${mo.padStart(2,'0')}-${dy.padStart(2,'0')}`);
-  };
   const toKey = d =>
     `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`;
-  const first = parseKey(firstKey), last = parseKey(lastKey);
+  const first = parseMDY(firstKey), last = parseMDY(lastKey);
   const days = [];
   const cur = new Date(first);
+  let guard = 0;
   while (cur <= last) {
+    if (++guard > 5000) {
+      console.warn('[getAllWorkingDays] rango de fechas anómalo, abortando loop:', firstKey, '→', lastKey);
+      break;
+    }
     const dow = cur.getDay();
     if (dow !== 0 && dow !== 6) days.push(toKey(cur));
     cur.setDate(cur.getDate() + 1);
@@ -1762,8 +2022,7 @@ function formatAnalyticsDateRange(periods, gran) {
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const parseKey = k => {
     if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(parseInt(yr), parseInt(mo)-1, 1); }
-    const [mo, dy, yy] = k.split('/');
-    return new Date(`20${yy}-${mo.padStart(2,'0')}-${dy.padStart(2,'0')}`);
+    return parseMDY(k);
   };
   const fmt = d => gran === 'month'
     ? `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
@@ -2054,14 +2313,29 @@ function renderMemberErrorChart() {
 
   const gran     = analyticsGranularity;
   const ownCases = DATA.filter(x => x.owner === analyticsSelectedMember);
-  const actualPeriods = getSortedPeriods(gran).filter(p =>
-    ownCases.some(x => getPeriodKey(x.day, gran) === p)
-  );
 
-  if (!actualPeriods.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:.78rem;">No case data for this member.</div>';
+  // Requires the "Date" column = date the OWNER completed the case
+  if (!window._hasDateColumn) {
+    el.innerHTML = '<div style="color:var(--observed);font-size:.78rem;line-height:1.5;padding:16px;border:1px solid var(--border);border-radius:8px;">⚠ This chart needs the <strong>"Date"</strong> column (the date the owner completed the case). Please re-upload a CSV that includes it.</div>';
     return;
   }
+
+  const datedCases = ownCases.filter(x => x.completed_date);
+  if (!datedCases.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:.78rem;">No completion-date data for this member.</div>';
+    return;
+  }
+
+  // Periods built from completed_date (owner completion), NOT QA date
+  const actualPeriods = [...new Set(datedCases.map(x => getPeriodKey(x.completed_date, gran)))]
+    .filter(Boolean)
+    .sort((a, b) => {
+      const parse = k => {
+        if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(parseInt(yr), parseInt(mo)-1, 1); }
+        return parseMDY(k);
+      };
+      return parse(a) - parse(b);
+    });
 
   const periods = (gran === 'day' && actualPeriods.length >= 2)
     ? getAllWorkingDays(actualPeriods[0], actualPeriods[actualPeriods.length - 1])
@@ -2072,17 +2346,24 @@ function renderMemberErrorChart() {
   const dataLookup = new Map();
   actualPeriods.forEach(p => {
     const key   = gran === 'day' ? toCanon(p) : p;
-    const cases = ownCases.filter(x => getPeriodKey(x.day, gran) === p);
-    const errs  = count(cases, x => x.status === 'Failed' || x.status === 'Critical');
-    const rate  = cases.length > 0 ? Math.round(errs / cases.length * 100) : 0;
-    dataLookup.set(key, { label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran), total: cases.length, errs, rate });
+    const cases = datedCases.filter(x => getPeriodKey(x.completed_date, gran) === p);
+    const passed      = count(cases, x => x.status === 'Passed');
+    const opportunity = count(cases, x => x.status === 'Opportunity');
+    const failed      = count(cases, x => x.status === 'Failed');
+    const critical    = count(cases, x => x.status === 'Critical');
+    const errs        = failed + critical;
+    const rate        = cases.length > 0 ? Math.round(errs / cases.length * 100) : 0;
+    dataLookup.set(key, {
+      label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
+      total: cases.length, passed, opportunity, failed, critical, errs, rate
+    });
   });
 
   const periodData = periods.map(p =>
-    dataLookup.get(p) || { label: gran === 'day' ? p.slice(0, 5) : p, total: 0, errs: 0, rate: 0 }
+    dataLookup.get(p) || { label: gran === 'day' ? p.slice(0, 5) : p, total: 0, passed: 0, opportunity: 0, failed: 0, critical: 0, errs: 0, rate: 0 }
   );
 
-  // Trend badge
+  // Trend badge (still based on error rate, computed behind the scenes)
   let trendHtml = '';
   const active = periodData.filter(p => p.total > 0);
   if (active.length >= 3) {
@@ -2099,7 +2380,7 @@ function renderMemberErrorChart() {
   const pad      = { top: 20, bottom: 80 };
   const chartH   = H - pad.top - pad.bottom;
   const leftW    = 64;
-  const maxRate  = Math.max(...periodData.map(p => p.rate), 10);
+  const maxTotal = Math.max(...periodData.map(p => p.total), 1);
   const rightPad = 20;
   let barGap, barW, startPad, chartBodyW;
   if (gran === 'day') {
@@ -2115,15 +2396,15 @@ function renderMemberErrorChart() {
     chartBodyW = containerW;
   }
   const cx = i => startPad + i * barGap;
-  const yS = v => pad.top + chartH - (v / maxRate) * chartH;
+  const yS = v => pad.top + chartH - (v / maxTotal) * chartH;
 
-  // ── Left y-axis ───────────────────────────────────────────
+  // ── Left y-axis (Cases) ───────────────────────────────────
   const yMid = (pad.top + chartH / 2).toFixed(1);
-  let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Error Rate</text>`;
+  let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Cases</text>`;
   for (let i = 0; i <= 4; i++) {
     const y   = pad.top + (i / 4) * chartH;
-    const val = Math.round(maxRate * (1 - i / 4));
-    leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}%</text>`;
+    const val = Math.round(maxTotal * (1 - i / 4));
+    leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}</text>`;
   }
 
   // ── Grid ──────────────────────────────────────────────────
@@ -2139,49 +2420,65 @@ function renderMemberErrorChart() {
   if (!window._chartTips) window._chartTips = {};
 
   const header = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-    <div style="font-size:.72rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Error Rate Over Time — ${analyticsSelectedMember}</div>
+    <div style="font-size:.72rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Case Outcomes Over Time — ${analyticsSelectedMember}</div>
     ${trendHtml}</div>`;
-  const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">% of own cases that had errors (Failed + Critical only)</div>`;
+  const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">Cases completed by owner, classified by QA outcome</div>`;
+  const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">
+    ${['Critical','Failed','Opportunity','Passed'].map(s =>
+      `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`
+    ).join('')}</div>`;
 
   let rightContent = '', xLbls = '';
 
   if (analyticsChartType === 'line') {
-    // ── LINE MODE ────────────────────────────────────────────
-    let linePts = [], areaPts = [], dots = '';
+    // ── LINE MODE (total cases) ──────────────────────────────
+    let linePts = [], areaPts = [], dots = '', labels = '';
     periodData.forEach((pd, i) => {
       const x = cx(i).toFixed(1);
-      const y = yS(pd.rate).toFixed(1);
+      const y = yS(pd.total).toFixed(1);
       const key = `err_${i}`;
-      window._chartTips[key] = _rateTipHtml(pd);
+      window._chartTips[key] = _statusTipHtml(pd);
       linePts.push(`${x},${y}`);
       areaPts.push(`${x},${y}`);
       const col = pd.rate === 0 ? 'var(--passed)' : pd.rate > 30 ? 'var(--critical)' : pd.rate > 15 ? 'var(--failed)' : 'var(--observed)';
       dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
+      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y)-9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
       const ty = (H-54).toFixed(1);
       xLbls += `<text x="${x}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${x} ${ty})">${pd.label}</text>`;
     });
-    const areaFull = [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ');
+    const areaFull = linePts.length > 0
+      ? [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ')
+      : '';
 
     el.innerHTML = `${header}
       <div style="display:flex;align-items:stretch;overflow:hidden;">
         <svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg>
         <div class="err-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;">
-          <svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}<polygon points="${areaFull}" fill="var(--observed)" opacity="0.12"/>${linePts.length > 1 ? `<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--observed)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${dots}${xLbls}${xTitle}</svg>
+          <svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${areaFull ? `<polygon points="${areaFull}" fill="var(--accent)" opacity="0.08"/>` : ''}${linePts.length > 1 ? `<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${labels}${dots}${xLbls}${xTitle}</svg>
         </div>
-      </div>${footer}`;
+      </div>${legend}${footer}`;
 
   } else {
-    // ── BAR MODE ─────────────────────────────────────────────
+    // ── BAR MODE (stacked: Passed / Opportunity / Failed / Critical) ──
     periodData.forEach((pd, i) => {
       const bx  = cx(i) - barW / 2;
       const key = `err_${i}`;
-      window._chartTips[key] = _rateTipHtml(pd);
-      const col = pd.rate === 0 ? 'var(--passed)' : pd.rate > 30 ? 'var(--critical)' : pd.rate > 15 ? 'var(--failed)' : 'var(--observed)';
-      const h   = pd.rate > 0 ? Math.max(3, (pd.rate / maxRate) * chartH) : 0;
-      const topY = pad.top + chartH - h;
-      const barRect = h > 0 ? `<rect x="${bx.toFixed(1)}" y="${topY.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="1"/>` : '';
-      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text>` : '';
-      rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/>${barRect}${lbl}</g>`;
+      window._chartTips[key] = _statusTipHtml(pd);
+      const segs = [
+        { val: pd.critical,    color: 'var(--critical)' },
+        { val: pd.failed,      color: 'var(--failed)'   },
+        { val: pd.opportunity, color: 'var(--observed)'  },
+        { val: pd.passed,      color: 'var(--passed)'    },
+      ];
+      let yOff = pad.top + chartH, topY = pad.top + chartH, barRects = '';
+      segs.forEach(s => {
+        if (!s.val) return;
+        const h = Math.max(3, (s.val / maxTotal) * chartH);
+        yOff -= h; topY = yOff;
+        barRects += `<rect x="${bx.toFixed(1)}" y="${yOff.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${s.color}" rx="1"/>`;
+      });
+      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
+      rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/>${barRects}${lbl}</g>`;
       const tx = cx(i).toFixed(1), ty = (H-54).toFixed(1);
       xLbls += `<text x="${tx}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${tx} ${ty})">${pd.label}</text>`;
     });
@@ -2192,7 +2489,7 @@ function renderMemberErrorChart() {
         <div class="err-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;">
           <svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${rightContent}${xLbls}${xTitle}</svg>
         </div>
-      </div>${footer}`;
+      </div>${legend}${footer}`;
   }
 }
 
