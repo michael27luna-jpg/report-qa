@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file. See [standa
 ### Features
 
 * add button function to team cards ([5011b68](https://github.com/michael27luna-jpg/report-qa/commit/5011b68375a9a744b0ba04e5fa7c2e37c7cf812f))
+* add Type and Date logic ([fdcd948](https://github.com/michael27luna-jpg/report-qa/commit/fdcd948e3b1608a12cfa3c3f2c65f822a086d6c0))
+* observed changed to opportunity ([7949826](https://github.com/michael27luna-jpg/report-qa/commit/79498265b8b430ff6b5dd64cea8efd209279c858))
+
+
+### Bug Fixes
+
+* correct team performance report ([4cb6174](https://github.com/michael27luna-jpg/report-qa/commit/4cb61742ff4c4693064701d45f90f15183fb0738))
+* report enhace ([01cfa1c](https://github.com/michael27luna-jpg/report-qa/commit/01cfa1c371f543f69dbb6e28ec27af6c96458577))
 
 ## [1.9.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.8.1...v1.9.0) (2026-06-01)
 
