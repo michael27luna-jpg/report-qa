@@ -428,6 +428,45 @@ header {
   border-radius: 8px;
   padding: 16px;
   transition: border-color .2s;
+  position: relative;
+  cursor: pointer;
+}
+
+/* ---- Flip: owner face vs QA face ---- */
+.owner-card[data-flipped="true"]  .owner-face-front { display: none; }
+.owner-card[data-flipped="false"] .owner-face-back  { display: none; }
+
+.qa-flip-link {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--accent2);
+  font-size: .68rem;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: .04em;
+  padding: 2px 4px;
+}
+.qa-flip-link:hover { text-decoration: underline; }
+
+.qa-rev-total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  color: var(--text);
+  margin-bottom: 4px;
+  letter-spacing: 0;
+}
+.qa-rev-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: .76rem;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .owner-card:hover { border-color: var(--accent2); }

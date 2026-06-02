@@ -49,6 +49,16 @@ function sortDesc(obj) {
   return Object.entries(obj).sort((a, b) => b[1] - a[1]);
 }
 
+// Mapea nombres de la columna "QA Completed by" a su owner canónico.
+// La data de origen tiene nombres inconsistentes que no podemos cambiar upstream.
+const QA_ALIAS = {
+  'Armando':   'Diego Torrez',
+  'C. Javier': 'Javier Callejas',
+  'A. Javier': 'Javier Alcoba',
+  'Gustavich': 'Gustavo Pillco',
+  'Diego':     'Diego Delgadillo',
+};
+
 function extractNameFromEmail(email) {
   if (!email || !email.includes('@')) return email || 'Unknown';
   return email.split('@')[0]
@@ -597,8 +607,6 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
   const container = document.getElementById('qa-donut-grid');
   if (!container) return;
 
-  const qaNames = Object.keys(qaByCount);
-
   // Day cards
   const dayCards = DAYS.map(day => {
     const dc   = byDay[day] || [];
@@ -645,44 +653,9 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
     </div>`;
   });
 
-  // Per-QA-shadow error cards
-  const shadowCards = qaNames.map((name, i) => {
-    const sc   = d.filter(x => x.qa_by === name);
-    const pa   = count(sc, x => x.status === 'Passed');
-    const op   = count(sc, x => x.status === 'Opportunity');
-    const fa   = count(sc, x => x.status === 'Failed');
-    const cr   = count(sc, x => x.status === 'Critical');
-    const errs = fa + cr;
-    const id   = 'dshadow-' + name.replace(/\s/g, '');
-
-    return `<div class="qa-donut-card">
-      <div class="card-title">${name} — Errors Found</div>
-      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-        <div>
-          <svg id="${id}" width="80" height="80" viewBox="0 0 80 80"></svg>
-          <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;font-family:'Space Mono',monospace;">errors</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;font-size:.72rem;">
-          <div style="display:flex;align-items:center;gap:5px;">
-            <span style="width:7px;height:7px;border-radius:50%;background:var(--passed);display:inline-block"></span>
-            <span style="color:var(--muted)">Passed:</span>
-            <span style="font-family:'Space Mono',monospace;color:var(--passed)">${pa}</span>
-          </div>
-          ${op > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--observed);display:inline-block"></span><span style="color:var(--muted)">Opportunity:</span><span style="font-family:'Space Mono',monospace;color:var(--observed)">${op}</span></div>` : ''}
-          ${fa > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--failed);display:inline-block"></span><span style="color:var(--muted)">Failed:</span><span style="font-family:'Space Mono',monospace;color:var(--failed)">${fa}</span></div>` : ''}
-          ${cr > 0 ? `<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--critical);display:inline-block"></span><span style="color:var(--muted)">Critical:</span><span style="font-family:'Space Mono',monospace;color:var(--critical)">${cr}</span></div>` : ''}
-          <div style="margin-top:3px;font-size:.63rem;font-family:'Space Mono',monospace;color:var(--muted);">${sc.length} total reviewed</div>
-        </div>
-      </div>
-    </div>`;
-  });
-
   container.innerHTML = `
     <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">By day</div>
     <div class="qa-donuts-row" id="qa-day-row">${dayCards.join('')}</div>
-    ${shadowCards.length ? `
-    <div style="font-size:.72rem;color:var(--muted);margin:20px 0 10px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">By QA Shadow</div>
-    <div class="qa-donuts-row">${shadowCards.join('')}</div>` : ''}
   `;
 
   // Draw all mini donuts after DOM is ready
@@ -697,22 +670,6 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
       ]);
     });
 
-    qaNames.forEach(name => {
-      const sc   = d.filter(x => x.qa_by === name);
-      const op   = count(sc, x => x.status === 'Opportunity');
-      const fa   = count(sc, x => x.status === 'Failed');
-      const cr   = count(sc, x => x.status === 'Critical');
-      const errs = fa + cr;
-      drawSmallDonut('dshadow-' + name.replace(/\s/g, ''),
-        errs === 0
-          ? [{ value: count(sc, x => x.status === 'Passed'), color: STATUS_COLORS.Passed }]
-          : [
-              { value: op, color: STATUS_COLORS.Opportunity },
-              { value: fa, color: STATUS_COLORS.Failed },
-              { value: cr, color: STATUS_COLORS.Critical },
-            ]
-      );
-    });
   });
 }
 
@@ -1516,6 +1473,12 @@ function renderTeam() {
     return;
   }
 
+  const reviewedByOwner = {};
+  DATA.forEach(x => {
+    const ro = canonicalOwnerFor(x.qa_by);
+    if (ro) (reviewedByOwner[ro] = reviewedByOwner[ro] || []).push(x);
+  });
+
   const cards = teamRows.map(item => {
     const {
       owner,
@@ -1532,16 +1495,25 @@ function renderTeam() {
       trend
     } = item;
 
+    const reviewedCases  = reviewedByOwner[owner] || [];
+    const rTotal         = reviewedCases.length;
+    const rPassed        = count(reviewedCases, x => x.status === 'Passed');
+    const rOpp           = count(reviewedCases, x => x.status === 'Opportunity');
+    const rFailed        = count(reviewedCases, x => x.status === 'Failed');
+    const rCritical      = count(reviewedCases, x => x.status === 'Critical');
+
     const cats = {};
-    cases.forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
+    cases
+      .filter(c => c.status === 'Failed' || c.status === 'Critical')
+      .forEach(c => c.categories.forEach(cat => cats[cat] = (cats[cat] || 0) + 1));
 
     const postingIssues = count(cases, c =>
       c.type === 'Posting' &&
-      (c.status === 'Opportunity' || c.status === 'Failed' || c.status === 'Critical')
+      (c.status === 'Failed' || c.status === 'Critical')
     );
     const lpIssues = count(cases, c =>
       c.type === 'LP' &&
-      (c.status === 'Opportunity' || c.status === 'Failed' || c.status === 'Critical')
+      (c.status === 'Failed' || c.status === 'Critical')
     );
 
     const trendLabel = getTeamTrendLabel(trend);
@@ -1553,7 +1525,10 @@ function renderTeam() {
           ? 'var(--observed)'
           : 'var(--passed)';
 
-    return `<div class="owner-card">
+    return `<div class="owner-card" data-flipped="false" onclick="toggleCardFlip(event, this)">
+      <button class="qa-flip-link" onclick="toggleCardFlip(event, this.closest('.owner-card'))">QA ↻</button>
+
+      <div class="owner-face owner-face-front">
       <div class="owner-name">${owner}</div>
 
       <div class="owner-stats">
@@ -1634,15 +1609,43 @@ function renderTeam() {
         </div>
       </div>
 
-        <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:15px 0 0 0;font-family:'Syne',sans-serif;font-weight:700;">Status</div>
-      
+      <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:8px 0 0 0;font-family:'Syne',sans-serif;font-weight:700;">Status</div>
+
       <div>
         <span class="trend-badge trend-${trend}">${trendLabel}</span>
       </div>
+      </div><!-- /owner-face-front -->
+
+      <div class="owner-face owner-face-back">
+        <div class="owner-name">${owner}</div>
+        <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px;font-family:'Syne',sans-serif;font-weight:700;">Cases reviewed as QA</div>
+        ${rTotal > 0 ? `
+        <div class="qa-rev-total" style="font-size:2rem;margin-bottom:10px;">${rTotal}<span style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-left:5px;">total reviewed</span></div>
+        <svg id="qa-donut-${owner.replace(/[^a-zA-Z0-9]/g, '')}" width="80" height="80" viewBox="0 0 80 80" style="display:block;margin:0 auto 10px;"></svg>
+        <div>
+          <div class="qa-rev-row"><span>✓ Passed</span><span style="color:var(--passed)">${rPassed}</span></div>
+          <div class="qa-rev-row"><span>● Opportunity</span><span style="color:var(--observed)">${rOpp}</span></div>
+          <div class="qa-rev-row"><span>▲ Failed</span><span style="color:var(--failed)">${rFailed}</span></div>
+          <div class="qa-rev-row"><span>✕ Critical</span><span style="color:var(--critical)">${rCritical}</span></div>
+        </div>`
+        : `<div style="font-size:.78rem;color:var(--muted);font-family:'Space Mono',monospace;padding:8px 0;">— No reviews recorded for this member.</div>`}
+        <button class="qa-flip-link" style="position:static;margin-top:14px;" onclick="toggleCardFlip(event, this.closest('.owner-card'))">← Back to owner view</button>
+      </div><!-- /owner-face-back -->
     </div>`;
   });
 
   document.getElementById('owner-grid').innerHTML = cards.join('');
+
+  teamRows.forEach(item => {
+    const rc = reviewedByOwner[item.owner] || [];
+    if (!rc.length) return;
+    drawSmallDonut('qa-donut-' + item.owner.replace(/[^a-zA-Z0-9]/g, ''), [
+      { value: count(rc, x => x.status === 'Passed'),      color: STATUS_COLORS.Passed },
+      { value: count(rc, x => x.status === 'Opportunity'), color: STATUS_COLORS.Opportunity },
+      { value: count(rc, x => x.status === 'Failed'),      color: STATUS_COLORS.Failed },
+      { value: count(rc, x => x.status === 'Critical'),    color: STATUS_COLORS.Critical },
+    ]);
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1928,11 +1931,38 @@ SEP(),
 // ─────────────────────────────────────────────────────────────
 // ANALYTICS — STATE
 // ─────────────────────────────────────────────────────────────
-// qa_by stores short names ("Michael") while owner is full name ("Michael Luna").
-// This checks if any part of the qa_by value appears in the full owner name.
+// Índice perezoso de primer-nombre -> owner(s), reconstruido si cambia DATA.
+let _firstNameIndex = null;
+let _firstNameIndexLen = -1;
+function _buildFirstNameIndex() {
+  _firstNameIndex = {};
+  const owners = [...new Set(DATA.map(x => x.owner))];
+  owners.forEach(o => {
+    const f = o.toLowerCase().split(' ')[0];
+    (_firstNameIndex[f] = _firstNameIndex[f] || []).push(o);
+  });
+  _firstNameIndexLen = DATA.length;
+}
+// Devuelve el owner canónico para un valor de qa_by, o null si no se resuelve.
+function canonicalOwnerFor(qaBy) {
+  const q = (qaBy || '').trim();
+  if (!q) return null;
+  if (QA_ALIAS[q]) return QA_ALIAS[q];
+  if (_firstNameIndex === null || _firstNameIndexLen !== DATA.length) _buildFirstNameIndex();
+  const m = _firstNameIndex[q.toLowerCase()];
+  return (m && m.length === 1) ? m[0] : null;  // si es ambiguo, no adivina
+}
+
 function ownerMatchesQaBy(ownerName, qaBy) {
-  if (!ownerName || !qaBy) return false;
-  return ownerName.toLowerCase().includes(qaBy.toLowerCase().trim());
+  return canonicalOwnerFor(qaBy) === ownerName;
+}
+
+// Voltea una owner-card entre la cara de owner y la cara de QA reviews.
+function toggleCardFlip(event, cardEl) {
+  if (event) event.stopPropagation();
+  if (!cardEl) return;
+  const flipped = cardEl.getAttribute('data-flipped') === 'true';
+  cardEl.setAttribute('data-flipped', String(!flipped));
 }
 let analyticsGranularity     = 'day';
 let analyticsSelectedMember  = null;
