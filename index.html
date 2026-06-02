@@ -53,10 +53,31 @@
 
     <!-- Filter bar -->
     <div class="filter-bar">
-      <!-- Date -->
+      <!-- Completed Date -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-datecompleted" onclick="toggleDropdown('datecompleted')">
+          📆 Completed Date <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-datecompleted">
+          <div class="date-picker-wrap">
+            <div class="date-picker-header">
+              <span class="date-picker-nav" onclick="datePickerNavDC(-1)">‹</span>
+              <span id="date-picker-month-label-dc"></span>
+              <span class="date-picker-nav" onclick="datePickerNavDC(1)">›</span>
+            </div>
+            <div class="date-picker-grid" id="date-picker-grid-dc"></div>
+            <div class="date-picker-actions">
+              <button class="date-picker-clear" onclick="clearDateFilterDC()">Clear</button>
+              <button class="date-picker-apply" onclick="applyDateFilterDC()">Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QA Date -->
       <div class="filter-wrap">
         <div class="filter-btn" id="filter-btn-date" onclick="toggleDropdown('date')">
-          📅 Date <span class="filter-btn-arrow">▾</span>
+          📅 QA Date <span class="filter-btn-arrow">▾</span>
         </div>
         <div class="filter-dropdown" id="filter-dropdown-date">
           <div class="date-picker-wrap">
@@ -139,6 +160,16 @@
         </div>
       </div>
 
+      <!-- Type -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-type" onclick="toggleDropdown('type')">
+          📋 Type <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-type">
+          <div id="filter-options-type"></div>
+        </div>
+      </div>
+
       <!-- Clear All -->
       <button class="filter-clear-all" id="filter-clear-all" onclick="clearAllFilters()">
         × Clear All
@@ -154,10 +185,12 @@
         <table class="data-table" id="case-table">
           <thead>
             <tr>
-              <th>Day</th>
+              <th>Completed Date</th>
+              <th>QA Date</th>
               <th>Owner</th>
               <th>Task ID</th>
               <th>Status</th>
+              <th>Type</th>
               <th>QA By</th>
               <th>Categories</th>
               <th>Summary</th>
@@ -417,9 +450,17 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Bug Categories</div>
-        <div class="bar-chart" id="cat-bars"></div>
+        <div class="card-title">Cases by Type</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="160" height="160" viewBox="0 0 110 110" id="donut-casetype"></svg>
+          <div class="donut-legend" id="donut-casetype-legend"></div>
+        </div>
       </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title">Bug Categories</div>
+      <div class="bar-chart" id="cat-bars"></div>
     </div>
 
     <div class="grid-2" style="margin-top:16px;">
@@ -442,11 +483,11 @@
   <div class="panel" id="panel-import">
 
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-title">Import from Google Sheets (CSV Export)</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;">
-        Export your Google Sheet as CSV (<strong style="color:var(--text)">File → Download → CSV</strong>)
+      <div class="card-title">Import from SmartSheet (CSV Export)</div>
+      <p style="font-size:.82rem;color:var(--text);margin-bottom:16px;">
+        Export your Excel Sheet as CSV and
         then upload below. Columns expected:
-        <code style="color:var(--accent); font-size:12px;">Name, ID / Task / Case Number,	QA Status,	QA Comment,	QA Completed by,	Date QA Completed,	QA Fix Comment</code>
+        <code style="color:var(--accent); font-size:12px;">Name, ID / Task / Case Number,	QA Status,	QA Comment,	QA Completed by,	Date QA Completed,	QA Fix Comment,	Date, Type</code>
       </p>
       <label class="import-area" for="csv-file-input">
         <div class="import-icon">📂</div>
@@ -464,7 +505,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Expected Google Sheet Column Format</div>
+      <div class="card-title">Expected Excel Sheet Column Format</div>
       <div class="scroll-x">
         <table class="data-table">
           <thead>
@@ -476,13 +517,15 @@
               <th>QA Completed by</th>
               <th>Date QA Completed</th>
               <th>QA Fix Comment</th>
+              <th>Date</th>
+              <th>Type</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Opportunity</td><td>D/M | Issue | Label | Page title year wrong</td><td>Michael</td><td>04/13/26</td><td></td></tr>
-            <tr><td>jesus.macedo@coxautoinc.com</td><td>D-47099</td><td>Passed</td><td>well done</td><td>Michael</td><td>04/13/26</td><td></td></tr>
-            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Opportunity</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td><td>Fixed</td></tr>
-            <tr><td>nicole.gongora@coxautoinc.com</td><td>D-47999</td><td>Opportunity</td><td>D/M | Question | Content | Content isn't in the page</td><td>Cidar</td><td>04/13/26</td><td>Talked with client, fixed</td></tr>
+            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Opportunity</td><td>D/M | Issue | Label | Page title year wrong</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting Case</td></tr>
+            <tr><td>jesus.macedo@coxautoinc.com</td><td>D-47099</td><td>Passed</td><td>well done</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting HTML</td></tr>
+            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Opportunity</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td><td>Fixed</td><td>04/12/26</td><td>SEO Landing Page</td></tr>
+            <tr><td>nicole.gongora@coxautoinc.com</td><td>D-47999</td><td>Opportunity</td><td>D/M | Question | Content | Content isn't in the page</td><td>Cidar</td><td>04/13/26</td><td>Talked with client, fixed</td><td>04/12/26</td><td>OEM Landing Page</td></tr>
           </tbody>
         </table>
       </div>
