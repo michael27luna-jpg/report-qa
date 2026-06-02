@@ -350,7 +350,7 @@ function renderOverview() {
     {
       label:'Passed',
       val: passed,
-      sub: `${((passed / total) * 100).toFixed(2)}% pass rate`,
+      sub: `${(((passed + opportunity) / total) * 100).toFixed(2)}% pass rate`,
       color: 'var(--passed)'
     },
     {
@@ -1794,13 +1794,31 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
     L(`  Days worked  : ${DAYS.length} days (${DAYS[0]} – ${DAYS[DAYS.length-1]})`, 'var(--text)'),
     L(''),
 
-    TTL(' RESULTS'),
-    L(`  ✓ Passed      ${String(passed).padStart(4)}   (${passRate}%)`, 'var(--passed)'),
-    L(`  ● Opportunity ${String(opportunity).padStart(4)}   (${Math.round(opportunity/total*100)}%)`, 'var(--observed)'),
-    L(`  ▲ Failed      ${String(failed).padStart(4)}   (${Math.round(failed/total*100)}%)`, 'var(--failed)'),
-    L(`  ✕ Critical    ${String(critical).padStart(4)}   (${Math.round(critical/total*100)}%)`, 'var(--critical)'),
-    SEP(),
+    // TTL(' RESULTS'),
+    // L(`  ✓ Passed      ${String(passed).padStart(4)}   (${passRate}%)`, 'var(--passed)'),
+    // L(`  ● Opportunity ${String(opportunity).padStart(4)}   (${Math.round(opportunity/total*100)}%)`, 'var(--observed)'),
+    // L(`  ▲ Failed      ${String(failed).padStart(4)}   (${Math.round(failed/total*100)}%)`, 'var(--failed)'),
+    // L(`  ✕ Critical    ${String(critical).padStart(4)}   (${Math.round(critical/total*100)}%)`, 'var(--critical)'),
+    // SEP(),
+TTL(' RESULTS'),
 
+L(
+  `  ✓ ${'Passed'.padEnd(12)} ${String(passed).padStart(4)}   (${passRate}%)` +
+  `     ● ${'Opportunity'.padEnd(12)} ${String(opportunity).padStart(4)}   (${Math.round(opportunity / total * 100)}%)`,
+  'var(--passed)'
+),
+
+L(
+  `  ▲ ${'Failed'.padEnd(12)} ${String(failed).padStart(4)}   (${Math.round(failed / total * 100)}%)`,
+  'var(--failed)'
+),
+
+L(
+  `  ✕ ${'Critical'.padEnd(12)} ${String(critical).padStart(4)}   (${Math.round(critical / total * 100)}%)`,
+  'var(--critical)'
+),
+
+SEP(),
     TTL(' BUG PATTERNS'),
     ...(Object.keys(catCount).length
       ? sortDesc(catCount).map(([c,n]) => L(`  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${errors>0?Math.round(n/errors*100):0}% of errors`, 'var(--text)'))
@@ -1816,25 +1834,46 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
     // SEP(),
     TTL(' TEAM PERFORMANCE'),
     ...Object.entries(ownerMap)
-      .sort((a,b) => b[1].length - a[1].length)
+      .sort((a, b) => {
+        const getPriority = (cases) => {
+          const totalCases = cases.length;
+          const errs = count(cases, x => x.status === 'Failed' || x.status === 'Critical');
+          const errRate = Math.round(errs / totalCases * 100);
+
+          if (errRate > 10) return 1; // Needs Attention
+          if (errRate > 5) return 2;  // Watch
+          return 3;                   // On Track
+        };
+
+        const priorityA = getPriority(a[1]);
+        const priorityB = getPriority(b[1]);
+
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+
+        return b[1].length - a[1].length;
+      })
       .map(([o, cases]) => {
         const totalCases = cases.length;
         const errs = count(cases, x => x.status === 'Failed' || x.status === 'Critical');
         const pr = Math.round(count(cases, x => x.status === 'Passed') / totalCases * 100);
         const errRate = Math.round(errs / totalCases * 100);
 
-        const attention =
-          errRate > 10 ? '⚠ Needs Attention' :
-          errRate > 5  ? '◈ Watch' :
-                        '✓ On Track';
+        const attention = errRate > 10
+          ? '⚠ Needs Attention'
+          : errRate > 5
+            ? '◈ Watch'
+            : '✓ On Track';
 
-        const color =
-          errRate > 10 ? 'var(--failed)' :
-          errRate > 5  ? 'var(--observed)' :
-                        'var(--passed)';
+        const color = errRate > 10
+          ? 'var(--failed)'
+          : errRate > 5
+            ? 'var(--observed)'
+            : 'var(--passed)';
 
         return L(
-          `  ${o.padEnd(22)} ${String(totalCases).padStart(3)} cases  ${String(errs).padStart(2)} error(s)  ${String(pr).padStart(3)}% pass  ${attention}`,
+          `${o.padEnd(22)} ${String(totalCases).padStart(3)} cases ${String(errs).padStart(2)} error(s) ${String(pr).padStart(3)}% pass ${attention}`,
           color
         );
       }),
