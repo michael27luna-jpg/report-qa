@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.12.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.10.0...v1.12.0) (2026-06-11)
+
+
+### Features
+
+* add new analytics charts by error rate ([36d5b13](https://github.com/michael27luna-jpg/report-qa/commit/36d5b137ac3059a08b6d95e93f35266b8e63f220))
+
+
+### Bug Fixes
+
+* report enhace ([01cfa1c](https://github.com/michael27luna-jpg/report-qa/commit/01cfa1c371f543f69dbb6e28ec27af6c96458577))
+
 ## [1.11.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.10.0...v1.11.0) (2026-06-11)
 
 
