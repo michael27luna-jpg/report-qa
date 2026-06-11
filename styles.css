@@ -1372,3 +1372,84 @@ input[type="file"] { display: none; }
   font-weight: 700;
   color: var(--text);
 }
+
+.qa-day-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qa-day-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+
+.qa-day-summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.qa-day-summary:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.qa-day-panel .qa-donut-card {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+}
+.qa-day-card-content {
+  display: grid;
+  grid-template-columns: 90px 150px 1fr;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.qa-shadow-split-col {
+  border-left: 1px solid var(--border);
+  padding-left: 14px;
+}
+
+.qa-shadow-split-title {
+  font-size: .62rem;
+  color: var(--muted);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.qa-shadow-split-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.qa-shadow-split-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .68rem;
+}
+
+@media (max-width: 700px) {
+  .qa-day-card-content {
+    grid-template-columns: 1fr;
+  }
+
+  .qa-shadow-split-col {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+}
