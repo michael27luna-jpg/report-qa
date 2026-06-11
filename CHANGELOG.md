@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.11.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.10.0...v1.11.0) (2026-06-11)
+
+
+### Features
+
+* add button function to team cards ([5011b68](https://github.com/michael27luna-jpg/report-qa/commit/5011b68375a9a744b0ba04e5fa7c2e37c7cf812f))
+
 ## [1.10.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.9.0...v1.10.0) (2026-06-02)
 
 
