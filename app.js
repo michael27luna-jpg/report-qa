@@ -622,42 +622,101 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
     const qaSplit = {};
     dc.forEach(r => { if (r.qa_by) qaSplit[r.qa_by] = (qaSplit[r.qa_by] || 0) + 1; });
 
-    return `<div class="qa-donut-card">
-      <div class="card-title">${day}</div>
-      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+    // return `<div class="qa-donut-card">
+    //   <div class="card-title">${day}</div>
+    //   <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+    //     <div>
+    //       <svg id="${id}" width="80" height="80" viewBox="0 0 80 80"></svg>
+    //       <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;font-family:'Space Mono',monospace;">cases</div>
+    //     </div>
+    //     <div style="display:flex;flex-direction:column;gap:4px;font-size:.72rem;">
+    //       ${[['Passed',pa,'var(--passed)'],['Opportunity',op,'var(--observed)'],['Failed',fa,'var(--failed)'],['Critical',cr,'var(--critical)']].map(([lbl,val,col])=>
+    //         val > 0 ? `<div style="display:flex;align-items:center;gap:5px;">
+    //           <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block"></span>
+    //           <span style="color:var(--muted)">${lbl}:</span>
+    //           <span style="font-family:'Space Mono',monospace;color:${col}">${val}</span>
+    //         </div>` : ''
+    //       ).join('')}
+    //       <div style="margin-top:3px;font-size:.63rem;font-family:'Space Mono',monospace;color:${errs > 0 ? 'var(--observed)' : 'var(--passed)'};">
+    //         ${errs > 0 ? `${errs} error(s)` : '✓ Clean day'}
+    //       </div>
+    //     </div>
+    //   </div>
+    //   ${Object.keys(qaSplit).length ? `
+    //     <div style="margin-top:10px;font-size:.62rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;">QA Shadow split</div>
+    //     <div style="display:flex;flex-wrap:wrap;gap:6px;">
+    //       ${Object.entries(qaSplit).map(([name, c], i) => `
+    //         <div style="display:flex;align-items:center;gap:4px;font-size:.68rem;">
+    //           <span style="width:7px;height:7px;border-radius:50%;background:${qaColors[i % qaColors.length]};display:inline-block"></span>
+    //           <span style="color:var(--text)">${name}</span>
+    //           <span style="font-family:'Space Mono',monospace;color:var(--muted)">(${c})</span>
+    //         </div>`).join('')}
+    //     </div>` : ''}
+    // </div>`;
+return `
+  <details class="qa-day-panel">
+    <summary class="qa-day-summary">
+      <span>${day}</span>
+      <span style="font-family:'Space Mono',monospace;color:var(--muted);font-size:.68rem;">
+        ${dc.length} cases
+      </span>
+    </summary>
+
+    <div class="qa-donut-card">
+      <div class="qa-day-card-content">
         <div>
           <svg id="${id}" width="80" height="80" viewBox="0 0 80 80"></svg>
           <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;font-family:'Space Mono',monospace;">cases</div>
         </div>
+
         <div style="display:flex;flex-direction:column;gap:4px;font-size:.72rem;">
-          ${[['Passed',pa,'var(--passed)'],['Opportunity',op,'var(--observed)'],['Failed',fa,'var(--failed)'],['Critical',cr,'var(--critical)']].map(([lbl,val,col])=>
+          ${[['Passed',pa,'var(--passed)'],['Opportunity',op,'var(--observed)'],['Failed',fa,'var(--failed)'],['Critical',cr,'var(--critical)']].map(([lbl,val,col]) =>
             val > 0 ? `<div style="display:flex;align-items:center;gap:5px;">
               <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block"></span>
               <span style="color:var(--muted)">${lbl}:</span>
               <span style="font-family:'Space Mono',monospace;color:${col}">${val}</span>
             </div>` : ''
           ).join('')}
+
           <div style="margin-top:3px;font-size:.63rem;font-family:'Space Mono',monospace;color:${errs > 0 ? 'var(--observed)' : 'var(--passed)'};">
             ${errs > 0 ? `${errs} error(s)` : '✓ Clean day'}
           </div>
         </div>
+
+        <div class="qa-shadow-split-col">
+          <div class="qa-shadow-split-title">QA Shadow split</div>
+
+          ${
+            Object.keys(qaSplit).length
+              ? `<div class="qa-shadow-split-list">
+                  ${Object.entries(qaSplit).map(([name, c], i) => `
+                    <div class="qa-shadow-split-item">
+                      <span style="width:7px;height:7px;border-radius:50%;background:${qaColors[i % qaColors.length]};display:inline-block"></span>
+                      <span style="color:var(--text)">${name}</span>
+                      <span style="font-family:'Space Mono',monospace;color:var(--muted)">(${c})</span>
+                    </div>
+                  `).join('')}
+                </div>`
+              : `<div style="font-size:.68rem;color:var(--muted);">No QA split</div>`
+          }
+        </div>
       </div>
-      ${Object.keys(qaSplit).length ? `
-        <div style="margin-top:10px;font-size:.62rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;">QA Shadow split</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-          ${Object.entries(qaSplit).map(([name, c], i) => `
-            <div style="display:flex;align-items:center;gap:4px;font-size:.68rem;">
-              <span style="width:7px;height:7px;border-radius:50%;background:${qaColors[i % qaColors.length]};display:inline-block"></span>
-              <span style="color:var(--text)">${name}</span>
-              <span style="font-family:'Space Mono',monospace;color:var(--muted)">(${c})</span>
-            </div>`).join('')}
-        </div>` : ''}
-    </div>`;
+    </div>
+  </details>
+`;
   });
 
+  // container.innerHTML = `
+  //   <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">By day</div>
+  //   <div class="qa-donuts-row" id="qa-day-row">${dayCards.join('')}</div>
+  // `;
   container.innerHTML = `
-    <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">By day</div>
-    <div class="qa-donuts-row" id="qa-day-row">${dayCards.join('')}</div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;">
+      By day
+    </div>
+    <div class="qa-day-panels" id="qa-day-row">
+      ${dayCards.join('')}
+    </div>
   `;
 
   // Draw all mini donuts after DOM is ready
