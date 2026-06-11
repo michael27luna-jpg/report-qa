@@ -280,56 +280,111 @@
   <!-- ════════════════════════ ANALYTICS ════════════════════════ -->
   <div class="panel" id="panel-analytics">
 
-    <!-- Section 1: Team Volume -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-        <div class="card-title" style="margin-bottom:0;">Team Volume Over Time<span id="analytics-vol-range" style="font-size:.68rem;font-weight:400;color:var(--muted);margin-left:14px;font-family:'Space Mono',monospace;letter-spacing:0;text-transform:none;vertical-align:middle;"></span></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <div class="analytics-toggle">
-            <button class="atype active" data-type="bar"  onclick="setAnalyticsChartType('bar')">▬ Bar</button>
-            <button class="atype"        data-type="line" onclick="setAnalyticsChartType('line')">∿ Line</button>
-          </div>
-          <div class="analytics-toggle">
-            <button class="atoggle active" data-gran="day"   onclick="setAnalyticsGranularity('day')">Day</button>
-            <button class="atoggle"        data-gran="week"  onclick="setAnalyticsGranularity('week')">Week</button>
-            <button class="atoggle"        data-gran="month" onclick="setAnalyticsGranularity('month')">Month</button>
-          </div>
-        </div>
+    <!-- Sub-tabs -->
+    <div class="analytics-subtabs">
+      <div class="analytics-toggle">
+        <button class="asub active" data-sub="cases"  onclick="setAnalyticsSubTab('cases')">Cases vs Period</button>
+        <button class="asub"        data-sub="errors" onclick="setAnalyticsSubTab('errors')">Error Rate vs Period</button>
       </div>
-      <div id="analytics-vol-chart"></div>
     </div>
 
-    <!-- Section 2: Member Analysis -->
-    <div class="card">
-      <div class="card-title" style="margin-bottom:16px;">Member Analysis</div>
+    <!-- ── Sub-tab: Cases vs Period ── -->
+    <div id="analytics-sub-cases">
 
-      <!-- Person filter -->
-      <div style="margin-bottom:20px;">
-        <div class="filter-wrap" id="analytics-person-wrap">
-          <div class="filter-btn" id="analytics-person-btn" onclick="toggleAnalyticsPersonDropdown()">
-            👤 Person <span class="filter-btn-arrow">▾</span>
-          </div>
-          <div class="filter-dropdown" id="analytics-person-dropdown">
-            <div class="filter-dropdown-search">
-              <span style="color:var(--muted);font-size:.8rem;">🔍</span>
-              <input type="text" placeholder="Search..." oninput="searchAnalyticsPerson(this.value)"/>
+      <!-- Team Volume -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:0;">Team Volume Over Time<span id="analytics-vol-range" style="font-size:.68rem;font-weight:400;color:var(--muted);margin-left:14px;font-family:'Space Mono',monospace;letter-spacing:0;text-transform:none;vertical-align:middle;"></span></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="analytics-toggle">
+              <button class="atype active" data-type="bar"  onclick="setVolChartType('bar')">▬ Bar</button>
+              <button class="atype"        data-type="line" onclick="setVolChartType('line')">∿ Line</button>
             </div>
-            <div id="analytics-person-options"></div>
+            <div class="analytics-toggle">
+              <button class="atoggle active" data-gran="day"   onclick="setVolGranularity('day')">Day</button>
+              <button class="atoggle"        data-gran="week"  onclick="setVolGranularity('week')">Week</button>
+              <button class="atoggle"        data-gran="month" onclick="setVolGranularity('month')">Month</button>
+            </div>
           </div>
         </div>
+        <div id="analytics-team-stats" style="margin-bottom:16px;"></div>
+        <div style="font-size:.72rem;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);margin-bottom:10px;">QA Cases Reviewed Over Time</div>
+        <div id="analytics-vol-chart"></div>
+        <div style="border-top:1px solid var(--border);margin:20px 0;"></div>
+        <div id="analytics-completed-chart"></div>
       </div>
 
-      <!-- Mini KPI strip -->
-      <div id="analytics-member-stats" style="margin-bottom:24px;"></div>
+      <!-- Member Analysis -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">Member Analysis</div>
+        <div style="margin-bottom:20px;">
+          <div class="filter-wrap" id="analytics-person-wrap">
+            <div class="filter-btn" id="analytics-person-btn" onclick="toggleAnalyticsPersonDropdown()">
+              👤 Person <span class="filter-btn-arrow">▾</span>
+            </div>
+            <div class="filter-dropdown" id="analytics-person-dropdown">
+              <div class="filter-dropdown-search">
+                <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+                <input type="text" placeholder="Search..." oninput="searchAnalyticsPerson(this.value)"/>
+              </div>
+              <div id="analytics-person-options"></div>
+            </div>
+          </div>
+        </div>
+        <div id="analytics-member-stats" style="margin-bottom:24px;"></div>
+        <div id="analytics-cases-member-error"></div>
+        <div style="border-top:1px solid var(--border);margin:24px 0;"></div>
+        <div id="analytics-member-reviewer"></div>
+      </div>
 
-      <!-- Chart B: Error Rate Trend (first as requested) -->
-      <div id="analytics-member-error"></div>
+    </div><!-- /#analytics-sub-cases -->
 
-      <div style="border-top:1px solid var(--border);margin:24px 0;"></div>
+    <!-- ── Sub-tab: Error Rate vs Period ── -->
+    <div id="analytics-sub-errors" style="display:none;">
 
-      <!-- Chart A: Reviewer Activity -->
-      <div id="analytics-member-reviewer"></div>
-    </div>
+      <!-- Team Error Rate -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:0;">Team Error Rate Over Time<span id="analytics-err-range" style="font-size:.68rem;font-weight:400;color:var(--muted);margin-left:14px;font-family:'Space Mono',monospace;letter-spacing:0;text-transform:none;vertical-align:middle;"></span></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="analytics-toggle">
+              <button class="atype-err active" data-type="bar"  onclick="setErrChartType('bar')">▬ Bar</button>
+              <button class="atype-err"        data-type="line" onclick="setErrChartType('line')">∿ Line</button>
+            </div>
+            <div class="analytics-toggle">
+              <button class="atoggle-err active" data-gran="day"   onclick="setErrGranularity('day')">Day</button>
+              <button class="atoggle-err"        data-gran="week"  onclick="setErrGranularity('week')">Week</button>
+              <button class="atoggle-err"        data-gran="month" onclick="setErrGranularity('month')">Month</button>
+            </div>
+          </div>
+        </div>
+        <div id="analytics-err-team-stats" style="margin-bottom:12px;"></div>
+        <div id="analytics-err-team-filter" style="margin-bottom:16px;"></div>
+        <div id="analytics-err-team-chart"></div>
+      </div>
+
+      <!-- Member Error Rate -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">Member Error Rate</div>
+        <div style="margin-bottom:20px;">
+          <div class="filter-wrap" id="analytics-err-person-wrap">
+            <div class="filter-btn" id="analytics-err-person-btn" onclick="toggleAnalyticsErrPersonDropdown()">
+              👤 Person <span class="filter-btn-arrow">▾</span>
+            </div>
+            <div class="filter-dropdown" id="analytics-err-person-dropdown">
+              <div class="filter-dropdown-search">
+                <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+                <input type="text" placeholder="Search..." oninput="searchAnalyticsErrPerson(this.value)"/>
+              </div>
+              <div id="analytics-err-person-options"></div>
+            </div>
+          </div>
+        </div>
+        <div id="analytics-err-member-stats" style="margin-bottom:24px;"></div>
+        <div id="analytics-member-error"></div>
+      </div>
+
+    </div><!-- /#analytics-sub-errors -->
 
   </div>
 
@@ -438,7 +493,8 @@
     <div class="card" style="margin-bottom:16px;">
       <div class="card-title">Cases Reviewed per Day</div>
       <div class="timeline" id="timeline"></div>
-      <div style="margin-top:14px;" id="daily-bars"></div>
+      <div class="daily-scroll" style="margin-top:14px;" id="daily-bars"></div>
+      <div id="daily-bars-legend"></div>
     </div>
 
     <div class="grid-2">
