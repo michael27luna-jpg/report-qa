@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.13.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.11.0...v1.13.0) (2026-06-12)
+
+
+### Features
+
+* add new analytics charts by error rate ([36d5b13](https://github.com/michael27luna-jpg/report-qa/commit/36d5b137ac3059a08b6d95e93f35266b8e63f220))
+
+
+### Bug Fixes
+
+* scroll in day ([3f47217](https://github.com/michael27luna-jpg/report-qa/commit/3f47217f10c9ce646048df57e32f6e059a25730f))
+
 ## [1.12.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.10.0...v1.12.0) (2026-06-11)
 
 
