@@ -1453,6 +1453,30 @@ input[type="file"] { display: none; }
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.qa-day-panels::-webkit-scrollbar {
+  width: 4px;
+}
+
+.qa-day-panels::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.qa-day-panels::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+.qa-day-panels::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .qa-day-panel {
@@ -1460,6 +1484,7 @@ input[type="file"] { display: none; }
   border-radius: 12px;
   background: var(--surface2);
   overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .qa-day-summary {
