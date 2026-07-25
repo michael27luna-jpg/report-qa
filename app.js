@@ -216,6 +216,7 @@ document.getElementById('csv-file-input').addEventListener('change', function (e
         statusEl.textContent = `✓ Loaded ${parsed.length} cases across ${getDays().length} day(s).`;
         statusEl.style.color = 'var(--passed)';
       }
+      updateQAAssistantState();
       rerender();
     } catch (err) {
       document.getElementById('import-status').textContent = '✗ Parse error: ' + err.message;
@@ -3557,3 +3558,379 @@ document.addEventListener('scroll', function(e) {
     });
   });
 }, true);
+
+// ═══════════════════════════════════════
+// QA AI ASSISTANT — PANEL CONTROLS
+// ═══════════════════════════════════════
+
+function updateQAAssistantState() {
+  const hasData = Array.isArray(DATA) && DATA.length > 0;
+
+  const status = document.getElementById('qa-ai-status');
+  const input = document.getElementById('qa-ai-input');
+  const sendButton = document.getElementById('qa-ai-send');
+  const suggestions = document.querySelectorAll('.qa-ai-suggestion');
+  const trigger = document.getElementById('qa-ai-trigger');
+
+  if (status) {
+    status.textContent = hasData
+      ? `Data ready · ${DATA.length} cases loaded`
+      : 'No dataset loaded';
+
+    status.classList.toggle('ready', hasData);
+  }
+
+  if (input) {
+    input.disabled = !hasData;
+    input.placeholder = hasData
+      ? 'Ask a question about QA dataset...'
+      : 'Upload a CSV before asking questions...';
+  }
+
+  if (sendButton) {
+    sendButton.disabled = !hasData;
+  }
+
+  suggestions.forEach(button => {
+    button.disabled = !hasData;
+  });
+
+  if (trigger) {
+    trigger.classList.toggle('ready', hasData);
+    trigger.title = hasData
+      ? `${DATA.length} QA cases available`
+      : 'Upload a CSV to enable the assistant';
+  }
+  updateQAAssistantWelcomeMessage(hasData);
+  updateQAAssistantSendState();
+}
+
+function updateQAAssistantWelcomeMessage(hasData) {
+  const messages = document.getElementById('qa-ai-messages');
+
+  if (!messages) return;
+
+  const message = hasData
+    ? `Your QA dataset is ready.\n\n${DATA.length} cases were loaded successfully. You can now ask questions about cases, team members, statuses, errors and QA activity.`
+    : 'Upload a CSV file to start asking questions about your QA data.';
+
+  messages.innerHTML = `
+    <div class="qa-ai-message qa-ai-message-assistant">
+      <div class="qa-ai-message-label">QA Assistant</div>
+
+      <div class="qa-ai-message-content">
+        ${message}
+      </div>
+    </div>
+  `;
+}
+
+function openQAAssistant() {
+  const panel = document.getElementById('qa-ai-panel');
+  const overlay = document.getElementById('qa-ai-overlay');
+
+  if (!panel || !overlay) return;
+
+  panel.classList.add('open');
+  overlay.classList.add('open');
+
+  panel.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeQAAssistant() {
+  const panel = document.getElementById('qa-ai-panel');
+  const overlay = document.getElementById('qa-ai-overlay');
+
+  if (!panel || !overlay) return;
+
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+
+  panel.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+// document.addEventListener('DOMContentLoaded', () => {
+//   const trigger = document.getElementById('qa-ai-trigger');
+//   const closeButton = document.getElementById('qa-ai-close');
+//   const overlay = document.getElementById('qa-ai-overlay');
+
+//   trigger?.addEventListener('click', openQAAssistant);
+//   closeButton?.addEventListener('click', closeQAAssistant);
+//   overlay?.addEventListener('click', closeQAAssistant);
+
+//   updateQAAssistantState();
+// });
+document.addEventListener('DOMContentLoaded', () => {
+  const trigger =
+    document.getElementById('qa-ai-trigger');
+
+  const closeButton =
+    document.getElementById('qa-ai-close');
+
+  const overlay =
+    document.getElementById('qa-ai-overlay');
+
+  const input =
+    document.getElementById('qa-ai-input');
+
+  const sendButton =
+    document.getElementById('qa-ai-send');
+
+  const clearButton =
+    document.getElementById('qa-ai-clear');
+
+  const suggestions =
+    document.querySelectorAll('.qa-ai-suggestion');
+
+  trigger?.addEventListener(
+    'click',
+    openQAAssistant
+  );
+
+  closeButton?.addEventListener(
+    'click',
+    closeQAAssistant
+  );
+
+  overlay?.addEventListener(
+    'click',
+    closeQAAssistant
+  );
+
+  sendButton?.addEventListener(
+    'click',
+    () => sendQAAssistantMessage()
+  );
+
+  clearButton?.addEventListener(
+    'click',
+    clearQAAssistantChat
+  );
+
+  input?.addEventListener('input', () => {
+    resizeQAAssistantInput();
+    updateQAAssistantSendState();
+  });
+
+  input?.addEventListener('keydown', event => {
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      sendQAAssistantMessage();
+    }
+  });
+
+  suggestions.forEach(button => {
+    button.addEventListener('click', () => {
+      const question =
+        button.dataset.question || '';
+
+      sendQAAssistantMessage(question);
+    });
+  });
+
+  updateQAAssistantState();
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    closeQAAssistant();
+  }
+});
+
+function addQAAssistantMessage(role, text) {
+  const messages = document.getElementById('qa-ai-messages');
+
+  if (!messages || !text) return;
+
+  const message = document.createElement('div');
+  const isUser = role === 'user';
+
+  message.className = `qa-ai-message ${
+    isUser
+      ? 'qa-ai-message-user'
+      : 'qa-ai-message-assistant'
+  }`;
+
+  const label = document.createElement('div');
+  label.className = 'qa-ai-message-label';
+  label.textContent = isUser ? 'You' : 'QA Assistant';
+
+  const content = document.createElement('div');
+  content.className = 'qa-ai-message-content';
+  content.textContent = text;
+
+  message.appendChild(label);
+  message.appendChild(content);
+
+  messages.appendChild(message);
+
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function getMockQAAssistantResponse(question) {
+  const normalizedQuestion = question
+    .trim()
+    .toLowerCase();
+
+  if (
+    normalizedQuestion.includes('summarize') ||
+    normalizedQuestion.includes('summary')
+  ) {
+    return `The current dataset contains ${DATA.length} valid QA cases. Detailed metrics will be connected in the next development step.`;
+  }
+
+  if (
+    normalizedQuestion.includes('pending')
+  ) {
+    return 'Pending-case analysis is not connected yet. This question was received successfully.';
+  }
+
+  if (
+    normalizedQuestion.includes('error rate')
+  ) {
+    return 'Error-rate analysis is not connected yet. This question was received successfully.';
+  }
+
+  if (
+    normalizedQuestion.includes('bug category') ||
+    normalizedQuestion.includes('category')
+  ) {
+    return 'Bug-category analysis is not connected yet. This question was received successfully.';
+  }
+
+  return `I received your question: "${question}"\n\nThis is currently a simulated response.`;
+}
+function showQAAssistantTyping() {
+  const messages = document.getElementById('qa-ai-messages');
+
+  if (!messages) return;
+
+  removeQAAssistantTyping();
+
+  const typing = document.createElement('div');
+
+  typing.className =
+    'qa-ai-message qa-ai-message-assistant qa-ai-typing-message';
+
+  typing.id = 'qa-ai-typing';
+
+  typing.innerHTML = `
+    <div class="qa-ai-message-label">QA Assistant</div>
+
+    <div class="qa-ai-message-content qa-ai-typing-content">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  `;
+
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeQAAssistantTyping() {
+  document.getElementById('qa-ai-typing')?.remove();
+}
+function sendQAAssistantMessage(questionFromSuggestion = '') {
+  const input = document.getElementById('qa-ai-input');
+  const sendButton = document.getElementById('qa-ai-send');
+
+  if (!input || !sendButton) return;
+
+  const question = (
+    questionFromSuggestion ||
+    input.value
+  ).trim();
+
+  if (!question) return;
+
+  if (!Array.isArray(DATA) || DATA.length === 0) {
+    addQAAssistantMessage(
+      'assistant',
+      'Upload a valid CSV before asking questions.'
+    );
+
+    return;
+  }
+
+  addQAAssistantMessage('user', question);
+
+  input.value = '';
+  resizeQAAssistantInput();
+  updateQAAssistantSendState();
+
+  input.disabled = true;
+  sendButton.disabled = true;
+
+  showQAAssistantTyping();
+
+  window.setTimeout(() => {
+    removeQAAssistantTyping();
+
+    const response =
+      getMockQAAssistantResponse(question);
+
+    addQAAssistantMessage(
+      'assistant',
+      response
+    );
+
+    input.disabled = false;
+    // sendButton.disabled = false;
+    updateQAAssistantSendState();
+    input.focus();
+  }, 700);
+}
+function resizeQAAssistantInput() {
+  const input = document.getElementById('qa-ai-input');
+
+  if (!input) return;
+
+  input.style.height = 'auto';
+
+  input.style.height = `${Math.min(
+    input.scrollHeight,
+    120
+  )}px`;
+}
+function clearQAAssistantChat() {
+  const hasData =
+    Array.isArray(DATA) &&
+    DATA.length > 0;
+
+  updateQAAssistantWelcomeMessage(hasData);
+
+  const input =
+    document.getElementById('qa-ai-input');
+
+  if (input) {
+    input.value = '';
+    resizeQAAssistantInput();
+  }
+}
+function updateQAAssistantSendState() {
+  const input =
+    document.getElementById('qa-ai-input');
+
+  const sendButton =
+    document.getElementById('qa-ai-send');
+
+  if (!input || !sendButton) return;
+
+  const hasData =
+    Array.isArray(DATA) &&
+    DATA.length > 0;
+
+  const hasText =
+    input.value.trim().length > 0;
+
+  sendButton.disabled =
+    !hasData ||
+    !hasText ||
+    input.disabled;
+}

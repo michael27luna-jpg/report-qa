@@ -595,6 +595,143 @@
   </footer>
 </div><!-- /shell -->
 
+<!-- CIDAR -->
+  <!-- ════════════════════════ QA AI ASSISTANT ════════════════════════ -->
+
+<!-- Floating button -->
+<button
+  type="button"
+  class="qa-ai-trigger"
+  id="qa-ai-trigger"
+  aria-label="Open QA AI Assistant"
+>
+  <span class="qa-ai-trigger-icon">✦</span>
+  <span>Ask QA</span>
+</button>
+
+<!-- Chat panel -->
+<aside
+  class="qa-ai-panel"
+  id="qa-ai-panel"
+  aria-hidden="true"
+>
+  <!-- Header -->
+  <div class="qa-ai-header">
+    <div>
+      <div class="qa-ai-title">
+        <span class="qa-ai-title-icon">✦</span>
+        QA AI Assistant
+      </div>
+
+      <div class="qa-ai-status" id="qa-ai-status">
+        No dataset loaded
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="qa-ai-close"
+      id="qa-ai-close"
+      aria-label="Close QA AI Assistant"
+    >
+      ×
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div class="qa-ai-messages" id="qa-ai-messages">
+    <div class="qa-ai-message qa-ai-message-assistant">
+      <div class="qa-ai-message-label">QA Assistant</div>
+
+      <div class="qa-ai-message-content">
+        Upload a CSV file to start asking questions about your QA data.
+      </div>
+    </div>
+  </div>
+
+  <!-- Suggested questions -->
+  <div class="qa-ai-suggestions" id="qa-ai-suggestions">
+    <div class="qa-ai-suggestions-title">
+      Suggested questions
+    </div>
+
+    <button
+      type="button"
+      class="qa-ai-suggestion"
+      data-question="Summarize this dataset"
+      disabled
+    >
+      Summarize this dataset
+    </button>
+
+    <button
+      type="button"
+      class="qa-ai-suggestion"
+      data-question="Who has the highest error rate?"
+      disabled
+    >
+      Who has the highest error rate?
+    </button>
+
+    <button
+      type="button"
+      class="qa-ai-suggestion"
+      data-question="Show pending cases"
+      disabled
+    >
+      Show pending cases
+    </button>
+
+    <button
+      type="button"
+      class="qa-ai-suggestion"
+      data-question="What is the top bug category?"
+      disabled
+    >
+      What is the top bug category?
+    </button>
+  </div>
+
+  <!-- Composer -->
+  <div class="qa-ai-composer">
+    <textarea
+      id="qa-ai-input"
+      class="qa-ai-input"
+      rows="1"
+      maxlength="500"
+      placeholder="Upload a CSV before asking questions..."
+      disabled
+    ></textarea>
+
+    <button
+      type="button"
+      class="qa-ai-send"
+      id="qa-ai-send"
+      aria-label="Send question"
+      disabled
+    >
+      ➤
+    </button>
+  </div>
+
+  <!-- Footer -->
+  <div class="qa-ai-footer">
+    <span>Answers will use the currently loaded dataset.</span>
+
+    <button
+      type="button"
+      class="qa-ai-clear"
+      id="qa-ai-clear"
+    >
+      Clear chat
+    </button>
+  </div>
+</aside>
+
+<!-- Overlay for small screens -->
+<div class="qa-ai-overlay" id="qa-ai-overlay"></div>
+<!-- CIDAR -->
+
 <!-- JavaScript -->
 <script src="version.js"></script>
 <script src="app.js"></script>
