@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.13.1](https://github.com/michael27luna-jpg/report-qa/compare/v1.13.0...v1.13.1) (2026-07-27)
+
 ## [1.13.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.11.0...v1.13.0) (2026-06-12)
 
 
