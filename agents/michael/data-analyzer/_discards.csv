@@ -1,0 +1,8 @@
+Date QA Completed;Name;ID / Task / Case Number;QA Status
+1/5/25;ana@x.com;1001;Passed
+1/5/25;luis@x.com;1002;Observed
+1/5/25;;1003;Passed
+1/5/25;mia@x.com;;Failed
+1/5/25;leo@x.com;1005;In Progress
+1/5/25;;;Passed
+1/5/25;sam@x.com;1007;

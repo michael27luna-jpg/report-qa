@@ -203,6 +203,7 @@ function parseCSV(text) {
 document.getElementById('csv-file-input').addEventListener('change', function (e) {
   const file = e.target.files[0];
   if (!file) return;
+  runAudit(file);
   const reader = new FileReader();
   reader.onload = ev => {
     try {
@@ -224,6 +225,203 @@ document.getElementById('csv-file-input').addEventListener('change', function (e
   };
   reader.readAsText(file);
 });
+// ─────────────────────────────────────────────────────────────
+// CSV IMPORT + DATA ANALYZER GATE
+// ─────────────────────────────────────────────────────────────
+const AUDIT_API = 'http://localhost:8000';   // ← al migrar a Vercel, cambia solo esta línea
+
+document.getElementById('csv-file-input').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  gateImport(file);
+});
+
+function auditEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g,
+    c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Tu lógica de importación original, extraída para poder llamarla tras el gate.
+function importCsvText(text) {
+  const statusEl = document.getElementById('import-status');
+  try {
+    const parsed = parseCSV(text);
+    DATA = [...parsed];
+    if (!parsed.length) {
+      statusEl.textContent = '⚠ File loaded but no valid rows found. Check column headers.';
+      statusEl.style.color = 'var(--observed)';
+    } else {
+      statusEl.textContent = '✓ Loaded ' + parsed.length + ' cases across ' + getDays().length + ' day(s).';
+      statusEl.style.color = 'var(--passed)';
+    }
+    rerender();
+    reevaluateStatuses();   // ← Agente 2 corre después de cargar
+  } catch (err) {
+    statusEl.textContent = '✗ Parse error: ' + err.message;
+    statusEl.style.color = 'var(--critical)';
+  }
+}
+
+// Punto de entrada: audita primero, luego importa según el veredicto.
+async function gateImport(file) {
+  const panel = document.getElementById('audit-panel');
+  const statusEl = document.getElementById('import-status');
+  const text = await file.text();
+
+  panel.style.display = 'block';
+  panel.innerHTML = '<div class="card-title">Data Analyzer Agent</div>' +
+    '<div class="audit-loading">Running audit… this can take a few seconds.</div>';
+  statusEl.textContent = '⏳ Running audit before import…';
+  statusEl.style.color = 'var(--muted)';
+
+  let report;
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(AUDIT_API + '/audit', { method: 'POST', body: form });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    report = await res.json();
+  } catch (err) {
+    renderAuditUnavailable(text);   // servidor caído → fallback manual
+    return;
+  }
+  renderAuditPanel(report, text);
+}
+
+function auditFinding(f, cls) {
+  return '<div class="audit-finding audit-finding--' + cls + '">' +
+    '<div class="audit-finding-head">' +
+      '<span class="audit-finding-title">' + auditEsc(f.title) + '</span>' +
+      '<span class="audit-finding-rows">' + auditEsc(f.rows) + '</span>' +
+    '</div>' +
+    '<div class="audit-finding-detail">' + auditEsc(f.detail) + '</div>' +
+    (f.fix ? '<div class="audit-finding-fix"><b>Fix:</b> ' + auditEsc(f.fix) + '</div>' : '') +
+  '</div>';
+}
+
+function renderAuditPanel(report, text) {
+  const panel = document.getElementById('audit-panel');
+  const statusEl = document.getElementById('import-status');
+  const v = report.verdict || 'ok';
+  const meta = ({
+    blocked:  { mark:'✗', title:'Not ready to import', sub:'Fix the blocking issues before importing.' },
+    warnings: { mark:'⚠', title:'Ready with warnings', sub:'You can import, but review the warnings below.' },
+    ok:       { mark:'✓', title:'Ready to import', sub:'No issues found.' }
+  })[v] || { mark:'•', title:v, sub:'' };
+
+  const s = report.summary || {};
+  const blocking = report.blocking || [];
+  const warnings = report.warnings || [];
+
+  let actions;
+  if (v === 'ok') {
+    actions = '<div class="audit-actions"><span class="audit-hint">No issues found — data imported automatically.</span></div>';
+  } else if (v === 'warnings') {
+    actions = '<div class="audit-actions"><button class="audit-btn audit-btn--primary" id="audit-import-btn">Import anyway</button>' +
+              '<span class="audit-hint">Review the warnings above before importing.</span></div>';
+  } else {
+    actions = '<div class="audit-actions"><button class="audit-btn audit-btn--primary" disabled>Import anyway</button>' +
+              '<span class="audit-hint">Blocked while a crash-triggering issue is present. Fix the CSV and re-upload.</span></div>';
+  }
+
+  panel.innerHTML =
+    '<div class="card-title">Data Analyzer Agent</div>' +
+    '<div class="audit-verdict audit-verdict--' + v + '">' +
+      '<span class="audit-mark">' + meta.mark + '</span>' +
+      '<div><div class="audit-verdict-title">' + auditEsc(meta.title) + '</div>' +
+      '<div class="audit-verdict-sub">' + auditEsc(meta.sub) + '</div></div>' +
+    '</div>' +
+    '<div class="audit-strip">' +
+      '<div class="audit-stat"><div class="audit-n">' + (s.rows_read ?? '–') + '</div><div class="audit-k">Rows read</div></div>' +
+      '<div class="audit-stat"><div class="audit-n audit-n--ok">' + (s.would_import ?? '–') + '</div><div class="audit-k">Would import</div></div>' +
+      '<div class="audit-stat"><div class="audit-n audit-n--bad">' + (s.dropped ?? '–') + '</div><div class="audit-k">Dropped</div></div>' +
+    '</div>' +
+    (blocking.length ? '<div class="audit-group-title">Blocking · ' + blocking.length + '</div>' + blocking.map(f => auditFinding(f,'blk')).join('') : '') +
+    (warnings.length ? '<div class="audit-group-title">Warnings · ' + warnings.length + '</div>' + warnings.map(f => auditFinding(f,'wrn')).join('') : '') +
+    actions;
+
+  if (v === 'ok') {
+    importCsvText(text);                    // importa automático
+  } else if (v === 'warnings') {
+    statusEl.textContent = '⚠ Import paused — review the audit, then click “Import anyway”.';
+    statusEl.style.color = 'var(--warn)';
+    const btn = document.getElementById('audit-import-btn');
+    btn.addEventListener('click', () => { importCsvText(text); btn.textContent = 'Imported ✓'; btn.disabled = true; });
+  } else {
+    statusEl.textContent = '✗ Import blocked — fix the CSV and re-upload.';
+    statusEl.style.color = 'var(--danger)';
+  }
+}
+
+// Fallback cuando el agente no responde: permitir importar sin auditar.
+function renderAuditUnavailable(text) {
+  const panel = document.getElementById('audit-panel');
+  const statusEl = document.getElementById('import-status');
+  panel.style.display = 'block';
+  panel.innerHTML =
+    '<div class="card-title">Data Analyzer Agent</div>' +
+    '<div class="audit-error">Could not reach the audit server (at ' + AUDIT_API + '). You can import without it.</div>' +
+    '<div class="audit-actions"><button class="audit-btn audit-btn--ghost" id="audit-import-btn">Import without audit</button>' +
+    '<span class="audit-hint">The agent isn’t available, so the file will be imported unchecked.</span></div>';
+  statusEl.textContent = '⚠ Audit unavailable — import without it if needed.';
+  statusEl.style.color = 'var(--warn)';
+  const btn = document.getElementById('audit-import-btn');
+  btn.addEventListener('click', () => { importCsvText(text); btn.textContent = 'Imported ✓'; btn.disabled = true; });
+}
+
+// ─────────────────────────────────────────────────────────────
+// AGENT 2 — Status Reevaluator (reemplaza el NA manual)
+// ─────────────────────────────────────────────────────────────
+async function reevaluateStatuses() {
+  // Candidatos: tienen fix comment y NO están ya en Passed
+  const candidates = DATA
+    .map((r, i) => ({ i, r }))
+    .filter(({ r }) => (r.fix_comment || '').trim() && r.status !== 'Passed')
+    .map(({ i, r }) => ({
+      case_id: String(i),
+      status: r.status,
+      comment: r.summary || r.comment || '',   // ajusta al nombre real del campo del bug
+      fix: r.fix_comment || ''
+    }));
+
+  if (!candidates.length) return;
+
+  try {
+    const res = await fetch(AUDIT_API + '/reevaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cases: candidates })
+    });
+    if (!res.ok) return;
+    const { verdicts } = await res.json();
+
+    // Aplica los cambios y registra para el Case Log (con original para revertir)
+    window.AGENT_CHANGES = window.AGENT_CHANGES || [];
+    verdicts.forEach(v => {
+      if (v.changed && v.new_status === 'Passed') {
+        const idx = Number(v.case_id);
+        const original = DATA[idx].status;
+        DATA[idx].status = 'Passed';
+        DATA[idx]._agentChanged = true;              // marca para el Case Log
+        window.AGENT_CHANGES.push({ idx, original, reason: v.reason });
+      }
+    });
+    rerender();
+  } catch (err) {
+    // Si el agente no responde, no se toca nada (fallback: resolveFixStatus ya corrió)
+    console.warn('Reevaluator unavailable:', err);
+  }
+}
+
+// Revertir un cambio del agente (para el botón en el Case Log)
+function revertAgentChange(idx) {
+  const change = (window.AGENT_CHANGES || []).find(c => c.idx === idx);
+  if (!change) return;
+  DATA[idx].status = change.original;
+  DATA[idx]._agentChanged = false;
+  window.AGENT_CHANGES = window.AGENT_CHANGES.filter(c => c.idx !== idx);
+  rerender();
+}
 
 // ─────────────────────────────────────────────────────────────
 // DONUT CHART — full size (with legend)
