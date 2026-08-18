@@ -7,7 +7,7 @@
 // CONFIG
 // ─────────────────────────────────────────────────────────────
 const WEEK_NUMBER = '';
-const WEEK_RANGE  = '';
+const WEEK_RANGE = '';
 
 let DATA = [];  // populated via CSV upload
 
@@ -16,21 +16,33 @@ let DATA = [];  // populated via CSV upload
 // Passed=green, Opportunity=yellow, Failed=orange, Critical=red
 // ─────────────────────────────────────────────────────────────
 const STATUS_COLORS = {
-  Passed:      'var(--passed)',
+  Passed: 'var(--passed)',
   Opportunity: 'var(--observed)',
-  Failed:      'var(--failed)',
-  Critical:    'var(--critical)',
+  Failed: 'var(--failed)',
+  Critical: 'var(--critical)',
 };
 
 const CAT_COLORS = {
-  Config:   'var(--warn)',
-  Linking:  'var(--failed)',
-  Content:  'var(--accent)',
-  Styling:  'var(--accent2)',
-  Label:    '#c084fc',
+  Config: 'var(--warn)',
+  Linking: 'var(--failed)',
+  Content: 'var(--accent)',
+  Styling: 'var(--accent2)',
+  Label: '#c084fc',
 };
 
 const TYPE_COLORS = { LP: 'var(--lp)', Posting: 'var(--posting)', Unknown: 'var(--muted)' };
+/*
+function obtenerDatos() {
+    return {
+        titulo: document.getElementById("titulo").innerText,
+        cliente: document.getElementById("cliente").innerText,
+        hallazgos: document.getElementById("hallazgos").innerText
+    };
+}
+
+const reportData = obtenerDatos();
+const report = await generateReport(reportData);*/
+
 
 // ─────────────────────────────────────────────────────────────
 // UTILITIES
@@ -52,11 +64,11 @@ function sortDesc(obj) {
 // Mapea nombres de la columna "QA Completed by" a su owner canónico.
 // La data de origen tiene nombres inconsistentes que no podemos cambiar upstream.
 const QA_ALIAS = {
-  'Armando':   'Diego Torrez',
+  'Armando': 'Diego Torrez',
   'C. Javier': 'Javier Callejas',
   'A. Javier': 'Javier Alcoba',
   'Gustavich': 'Gustavo Pillco',
-  'Diego':     'Diego Delgadillo',
+  'Diego': 'Diego Delgadillo',
 };
 
 function extractNameFromEmail(email) {
@@ -97,11 +109,11 @@ function parseCategories(comment) {
   if (!comment) return [];
   const cats = new Set();
   const u = comment.toUpperCase();
-  if (u.includes('LABEL'))                            cats.add('Label');
-  if (u.includes('STYLING') || u.includes('STYLE'))  cats.add('Styling');
-  if (u.includes('CONTENT'))                          cats.add('Content');
-  if (u.includes('CONFIG') || u.includes('CONFGI'))  cats.add('Config');
-  if (u.includes('LINK') || u.includes('LINKING'))   cats.add('Linking');
+  if (u.includes('LABEL')) cats.add('Label');
+  if (u.includes('STYLING') || u.includes('STYLE')) cats.add('Styling');
+  if (u.includes('CONTENT')) cats.add('Content');
+  if (u.includes('CONFIG') || u.includes('CONFGI')) cats.add('Config');
+  if (u.includes('LINK') || u.includes('LINKING')) cats.add('Linking');
   return [...cats];
 }
 // ─────────────────────────────────────────────────────────────
@@ -110,10 +122,10 @@ function parseCategories(comment) {
 function normalizeType(raw) {
   if (!raw) return 'Unknown';
   const s = raw.trim().toLowerCase();
-  if (s === 'posting case' || s === 'posting html')                return 'Posting';
+  if (s === 'posting case' || s === 'posting html') return 'Posting';
   if (s === 'seo landing page' || s === 'just posting landing page' || s === 'oem landing page') return 'LP';
   if (s.includes('landing page')) return 'LP';
-  if (s.includes('posting'))      return 'Posting';
+  if (s.includes('posting')) return 'Posting';
   return 'Unknown';
 }
 
@@ -147,7 +159,7 @@ function countNAsInFix(fixComment) {
 function resolveFixStatus(status, fixComment, summary) {
   if (!fixComment || fixComment.trim() === '') return status;
 
-  const naCount  = countNAsInFix(fixComment);
+  const naCount = countNAsInFix(fixComment);
   if (naCount === 0) return status;
 
   const bugCount = countBugsInSummary(summary);
@@ -170,29 +182,29 @@ function parseCSV(text) {
 
   return lines.slice(1).map(line => {
     const vals = line.split(';').map(v => v.trim().replace(/"/g, ''));
-    const obj  = {};
+    const obj = {};
     headers.forEach((h, i) => obj[h] = vals[i] || '');
 
-    const rawRaw    = obj['QA Status'] || 'Opportunity';
+    const rawRaw = obj['QA Status'] || 'Opportunity';
     // Normalize legacy "Observed" → "Opportunity"
     const rawStatus = rawRaw === 'Observed' ? 'Opportunity' : rawRaw;
-    const comment    = obj['QA Comment'] || '';
+    const comment = obj['QA Comment'] || '';
     const fixComment = obj['QA Fix Comment'] || '';
-/*     const status     = resolveFixStatus(rawStatus, fixComment); */
-    const status     = resolveFixStatus(rawStatus, fixComment, comment);
+    /*     const status     = resolveFixStatus(rawStatus, fixComment); */
+    const status = resolveFixStatus(rawStatus, fixComment, comment);
 
     return {
-      day:            normalizeDate(obj['Date QA Completed'] || ''),
+      day: normalizeDate(obj['Date QA Completed'] || ''),
       completed_date: normalizeDate(obj['Date'] || ''),
-      owner:      extractNameFromEmail(obj['Name'] || ''),
-      task_id:    obj['ID / Task / Case Number'] || '',
+      owner: extractNameFromEmail(obj['Name'] || ''),
+      task_id: obj['ID / Task / Case Number'] || '',
       status,
       original_status: rawStatus,
-      qa_by:      (obj['QA Completed by:'] || obj['QA Completed by'] || '').trim(),
-      summary:    comment,
+      qa_by: (obj['QA Completed by:'] || obj['QA Completed by'] || '').trim(),
+      summary: comment,
       fix_comment: fixComment,
       categories: status === 'Passed' ? [] : parseCategories(comment),
-      type:       normalizeType(obj['Type'] || obj['Case Type']),
+      type: normalizeType(obj['Type'] || obj['Case Type']),
     };
   }).filter(r => r.owner && r.owner !== 'Unknown' && r.task_id && r.status !== 'In progress' && r.status !== 'In Progress');
 }
@@ -245,7 +257,7 @@ function drawDonut(svgId, legendId, slices) {
   let angle = -90, paths = '';
 
   valid.forEach(s => {
-    const deg  = (s.value / total) * 360;
+    const deg = (s.value / total) * 360;
     const rad1 = angle * Math.PI / 180;
     const rad2 = (angle + deg) * Math.PI / 180;
     const x1 = cx + r * Math.cos(rad1), y1 = cy + r * Math.sin(rad1);
@@ -257,7 +269,7 @@ function drawDonut(svgId, legendId, slices) {
   paths += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--text)" font-size="16" font-family="Space Mono,monospace" font-weight="700">${total}</text>`;
 
   svgEl.innerHTML = paths;
-if (legEl) legEl.innerHTML = valid.map(s => {
+  if (legEl) legEl.innerHTML = valid.map(s => {
     const pct = Math.round(s.value / total * 100);
     return `
     <div class="legend-item">
@@ -284,7 +296,7 @@ function drawSmallDonut(svgId, slices, size = 80) {
   let angle = -90, paths = '';
 
   valid.forEach(s => {
-    const deg  = (s.value / total) * 360;
+    const deg = (s.value / total) * 360;
     const rad1 = angle * Math.PI / 180;
     const rad2 = (angle + deg) * Math.PI / 180;
     const x1 = cx + r * Math.cos(rad1), y1 = cy + r * Math.sin(rad1);
@@ -303,47 +315,47 @@ function drawSmallDonut(svgId, slices, size = 80) {
 // RENDER — OVERVIEW (charts inside Weekly Report tab)
 // ─────────────────────────────────────────────────────────────
 function renderOverview() {
-  const d     = DATA;
+  const d = DATA;
   const total = d.length;
-  const DAYS  = getDays();
+  const DAYS = getDays();
 
   // Clean up QA bar chart if exists from previous render
   const oldQaBar = document.getElementById('qa-bar-chart');
   if (oldQaBar) oldQaBar.remove();
   const donutType = document.getElementById('donut-type');
-  const donutLeg  = document.getElementById('donut-type-legend');
+  const donutLeg = document.getElementById('donut-type-legend');
   if (donutType) donutType.style.display = '';
-  if (donutLeg)  donutLeg.style.display  = '';
+  if (donutLeg) donutLeg.style.display = '';
 
   if (total === 0) {
     const empty = '<div style="color:var(--muted);font-size:.78rem;padding:8px 0;">Upload a CSV to see data</div>';
-    ['kpi-row','timeline','daily-bars','daily-bars-legend','cat-bars','owner-bars',
-     'donut-status','donut-status-legend','donut-type','donut-type-legend',
-     'donut-casetype','donut-casetype-legend',
-     'qa-donut-grid'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = empty;
-    });
+    ['kpi-row', 'timeline', 'daily-bars', 'daily-bars-legend', 'cat-bars', 'owner-bars',
+      'donut-status', 'donut-status-legend', 'donut-type', 'donut-type-legend',
+      'donut-casetype', 'donut-casetype-legend',
+      'qa-donut-grid'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = empty;
+      });
     return;
   }
 
-  const passed      = count(d, x => x.status === 'Passed');
+  const passed = count(d, x => x.status === 'Passed');
   const opportunity = count(d, x => x.status === 'Opportunity');
-  const failed      = count(d, x => x.status === 'Failed');
-  const critical    = count(d, x => x.status === 'Critical');
-  const errors      = failed + critical;
-  const owners      = [...new Set(d.map(x => x.owner))].length;
-  const passRate    = Math.round(passed / total * 100);
+  const failed = count(d, x => x.status === 'Failed');
+  const critical = count(d, x => x.status === 'Critical');
+  const errors = failed + critical;
+  const owners = [...new Set(d.map(x => x.owner))].length;
+  const passRate = Math.round(passed / total * 100);
 
   // ── Type KPI data ──
-  const postingCases  = d.filter(x => x.type === 'Posting');
-  const lpCases       = d.filter(x => x.type === 'LP');
-  const postingTotal  = postingCases.length;
-  const lpTotal       = lpCases.length;
+  const postingCases = d.filter(x => x.type === 'Posting');
+  const lpCases = d.filter(x => x.type === 'LP');
+  const postingTotal = postingCases.length;
+  const lpTotal = lpCases.length;
   const postingErrors = count(postingCases, x => x.status === 'Failed' || x.status === 'Critical');
-  const lpErrors      = count(lpCases,      x => x.status === 'Failed' || x.status === 'Critical');
+  const lpErrors = count(lpCases, x => x.status === 'Failed' || x.status === 'Critical');
   const postingErrRate = postingTotal > 0 ? Math.round(postingErrors / postingTotal * 100) : null;
-  const lpErrRate      = lpTotal      > 0 ? Math.round(lpErrors      / lpTotal      * 100) : null;
+  const lpErrRate = lpTotal > 0 ? Math.round(lpErrors / lpTotal * 100) : null;
   const postingKpiColor = postingErrRate === null ? 'var(--accent2)'
     : postingErrRate > 10 ? 'var(--critical)' : postingErrRate > 5 ? 'var(--failed)' : 'var(--accent2)';
   const lpKpiColor = lpErrRate === null ? 'var(--accent2)'
@@ -352,51 +364,51 @@ function renderOverview() {
   // ── KPI cards ──
   const kpis = [
     {
-      label:'Total Cases',
+      label: 'Total Cases',
       val: total,
       sub: `${DAYS.length} day(s) loaded`,
       color: 'var(--accent)'
     },
     {
-      label:'Passed',
+      label: 'Passed',
       val: passed,
       sub: `${(((passed + opportunity) / total) * 100).toFixed(2)}% pass rate`,
       color: 'var(--passed)'
     },
     {
-      label:'Opportunity',
+      label: 'Opportunity',
       val: opportunity,
       sub: `${((opportunity / total) * 100).toFixed(2)}% of ${total} cases`,
       color: 'var(--observed)'
     },
     {
-      label:'Failed',
+      label: 'Failed',
       val: failed,
       sub: `${((failed / total) * 100).toFixed(2)}% of ${total} cases`,
       color: 'var(--failed)'
     },
     {
-      label:'Critical',
+      label: 'Critical',
       val: critical,
       sub: `${((critical / total) * 100).toFixed(2)}% of ${total} cases`,
       color: 'var(--critical)'
     },
     {
-      label:'Team Members',
+      label: 'Team Members',
       val: owners,
       sub: 'reviewed this week',
       color: 'var(--accent2)'
     },
     {
       label: 'Posting Err. Rate',
-      val:   postingErrRate !== null ? `${postingErrRate}%` : '—',
-      sub:   postingTotal > 0 ? `${postingErrors}/${postingTotal} cases` : 'No Posting cases',
+      val: postingErrRate !== null ? `${postingErrRate}%` : '—',
+      sub: postingTotal > 0 ? `${postingErrors}/${postingTotal} cases` : 'No Posting cases',
       color: postingKpiColor,
     },
     {
       label: 'LP Err. Rate',
-      val:   lpErrRate !== null ? `${lpErrRate}%` : '—',
-      sub:   lpTotal > 0 ? `${lpErrors}/${lpTotal} cases` : 'No LP cases',
+      val: lpErrRate !== null ? `${lpErrRate}%` : '—',
+      sub: lpTotal > 0 ? `${lpErrors}/${lpTotal} cases` : 'No LP cases',
       color: lpKpiColor,
     },
   ];
@@ -408,7 +420,7 @@ function renderOverview() {
     </div>`).join('');
 
   // ── Timeline ──
-  const byDay  = groupBy(d, 'day');
+  const byDay = groupBy(d, 'day');
   const counts = {};
   DAYS.forEach(day => counts[day] = byDay[day]?.length || 0);
   const maxDay = Math.max(...Object.values(counts), 1);
@@ -420,54 +432,53 @@ function renderOverview() {
     </div>`).join('');
 
   // ── Stacked bar per day ──
-  document.getElementById('daily-bars').innerHTML = `<div class="bar-chart">${
-    DAYS.map(day => {
-      const dc  = d.filter(x => x.day === day);
-      const pa  = count(dc, x => x.status === 'Passed');
-      const op  = count(dc, x => x.status === 'Opportunity');
-      const fa  = count(dc, x => x.status === 'Failed');
-      const cr  = count(dc, x => x.status === 'Critical');
-      const tot = counts[day];
-      return `<div class="bar-row">
+  document.getElementById('daily-bars').innerHTML = `<div class="bar-chart">${DAYS.map(day => {
+    const dc = d.filter(x => x.day === day);
+    const pa = count(dc, x => x.status === 'Passed');
+    const op = count(dc, x => x.status === 'Opportunity');
+    const fa = count(dc, x => x.status === 'Failed');
+    const cr = count(dc, x => x.status === 'Critical');
+    const tot = counts[day];
+    return `<div class="bar-row">
         <div class="bar-name" style="min-width:72px;font-family:'Space Mono',monospace;font-size:.7rem;">${day}</div>
         <div class="bar-track" style="height:16px;"><div style="display:flex;height:100%;">
-          <div title="Passed:${pa}"      style="width:${pa/maxDay*100}%;background:var(--passed);opacity:.65"></div>
-          <div title="Opportunity:${op}" style="width:${op/maxDay*100}%;background:var(--observed);opacity:.85"></div>
-          <div title="Failed:${fa}"      style="width:${fa/maxDay*100}%;background:var(--failed)"></div>
-          <div title="Critical:${cr}"    style="width:${cr/maxDay*100}%;background:var(--critical)"></div>
+          <div title="Passed:${pa}"      style="width:${pa / maxDay * 100}%;background:var(--passed);opacity:.65"></div>
+          <div title="Opportunity:${op}" style="width:${op / maxDay * 100}%;background:var(--observed);opacity:.85"></div>
+          <div title="Failed:${fa}"      style="width:${fa / maxDay * 100}%;background:var(--failed)"></div>
+          <div title="Critical:${cr}"    style="width:${cr / maxDay * 100}%;background:var(--critical)"></div>
         </div></div>
         <div class="bar-count">${tot}</div>
       </div>`;
-    }).join('')
-  }</div>`;
+  }).join('')
+    }</div>`;
 
   document.getElementById('daily-bars-legend').innerHTML = `
   <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;">
-    ${['Passed','Opportunity','Failed','Critical'].map(s =>
-      `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;">
+    ${['Passed', 'Opportunity', 'Failed', 'Critical'].map(s =>
+    `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;">
         <span style="width:10px;height:10px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;opacity:.85"></span>${s}
       </span>`).join('')}
   </div>`;
 
   // ── Status donut ──
   drawDonut('donut-status', 'donut-status-legend', [
-    { label:'Passed',      value: passed,      color: STATUS_COLORS.Passed },
-    { label:'Opportunity', value: opportunity, color: STATUS_COLORS.Opportunity },
-    { label:'Failed',      value: failed,      color: STATUS_COLORS.Failed },
-    { label:'Critical',    value: critical,    color: STATUS_COLORS.Critical },
+    { label: 'Passed', value: passed, color: STATUS_COLORS.Passed },
+    { label: 'Opportunity', value: opportunity, color: STATUS_COLORS.Opportunity },
+    { label: 'Failed', value: failed, color: STATUS_COLORS.Failed },
+    { label: 'Critical', value: critical, color: STATUS_COLORS.Critical },
   ]);
 
   // ── Cases by Type donut ──
   const typeCount = { LP: 0, Posting: 0, Unknown: 0 };
   d.forEach(r => { typeCount[r.type] = (typeCount[r.type] || 0) + 1; });
   drawDonut('donut-casetype', 'donut-casetype-legend', [
-    { label: 'Landing Page', value: typeCount.LP,      color: TYPE_COLORS.LP },
-    { label: 'Posting',      value: typeCount.Posting, color: TYPE_COLORS.Posting },
-    { label: 'Unknown',      value: typeCount.Unknown, color: TYPE_COLORS.Unknown },
+    { label: 'Landing Page', value: typeCount.LP, color: TYPE_COLORS.LP },
+    { label: 'Posting', value: typeCount.Posting, color: TYPE_COLORS.Posting },
+    { label: 'Unknown', value: typeCount.Unknown, color: TYPE_COLORS.Unknown },
   ]);
 
   // ── Bug Categories bar + percentage (stacked by type) ──
-  const catCount  = {};
+  const catCount = {};
   const catByType = {};
   d.forEach(r => r.categories.forEach(c => {
     catCount[c] = (catCount[c] || 0) + 1;
@@ -483,14 +494,14 @@ function renderOverview() {
     document.getElementById('cat-bars').innerHTML =
       sortDesc(catCount).map(([cat, cnt]) => {
         const pct = errors > 0 ? Math.round(cnt / errors * 100) : 0;
-        const bt  = catByType[cat] || { LP: 0, Posting: 0, Unknown: 0 };
+        const bt = catByType[cat] || { LP: 0, Posting: 0, Unknown: 0 };
         return `<div class="bar-row">
           <div class="bar-name">${cat}</div>
           <div class="bar-track">
             <div style="display:flex;height:100%;">
-              ${bt.LP      > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP/maxCat*100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
-              ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting/maxCat*100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
-              ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown/maxCat*100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
+              ${bt.LP > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP / maxCat * 100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
+              ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting / maxCat * 100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
+              ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown / maxCat * 100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
             </div>
           </div>
           <div style="display:flex;gap:6px;align-items:center;min-width:68px;justify-content:flex-end;">
@@ -501,20 +512,20 @@ function renderOverview() {
       }).join('') +
       `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of total errors (${errors})</div>` +
       `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
-        ${['LP','Posting','Unknown'].map(t =>
-          `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
+        ${['LP', 'Posting', 'Unknown'].map(t =>
+        `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
             <span style="width:8px;height:8px;border-radius:2px;background:${TYPE_COLORS[t]};display:inline-block;opacity:.85"></span>${t === 'LP' ? 'Landing Page' : t}
           </span>`).join('')}
       </div>`;
   }
 
   // ── Top Bug Contributors (stacked by type) ──
-  const allOwners      = [...new Set(d.map(x => x.owner))];
-  const bugsByOwner     = {};
+  const allOwners = [...new Set(d.map(x => x.owner))];
+  const bugsByOwner = {};
   const bugsByOwnerType = {};
   allOwners.forEach(o => {
     const ownerErrors = d.filter(x => x.owner === o && (x.status === 'Failed' || x.status === 'Critical'));
-    bugsByOwner[o]     = ownerErrors.length;
+    bugsByOwner[o] = ownerErrors.length;
     bugsByOwnerType[o] = { LP: 0, Posting: 0, Unknown: 0 };
     ownerErrors.forEach(r => { bugsByOwnerType[o][r.type] = (bugsByOwnerType[o][r.type] || 0) + 1; });
   });
@@ -536,16 +547,16 @@ function renderOverview() {
       <div class="bar-name">${own}</div>
       <div class="bar-track">
         <div style="display:flex;height:100%;">
-          ${bt.LP      > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP/maxBugs*100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
-          ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting/maxBugs*100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
-          ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown/maxBugs*100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
+          ${bt.LP > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP / maxBugs * 100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
+          ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting / maxBugs * 100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
+          ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown / maxBugs * 100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
         </div>
       </div>
       <div class="bar-count">${bugs}</div>
     </div>`;
   }).join('') +
-  `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
-    ${['LP','Posting','Unknown'].map(t =>
+    `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+    ${['LP', 'Posting', 'Unknown'].map(t =>
       `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
         <span style="width:8px;height:8px;border-radius:2px;background:${TYPE_COLORS[t]};display:inline-block;opacity:.85"></span>${t === 'LP' ? 'Landing Page' : t}
       </span>`).join('')}
@@ -557,39 +568,39 @@ function renderOverview() {
   const qaColors = ['var(--accent2)', 'var(--warn)', 'var(--accent)', 'var(--failed)'];
 
   const qaSorted = sortDesc(qaByCount);
-  const qaMax    = qaSorted.length > 0 ? qaSorted[0][1] : 1;
+  const qaMax = qaSorted.length > 0 ? qaSorted[0][1] : 1;
 
-  document.getElementById('donut-type').style.display        = 'none';
+  document.getElementById('donut-type').style.display = 'none';
   document.getElementById('donut-type-legend').style.display = 'none';
 
   document.getElementById('donut-type-legend').insertAdjacentHTML('afterend', `
     <div id="qa-bar-chart" style="width:100%;margin-top:8px;">
       <div class="bar-chart">
         ${qaSorted.map(([name, cnt]) => {
-          const personCases = d.filter(x => x.qa_by === name);
-          const pa = count(personCases, x => x.status === 'Passed');
-          const op = count(personCases, x => x.status === 'Opportunity');
-          const fa = count(personCases, x => x.status === 'Failed');
-          const cr = count(personCases, x => x.status === 'Critical');
-          // Min width for Critical so it's always visible when > 0
-          const crWidth = cr > 0 ? Math.max(cr / qaMax * 100, 1.5) : 0;
-          return `<div class="bar-row">
+    const personCases = d.filter(x => x.qa_by === name);
+    const pa = count(personCases, x => x.status === 'Passed');
+    const op = count(personCases, x => x.status === 'Opportunity');
+    const fa = count(personCases, x => x.status === 'Failed');
+    const cr = count(personCases, x => x.status === 'Critical');
+    // Min width for Critical so it's always visible when > 0
+    const crWidth = cr > 0 ? Math.max(cr / qaMax * 100, 1.5) : 0;
+    return `<div class="bar-row">
             <div class="bar-name">${name}</div>
             <div class="bar-track" style="height:14px;">
               <div style="display:flex;height:100%;border-radius:2px;overflow:hidden;">
-                <div title="Passed: ${pa}"      style="width:${pa/qaMax*100}%;background:var(--passed);opacity:.8"></div>
-                <div title="Opportunity: ${op}" style="width:${op/qaMax*100}%;background:var(--observed);opacity:.9"></div>
-                <div title="Failed: ${fa}"      style="width:${fa/qaMax*100}%;background:var(--failed)"></div>
+                <div title="Passed: ${pa}"      style="width:${pa / qaMax * 100}%;background:var(--passed);opacity:.8"></div>
+                <div title="Opportunity: ${op}" style="width:${op / qaMax * 100}%;background:var(--observed);opacity:.9"></div>
+                <div title="Failed: ${fa}"      style="width:${fa / qaMax * 100}%;background:var(--failed)"></div>
                 <div title="Critical: ${cr}"    style="width:${crWidth}%;background:var(--critical)"></div>
               </div>
             </div>
             <div class="bar-count">${cnt}</div>
           </div>`;
-        }).join('')}
+  }).join('')}
       </div>
       <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;justify-content:center;">
-        ${['Passed','Opportunity','Failed','Critical'].map(s =>
-          `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;">
+        ${['Passed', 'Opportunity', 'Failed', 'Critical'].map(s =>
+    `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;">
             <span style="width:10px;height:10px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;opacity:.85"></span>${s}
           </span>`).join('')}
       </div>
@@ -611,13 +622,13 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
 
   // Day cards
   const dayCards = DAYS.map(day => {
-    const dc   = byDay[day] || [];
-    const pa   = count(dc, x => x.status === 'Passed');
-    const op   = count(dc, x => x.status === 'Opportunity');
-    const fa   = count(dc, x => x.status === 'Failed');
-    const cr   = count(dc, x => x.status === 'Critical');
+    const dc = byDay[day] || [];
+    const pa = count(dc, x => x.status === 'Passed');
+    const op = count(dc, x => x.status === 'Opportunity');
+    const fa = count(dc, x => x.status === 'Failed');
+    const cr = count(dc, x => x.status === 'Critical');
     const errs = fa + cr;
-    const id   = 'dday-' + day.replace(/\//g, '');
+    const id = 'dday-' + day.replace(/\//g, '');
 
     const qaSplit = {};
     dc.forEach(r => { if (r.qa_by) qaSplit[r.qa_by] = (qaSplit[r.qa_by] || 0) + 1; });
@@ -653,7 +664,7 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
     //         </div>`).join('')}
     //     </div>` : ''}
     // </div>`;
-return `
+    return `
   <details class="qa-day-panel">
     <summary class="qa-day-summary">
       <span>${day}</span>
@@ -670,13 +681,13 @@ return `
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;font-size:.72rem;">
-          ${[['Passed',pa,'var(--passed)'],['Opportunity',op,'var(--observed)'],['Failed',fa,'var(--failed)'],['Critical',cr,'var(--critical)']].map(([lbl,val,col]) =>
-            val > 0 ? `<div style="display:flex;align-items:center;gap:5px;">
+          ${[['Passed', pa, 'var(--passed)'], ['Opportunity', op, 'var(--observed)'], ['Failed', fa, 'var(--failed)'], ['Critical', cr, 'var(--critical)']].map(([lbl, val, col]) =>
+      val > 0 ? `<div style="display:flex;align-items:center;gap:5px;">
               <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block"></span>
               <span style="color:var(--muted)">${lbl}:</span>
               <span style="font-family:'Space Mono',monospace;color:${col}">${val}</span>
             </div>` : ''
-          ).join('')}
+    ).join('')}
 
           <div style="margin-top:3px;font-size:.63rem;font-family:'Space Mono',monospace;color:${errs > 0 ? 'var(--observed)' : 'var(--passed)'};">
             ${errs > 0 ? `${errs} error(s)` : '✓ Clean day'}
@@ -686,9 +697,8 @@ return `
         <div class="qa-shadow-split-col">
           <div class="qa-shadow-split-title">QA Shadow split</div>
 
-          ${
-            Object.keys(qaSplit).length
-              ? `<div class="qa-shadow-split-list">
+          ${Object.keys(qaSplit).length
+        ? `<div class="qa-shadow-split-list">
                   ${Object.entries(qaSplit).map(([name, c], i) => `
                     <div class="qa-shadow-split-item">
                       <span style="width:7px;height:7px;border-radius:50%;background:${qaColors[i % qaColors.length]};display:inline-block"></span>
@@ -697,8 +707,8 @@ return `
                     </div>
                   `).join('')}
                 </div>`
-              : `<div style="font-size:.68rem;color:var(--muted);">No QA split</div>`
-          }
+        : `<div style="font-size:.68rem;color:var(--muted);">No QA split</div>`
+      }
         </div>
       </div>
     </div>
@@ -722,12 +732,12 @@ return `
   // Draw all mini donuts after DOM is ready
   requestAnimationFrame(() => {
     DAYS.forEach(day => {
-      const dc  = (byDay[day] || []);
+      const dc = (byDay[day] || []);
       drawSmallDonut('dday-' + day.replace(/\//g, ''), [
-        { value: count(dc, x => x.status === 'Passed'),      color: STATUS_COLORS.Passed },
+        { value: count(dc, x => x.status === 'Passed'), color: STATUS_COLORS.Passed },
         { value: count(dc, x => x.status === 'Opportunity'), color: STATUS_COLORS.Opportunity },
-        { value: count(dc, x => x.status === 'Failed'),      color: STATUS_COLORS.Failed },
-        { value: count(dc, x => x.status === 'Critical'),    color: STATUS_COLORS.Critical },
+        { value: count(dc, x => x.status === 'Failed'), color: STATUS_COLORS.Failed },
+        { value: count(dc, x => x.status === 'Critical'), color: STATUS_COLORS.Critical },
       ]);
     });
 
@@ -740,51 +750,51 @@ return `
 
 // ── Filter state ──
 const activeFilters = {
-  dateFrom:            null,   // 'MM/DD/YY'
-  dateTo:              null,   // 'MM/DD/YY'
-  dateCompletedFrom:   null,   // 'MM/DD/YY'
-  dateCompletedTo:     null,   // 'MM/DD/YY'
-  status:     [],     // multi: ['Passed','Failed',...]
-  qaby:       [],     // multi: ['Cidar','Michael',...]
-  owner:      [],
-  category:   [],     // multi: ['Config','Styling',...]
-  type:       [],     // multi: ['LP','Posting','Unknown']
+  dateFrom: null,   // 'MM/DD/YY'
+  dateTo: null,   // 'MM/DD/YY'
+  dateCompletedFrom: null,   // 'MM/DD/YY'
+  dateCompletedTo: null,   // 'MM/DD/YY'
+  status: [],     // multi: ['Passed','Failed',...]
+  qaby: [],     // multi: ['Cidar','Michael',...]
+  owner: [],
+  category: [],     // multi: ['Config','Styling',...]
+  type: [],     // multi: ['LP','Posting','Unknown']
 };
 
 // ── Date picker state — QA Date ──
-let dpYear  = new Date().getFullYear();
+let dpYear = new Date().getFullYear();
 let dpMonth = new Date().getMonth();
 let dpStart = null;  // 'MM/DD/YY'
-let dpEnd   = null;  // 'MM/DD/YY'
+let dpEnd = null;  // 'MM/DD/YY'
 let dpSelecting = false;
 
 // ── Date picker state — Completed Date ──
-let dpYearDC  = new Date().getFullYear();
+let dpYearDC = new Date().getFullYear();
 let dpMonthDC = new Date().getMonth();
 let dpStartDC = null;  // 'MM/DD/YY'
-let dpEndDC   = null;  // 'MM/DD/YY'
+let dpEndDC = null;  // 'MM/DD/YY'
 
 // ─────────────────────────────────────────────────────────────
 // DROPDOWN TOGGLE
 // ─────────────────────────────────────────────────────────────
 function toggleDropdown(name) {
-  const allDropdowns = ['datecompleted','date','status','qaby','owner','category','type'];
+  const allDropdowns = ['datecompleted', 'date', 'status', 'qaby', 'owner', 'category', 'type'];
   allDropdowns.forEach(n => {
     if (n === name) return;
     document.getElementById(`filter-dropdown-${n}`)?.classList.remove('open');
     document.getElementById(`filter-btn-${n}`)?.classList.remove('open');
   });
-  const dd  = document.getElementById(`filter-dropdown-${name}`);
+  const dd = document.getElementById(`filter-dropdown-${name}`);
   const btn = document.getElementById(`filter-btn-${name}`);
   const isOpen = dd.classList.toggle('open');
   btn.classList.toggle('open', isOpen);
 
   if (name === 'datecompleted' && isOpen) renderDatePickerDC();
-  if (name === 'date' && isOpen)          renderDatePicker();
-  if (name === 'qaby' && isOpen)          renderDropdownOptions('qaby');
-  if (name === 'owner' && isOpen)         renderDropdownOptions('owner');
-  if (name === 'category' && isOpen)      renderDropdownOptions('category');
-  if (name === 'type' && isOpen)          renderDropdownOptions('type');
+  if (name === 'date' && isOpen) renderDatePicker();
+  if (name === 'qaby' && isOpen) renderDropdownOptions('qaby');
+  if (name === 'owner' && isOpen) renderDropdownOptions('owner');
+  if (name === 'category' && isOpen) renderDropdownOptions('category');
+  if (name === 'type' && isOpen) renderDropdownOptions('type');
 }
 
 // Close dropdowns when clicking outside
@@ -842,7 +852,7 @@ function renderDropdownOptions(name, searchTerm = '') {
   container.innerHTML = filtered.map(opt => `
     <div class="filter-option${sel.includes(opt) ? ' selected' : ''}"
          onclick="toggleFilterOption('${name}','${opt}')"
-         id="fopt-${name}-${opt.replace(/\s/g,'-')}">
+         id="fopt-${name}-${opt.replace(/\s/g, '-')}">
       <div class="filter-checkbox"></div>
       <span class="filter-option-label">${opt}</span>
       <span class="filter-option-count">${countMap[opt] || 0}</span>
@@ -858,18 +868,18 @@ function searchDropdown(name, val) {
 // ─────────────────────────────────────────────────────────────
 function toggleFilterOption(name, value) {
   let arr;
-  if (name === 'status')   arr = activeFilters.status;
-  if (name === 'qaby')     arr = activeFilters.qaby;
-  if (name === 'owner')    arr = activeFilters.owner;
+  if (name === 'status') arr = activeFilters.status;
+  if (name === 'qaby') arr = activeFilters.qaby;
+  if (name === 'owner') arr = activeFilters.owner;
   if (name === 'category') arr = activeFilters.category;
-  if (name === 'type')     arr = activeFilters.type;
+  if (name === 'type') arr = activeFilters.type;
 
   const idx = arr.indexOf(value);
   if (idx === -1) arr.push(value);
-  else            arr.splice(idx, 1);
+  else arr.splice(idx, 1);
 
   // Update visual state of the option
-  const el = document.getElementById(`fopt-${name}-${value.replace(/\s/g,'-')}`);
+  const el = document.getElementById(`fopt-${name}-${value.replace(/\s/g, '-')}`);
   if (el) el.classList.toggle('selected', arr.includes(value));
 
   updateFilterUI();
@@ -880,24 +890,24 @@ function toggleFilterOption(name, value) {
 // DATE PICKER
 // ─────────────────────────────────────────────────────────────
 function renderDatePicker() {
-  const DAYS     = getDays();
-  const daysSet  = new Set(DAYS);
-  const months   = ['January','February','March','April','May','June',
-                    'July','August','September','October','November','December'];
+  const DAYS = getDays();
+  const daysSet = new Set(DAYS);
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
 
   document.getElementById('date-picker-month-label').textContent =
     `${months[dpMonth]} ${dpYear}`;
 
   const firstDay = new Date(dpYear, dpMonth, 1).getDay();
   const daysInMonth = new Date(dpYear, dpMonth + 1, 0).getDate();
-  const dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const parseDay = str => str ? parseMDY(str) : null;
 
-  const fmtKey = (y, m, d) => `${m+1}/${d}/${String(y).slice(-2)}`;
+  const fmtKey = (y, m, d) => `${m + 1}/${d}/${String(y).slice(-2)}`;
 
   const startDate = parseDay(dpStart);
-  const endDate   = parseDay(dpEnd);
+  const endDate = parseDay(dpEnd);
 
   let html = dayLabels.map(l => `<div class="date-picker-day-label">${l}</div>`).join('');
 
@@ -907,9 +917,9 @@ function renderDatePicker() {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const key     = fmtKey(dpYear, dpMonth, day);
+    const key = fmtKey(dpYear, dpMonth, day);
     const hasData = daysSet.has(key);
-    const date    = new Date(dpYear, dpMonth, day);
+    const date = new Date(dpYear, dpMonth, day);
 
     let cls = 'date-picker-day';
     if (!hasData) cls += ' no-data';
@@ -919,7 +929,7 @@ function renderDatePicker() {
       if (date >= startDate && date <= endDate) cls += ' in-range';
     }
     if (dpStart === key) cls += ' range-start';
-    if (dpEnd   === key) cls += ' range-end';
+    if (dpEnd === key) cls += ' range-end';
 
     const click = hasData ? `onclick="datePickerClick('${key}', event)"` : '';
     html += `<div class="${cls}" ${click}>${day}</div>`;
@@ -930,8 +940,8 @@ function renderDatePicker() {
 
 function datePickerNav(dir) {
   dpMonth += dir;
-  if (dpMonth > 11) { dpMonth = 0;  dpYear++; }
-  if (dpMonth < 0)  { dpMonth = 11; dpYear--; }
+  if (dpMonth > 11) { dpMonth = 0; dpYear++; }
+  if (dpMonth < 0) { dpMonth = 11; dpYear--; }
   renderDatePicker();
 }
 
@@ -940,11 +950,11 @@ function datePickerClick(key, event) {
   if (!dpStart || (dpStart && dpEnd)) {
     // Start new selection
     dpStart = key;
-    dpEnd   = null;
+    dpEnd = null;
   } else {
     // Set end — ensure start <= end
     if (parseMDY(key) < parseMDY(dpStart)) {
-      dpEnd   = dpStart;
+      dpEnd = dpStart;
       dpStart = key;
     } else {
       dpEnd = key;
@@ -955,7 +965,7 @@ function datePickerClick(key, event) {
 
 function applyDateFilter() {
   activeFilters.dateFrom = dpStart;
-  activeFilters.dateTo   = dpEnd || dpStart; // single day if no end
+  activeFilters.dateTo = dpEnd || dpStart; // single day if no end
   toggleDropdown('date');
   updateFilterUI();
   filterCases();
@@ -963,9 +973,9 @@ function applyDateFilter() {
 
 function clearDateFilter() {
   dpStart = null;
-  dpEnd   = null;
+  dpEnd = null;
   activeFilters.dateFrom = null;
-  activeFilters.dateTo   = null;
+  activeFilters.dateTo = null;
   renderDatePicker();
   updateFilterUI();
   filterCases();
@@ -975,24 +985,24 @@ function clearDateFilter() {
 // DATE PICKER — COMPLETED DATE
 // ─────────────────────────────────────────────────────────────
 function renderDatePickerDC() {
-  const DATES    = getCompletedDates();
+  const DATES = getCompletedDates();
   const datesSet = new Set(DATES);
-  const months   = ['January','February','March','April','May','June',
-                    'July','August','September','October','November','December'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
 
   document.getElementById('date-picker-month-label-dc').textContent =
     `${months[dpMonthDC]} ${dpYearDC}`;
 
-  const firstDay    = new Date(dpYearDC, dpMonthDC, 1).getDay();
+  const firstDay = new Date(dpYearDC, dpMonthDC, 1).getDay();
   const daysInMonth = new Date(dpYearDC, dpMonthDC + 1, 0).getDate();
-  const dayLabels   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const parseDay = str => str ? parseMDY(str) : null;
 
-  const fmtKey = (y, m, d) => `${m+1}/${d}/${String(y).slice(-2)}`;
+  const fmtKey = (y, m, d) => `${m + 1}/${d}/${String(y).slice(-2)}`;
 
   const startDate = parseDay(dpStartDC);
-  const endDate   = parseDay(dpEndDC);
+  const endDate = parseDay(dpEndDC);
 
   let html = dayLabels.map(l => `<div class="date-picker-day-label">${l}</div>`).join('');
 
@@ -1001,9 +1011,9 @@ function renderDatePickerDC() {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const key     = fmtKey(dpYearDC, dpMonthDC, day);
+    const key = fmtKey(dpYearDC, dpMonthDC, day);
     const hasData = datesSet.has(key);
-    const date    = new Date(dpYearDC, dpMonthDC, day);
+    const date = new Date(dpYearDC, dpMonthDC, day);
 
     let cls = 'date-picker-day';
     if (!hasData) cls += ' no-data';
@@ -1013,7 +1023,7 @@ function renderDatePickerDC() {
       if (date >= startDate && date <= endDate) cls += ' in-range';
     }
     if (dpStartDC === key) cls += ' range-start';
-    if (dpEndDC   === key) cls += ' range-end';
+    if (dpEndDC === key) cls += ' range-end';
 
     const click = hasData ? `onclick="datePickerClickDC('${key}', event)"` : '';
     html += `<div class="${cls}" ${click}>${day}</div>`;
@@ -1024,8 +1034,8 @@ function renderDatePickerDC() {
 
 function datePickerNavDC(dir) {
   dpMonthDC += dir;
-  if (dpMonthDC > 11) { dpMonthDC = 0;  dpYearDC++; }
-  if (dpMonthDC < 0)  { dpMonthDC = 11; dpYearDC--; }
+  if (dpMonthDC > 11) { dpMonthDC = 0; dpYearDC++; }
+  if (dpMonthDC < 0) { dpMonthDC = 11; dpYearDC--; }
   renderDatePickerDC();
 }
 
@@ -1033,10 +1043,10 @@ function datePickerClickDC(key, event) {
   if (event) event.stopPropagation();
   if (!dpStartDC || (dpStartDC && dpEndDC)) {
     dpStartDC = key;
-    dpEndDC   = null;
+    dpEndDC = null;
   } else {
     if (parseMDY(key) < parseMDY(dpStartDC)) {
-      dpEndDC   = dpStartDC;
+      dpEndDC = dpStartDC;
       dpStartDC = key;
     } else {
       dpEndDC = key;
@@ -1047,7 +1057,7 @@ function datePickerClickDC(key, event) {
 
 function applyDateFilterDC() {
   activeFilters.dateCompletedFrom = dpStartDC;
-  activeFilters.dateCompletedTo   = dpEndDC || dpStartDC;
+  activeFilters.dateCompletedTo = dpEndDC || dpStartDC;
   toggleDropdown('datecompleted');
   updateFilterUI();
   filterCases();
@@ -1055,9 +1065,9 @@ function applyDateFilterDC() {
 
 function clearDateFilterDC() {
   dpStartDC = null;
-  dpEndDC   = null;
+  dpEndDC = null;
   activeFilters.dateCompletedFrom = null;
-  activeFilters.dateCompletedTo   = null;
+  activeFilters.dateCompletedTo = null;
   renderDatePickerDC();
   updateFilterUI();
   filterCases();
@@ -1067,8 +1077,8 @@ function clearDateFilterDC() {
 // FILTER UI — pills + button states + clear all
 // ─────────────────────────────────────────────────────────────
 function updateFilterUI() {
-  const pills    = [];
-  const hasAny   = () => pills.length > 0;
+  const pills = [];
+  const hasAny = () => pills.length > 0;
 
   // Completed Date pill
   if (activeFilters.dateCompletedFrom) {
@@ -1144,18 +1154,18 @@ function removePill(i) {
 
 function clearAllFilters() {
   dpStart = null;
-  dpEnd   = null;
+  dpEnd = null;
   activeFilters.dateFrom = null;
-  activeFilters.dateTo   = null;
+  activeFilters.dateTo = null;
   dpStartDC = null;
-  dpEndDC   = null;
+  dpEndDC = null;
   activeFilters.dateCompletedFrom = null;
-  activeFilters.dateCompletedTo   = null;
-  activeFilters.status   = [];
-  activeFilters.qaby     = [];
-  activeFilters.owner    = [];
+  activeFilters.dateCompletedTo = null;
+  activeFilters.status = [];
+  activeFilters.qaby = [];
+  activeFilters.owner = [];
   activeFilters.category = [];
-  activeFilters.type     = [];
+  activeFilters.type = [];
 
   // Reset visual state of all options
   document.querySelectorAll('.filter-option').forEach(el => el.classList.remove('selected'));
@@ -1190,7 +1200,7 @@ function renderCases() {
   if (DAYS.length && !dpStart) {
     const [m, , y] = DAYS[0].split('/');
     dpMonth = parseInt(m) - 1;
-    dpYear  = 2000 + parseInt(y);
+    dpYear = 2000 + parseInt(y);
   }
 
   // Init Completed Date picker to first month in data
@@ -1198,7 +1208,7 @@ function renderCases() {
   if (CDATES.length && !dpStartDC) {
     const [m, , y] = CDATES[0].split('/');
     dpMonthDC = parseInt(m) - 1;
-    dpYearDC  = 2000 + parseInt(y);
+    dpYearDC = 2000 + parseInt(y);
   }
 
   updateFilterUI();
@@ -1215,7 +1225,7 @@ function filterCases() {
   // ── Completed Date range filter ──
   if (activeFilters.dateCompletedFrom) {
     const from = parseMDY(activeFilters.dateCompletedFrom);
-    const to   = parseMDY(activeFilters.dateCompletedTo || activeFilters.dateCompletedFrom);
+    const to = parseMDY(activeFilters.dateCompletedTo || activeFilters.dateCompletedFrom);
     rows = rows.filter(x => {
       if (!x.completed_date) return false;
       const d = parseMDY(x.completed_date);
@@ -1226,7 +1236,7 @@ function filterCases() {
   // ── QA Date range filter ──
   if (activeFilters.dateFrom) {
     const from = parseMDY(activeFilters.dateFrom);
-    const to   = parseMDY(activeFilters.dateTo || activeFilters.dateFrom);
+    const to = parseMDY(activeFilters.dateTo || activeFilters.dateFrom);
     rows = rows.filter(x => {
       const d = parseMDY(x.day);
       return d >= from && d <= to;
@@ -1236,7 +1246,7 @@ function filterCases() {
   // ── Status filter (multi) ──
   if (activeFilters.status.length) {
     rows = rows.filter(x => {
-      if (activeFilters.status.includes('Pending'))   return x.status !== 'Passed' && (!x.fix_comment || !x.fix_comment.trim());
+      if (activeFilters.status.includes('Pending')) return x.status !== 'Passed' && (!x.fix_comment || !x.fix_comment.trim());
       if (activeFilters.status.includes('Responded')) return x.fix_comment && x.fix_comment.trim();
       return activeFilters.status.includes(x.status);
     });
@@ -1265,18 +1275,18 @@ function filterCases() {
   // ── Text search ──
   if (search) {
     rows = rows.filter(r =>
-      r.owner.toLowerCase().includes(search)       ||
-      r.task_id.toLowerCase().includes(search)     ||
-      r.summary.toLowerCase().includes(search)     ||
+      r.owner.toLowerCase().includes(search) ||
+      r.task_id.toLowerCase().includes(search) ||
+      r.summary.toLowerCase().includes(search) ||
       r.fix_comment.toLowerCase().includes(search) ||
       r.qa_by.toLowerCase().includes(search)
     );
   }
 
   const hasActiveFilters = activeFilters.dateCompletedFrom || activeFilters.dateFrom ||
-                        activeFilters.status.length || activeFilters.qaby.length ||
-                        activeFilters.owner.length || activeFilters.category.length ||
-                        activeFilters.type.length;
+    activeFilters.status.length || activeFilters.qaby.length ||
+    activeFilters.owner.length || activeFilters.category.length ||
+    activeFilters.type.length;
   const filterLabel = hasActiveFilters ? ' (filtered)' : '';
 
   document.getElementById('case-count-label').textContent =
@@ -1293,17 +1303,17 @@ function filterCases() {
         <td>
           <span class="status-pill pill-${r.status}">${r.status}</span>
           ${r.original_status !== r.status
-            ? `<span style="font-size:.6rem;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-top:3px;">was: ${r.original_status}</span>`
-            : ''}
+        ? `<span style="font-size:.6rem;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-top:3px;">was: ${r.original_status}</span>`
+        : ''}
         </td>
         <td><span class="type-pill type-${r.type}">${r.type}</span></td>
         <td style="font-size:.72rem;color:var(--muted);white-space:nowrap">${r.qa_by || '—'}</td>
         <td><div class="cat-tags">${r.categories.map(c => `<span class="cat-tag cat-${c}">${c}</span>`).join('') || '<span style="color:var(--muted);font-size:.65rem;">—</span>'}</div></td>
         <td style="font-size:.75rem;color:var(--muted);max-width:300px">${r.summary}</td>
         <td style="font-size:.75rem;max-width:200px">${r.fix_comment
-          ? `<span style="color:var(--passed);font-family:'Space Mono',monospace;">${r.fix_comment}</span>`
-          : '<span style="color:var(--muted);">—</span>'
-        }</td>
+        ? `<span style="color:var(--passed);font-family:'Space Mono',monospace;">${r.fix_comment}</span>`
+        : '<span style="color:var(--muted);">—</span>'
+      }</td>
       </tr>`).join('');
 }
 // ─────────────────────────────────────────────────────────────
@@ -1361,7 +1371,7 @@ function renderTeamMemberOptions(searchTerm = '') {
   container.innerHTML = filtered.map(owner => `
     <div class="filter-option${teamFilters.members.includes(owner) ? ' selected' : ''}"
          onclick="toggleTeamMemberFilter('${owner.replace(/'/g, "\\'")}')"
-         id="team-fopt-member-${owner.replace(/\s/g,'-')}">
+         id="team-fopt-member-${owner.replace(/\s/g, '-')}">
       <div class="filter-checkbox"></div>
       <span class="filter-option-label">${owner}</span>
       <span class="filter-option-count">${countMap[owner] || 0}</span>
@@ -1463,15 +1473,15 @@ function renderTeam() {
 
   let teamRows = Object.entries(ownerMap)
     .map(([owner, cases]) => {
-      const total       = cases.length;
-      const passed      = count(cases, x => x.status === 'Passed');
+      const total = cases.length;
+      const passed = count(cases, x => x.status === 'Passed');
       const opportunity = count(cases, x => x.status === 'Opportunity');
-      const failed      = count(cases, x => x.status === 'Failed');
-      const critical    = count(cases, x => x.status === 'Critical');
-      const errors      = failed + critical;
-      const passRate    = Math.round((passed + opportunity) / total * 100);
-      const errRate     = Math.round(errors / total * 100);
-      const oppRate     = Math.round(opportunity / total * 100);
+      const failed = count(cases, x => x.status === 'Failed');
+      const critical = count(cases, x => x.status === 'Critical');
+      const errors = failed + critical;
+      const passRate = Math.round((passed + opportunity) / total * 100);
+      const errRate = Math.round(errors / total * 100);
+      const oppRate = Math.round(opportunity / total * 100);
 
       const trend = getTeamTrend(errRate);
 
@@ -1546,12 +1556,12 @@ function renderTeam() {
       trend
     } = item;
 
-    const reviewedCases  = reviewedByOwner[owner] || [];
-    const rTotal         = reviewedCases.length;
-    const rPassed        = count(reviewedCases, x => x.status === 'Passed');
-    const rOpp           = count(reviewedCases, x => x.status === 'Opportunity');
-    const rFailed        = count(reviewedCases, x => x.status === 'Failed');
-    const rCritical      = count(reviewedCases, x => x.status === 'Critical');
+    const reviewedCases = reviewedByOwner[owner] || [];
+    const rTotal = reviewedCases.length;
+    const rPassed = count(reviewedCases, x => x.status === 'Passed');
+    const rOpp = count(reviewedCases, x => x.status === 'Opportunity');
+    const rFailed = count(reviewedCases, x => x.status === 'Failed');
+    const rCritical = count(reviewedCases, x => x.status === 'Critical');
 
     const cats = {};
     cases
@@ -1645,9 +1655,9 @@ function renderTeam() {
         ? `<div style="margin-top:10px;">
             <div style="font-size:.62rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;font-family:'Syne',sans-serif;font-weight:700;">Bug categories</div>
             <div class="cat-tags">
-              ${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,n]) =>
-                `<span class="cat-tag cat-${cat}" style="margin-right:3px">${cat} ×${n}</span>`
-              ).join('')}
+              ${Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([cat, n]) =>
+          `<span class="cat-tag cat-${cat}" style="margin-right:3px">${cat} ×${n}</span>`
+        ).join('')}
             </div>
           </div>`
         : `<div style="margin-top:10px;font-size:.72rem;color:var(--passed);font-family:'Space Mono',monospace;">✓ Great job — no errors found</div>`}
@@ -1691,10 +1701,10 @@ function renderTeam() {
     const rc = reviewedByOwner[item.owner] || [];
     if (!rc.length) return;
     drawSmallDonut('qa-donut-' + item.owner.replace(/[^a-zA-Z0-9]/g, ''), [
-      { value: count(rc, x => x.status === 'Passed'),      color: STATUS_COLORS.Passed },
+      { value: count(rc, x => x.status === 'Passed'), color: STATUS_COLORS.Passed },
       { value: count(rc, x => x.status === 'Opportunity'), color: STATUS_COLORS.Opportunity },
-      { value: count(rc, x => x.status === 'Failed'),      color: STATUS_COLORS.Failed },
-      { value: count(rc, x => x.status === 'Critical'),    color: STATUS_COLORS.Critical },
+      { value: count(rc, x => x.status === 'Failed'), color: STATUS_COLORS.Failed },
+      { value: count(rc, x => x.status === 'Critical'), color: STATUS_COLORS.Critical },
     ]);
   });
 }
@@ -1703,30 +1713,30 @@ function renderTeam() {
 // RENDER — WEEKLY REPORT
 // ─────────────────────────────────────────────────────────────
 function renderReport() {
-  const d     = DATA;
+  const d = DATA;
   const total = d.length;
-  const DAYS  = getDays();
+  const DAYS = getDays();
 
   if (!total) {
-     if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent = 'Upload a CSV to generate the daily report.';
+    if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent = 'Upload a CSV to generate the daily report.';
     document.getElementById('weekly-report').textContent = 'Upload a CSV to generate the weekly summary.';
     return;
   }
 
-  const passed      = count(d, x => x.status === 'Passed');
+  const passed = count(d, x => x.status === 'Passed');
   const opportunity = count(d, x => x.status === 'Opportunity');
-  const failed      = count(d, x => x.status === 'Failed');
-  const critical    = count(d, x => x.status === 'Critical');
-  const errors      = failed + critical;
-  const passRate    = Math.round((passed + opportunity) / total * 100);
-  const owners      = [...new Set(d.map(x => x.owner))];
+  const failed = count(d, x => x.status === 'Failed');
+  const critical = count(d, x => x.status === 'Critical');
+  const errors = failed + critical;
+  const passRate = Math.round((passed + opportunity) / total * 100);
+  const owners = [...new Set(d.map(x => x.owner))];
 
   const catCount = {};
   d.forEach(r => r.categories.forEach(c => catCount[c] = (catCount[c] || 0) + 1));
 
   const qaByCount = {};
   d.forEach(r => { if (r.qa_by) qaByCount[r.qa_by] = (qaByCount[r.qa_by] || 0) + 1; });
-  const qaShadows = Object.entries(qaByCount).map(([n,c]) => `${n} (${c})`).join(', ');
+  const qaShadows = Object.entries(qaByCount).map(([n, c]) => `${n} (${c})`).join(', ');
 
   const ownerMap = groupBy(d, 'owner');
   const atRisk = Object.entries(ownerMap)
@@ -1739,89 +1749,89 @@ function renderReport() {
   // Pending cases: has a bug (non-Passed) but no fix_comment yet
   const pendingCases = count(d, x => x.status !== 'Passed' && (!x.fix_comment || x.fix_comment.trim() === ''));
   const queueStatus =
-    pendingCases > 10 ? '🚨 At Risk'  :
-    pendingCases >= 5 ? '⚠ Watch'    :
-                         '✓ Stable';
+    pendingCases > 10 ? '🚨 At Risk' :
+      pendingCases >= 5 ? '⚠ Watch' :
+        '✓ Stable';
 
   const daysLabel = DAYS.length > 0
     ? `${DAYS[0]}${DAYS.length > 1 ? ' – ' + DAYS[DAYS.length - 1] : ''}`
     : WEEK_RANGE;
- // ── Final Status logic ──
-  const criticalPct    = total > 0 ? (critical    / total) * 100 : 0;
-  const failedPct      = total > 0 ? (failed      / total) * 100 : 0;
+  // ── Final Status logic ──
+  const criticalPct = total > 0 ? (critical / total) * 100 : 0;
+  const failedPct = total > 0 ? (failed / total) * 100 : 0;
   const opportunityPct = total > 0 ? (opportunity / total) * 100 : 0;
 
   // Opportunity no longer affects severity score — tracked separately
   const severityScore =
-    (criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0) +
-    (failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0);
+    (criticalPct > 1 ? 3 : criticalPct > 0 ? 1 : 0) +
+    (failedPct > 3 ? 2 : failedPct > 1.5 ? 1 : 0);
 
   const pendingScore =
     pendingCases > 20 ? 3 :
-    pendingCases >= 10 ? 2 : 1;
+      pendingCases >= 10 ? 2 : 1;
 
   const finalScore = severityScore + pendingScore;
 
   const finalStatus =
     finalScore >= 7 ? '🚨 AT RISK' :
-    finalScore >= 4 ? '⚠ NEEDS ATTENTION' :
-    errors === 0    ? '✓ CLEAN WEEK' :
-                      'UNDER CONTROL';
+      finalScore >= 4 ? '⚠ NEEDS ATTENTION' :
+        errors === 0 ? '✓ CLEAN WEEK' :
+          'UNDER CONTROL';
 
-if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent =
-`QA Shadow – Daily EOD (${daysLabel})
+  if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent =
+    `QA Shadow – Daily EOD (${daysLabel})
 
 • Reviewed: ${owners.length} members / ${total} cases
 • QA Shadows: ${qaShadows || 'N/A'}
 • Pass rate: ${passRate}% (${passed + opportunity}/${total})
 • Opportunities: ${opportunity}
 • Errors: ${errors} — Failed: ${failed} · Critical: ${critical}
-• Top bugs: ${sortDesc(catCount).slice(0,3).map(([c,n])=>`${c} (${n}x)`).join(', ') || 'None'}
+• Top bugs: ${sortDesc(catCount).slice(0, 3).map(([c, n]) => `${c} (${n}x)`).join(', ') || 'None'}
 • At risk: ${atRisk.length ? atRisk.join(', ') : 'None'}
 • Queues: Stable (verify in WOMS)
 • Status: ${critical > 0 ? '⚠ Critical — immediate follow-up needed' : errors === 0 ? '✓ Clean' : 'Under control'}`;
 
   const queueRows = [
-    ['Pending cases',    `${pendingCases}`,  pendingCases > 10 ? 'info-popup-risk' : pendingCases >= 5 ? 'info-popup-warn' : 'info-popup-ok'],
-    ['─────────────',   '', ''],
-    ['✓ Under Control', '< 5 pending',  'info-popup-ok'],
-    ['⚠ Watch',         '5–10 pending', 'info-popup-warn'],
-    ['🚨 At Risk',      '> 10 pending', 'info-popup-risk'],
+    ['Pending cases', `${pendingCases}`, pendingCases > 10 ? 'info-popup-risk' : pendingCases >= 5 ? 'info-popup-warn' : 'info-popup-ok'],
+    ['─────────────', '', ''],
+    ['✓ Under Control', '< 5 pending', 'info-popup-ok'],
+    ['⚠ Watch', '5–10 pending', 'info-popup-warn'],
+    ['🚨 At Risk', '> 10 pending', 'info-popup-risk'],
   ];
 
-  const criticalPts  = criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0;
-  const failedPts    = failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0;
+  const criticalPts = criticalPct > 1 ? 3 : criticalPct > 0 ? 1 : 0;
+  const failedPts = failedPct > 3 ? 2 : failedPct > 1.5 ? 1 : 0;
 
   const finalRows = [
     // ── Severity ──
-    ['── SEVERITY ──',             '',                  ''],
-    [`Critical  ${criticalPct.toFixed(2)}%`,  `● +${criticalPts} pts`,  criticalPts >= 3 ? 'info-popup-risk' : criticalPts >= 1 ? 'info-popup-warn' : 'info-popup-ok'],
-    ['  > 1%  →  +3 pts',          '',                  'info-popup-threshold'],
-    ['  > 0% – ≤ 1%  →  +1 pt',   '',                  'info-popup-threshold'],
-    ['  = 0%  →  +0 pts',          '',                  'info-popup-threshold'],
+    ['── SEVERITY ──', '', ''],
+    [`Critical  ${criticalPct.toFixed(2)}%`, `● +${criticalPts} pts`, criticalPts >= 3 ? 'info-popup-risk' : criticalPts >= 1 ? 'info-popup-warn' : 'info-popup-ok'],
+    ['  > 1%  →  +3 pts', '', 'info-popup-threshold'],
+    ['  > 0% – ≤ 1%  →  +1 pt', '', 'info-popup-threshold'],
+    ['  = 0%  →  +0 pts', '', 'info-popup-threshold'],
 
-    [`Failed    ${failedPct.toFixed(2)}%`,    `● +${failedPts} pts`,    failedPts >= 2 ? 'info-popup-risk' : failedPts >= 1 ? 'info-popup-warn' : 'info-popup-ok'],
-    ['  > 3%  →  +2 pts',          '',                  'info-popup-threshold'],
-    ['  > 1.5% – ≤ 3%  →  +1 pt', '',                  'info-popup-threshold'],
-    ['  ≤ 1.5%  →  +0 pts',        '',                  'info-popup-threshold'],
+    [`Failed    ${failedPct.toFixed(2)}%`, `● +${failedPts} pts`, failedPts >= 2 ? 'info-popup-risk' : failedPts >= 1 ? 'info-popup-warn' : 'info-popup-ok'],
+    ['  > 3%  →  +2 pts', '', 'info-popup-threshold'],
+    ['  > 1.5% – ≤ 3%  →  +1 pt', '', 'info-popup-threshold'],
+    ['  ≤ 1.5%  →  +0 pts', '', 'info-popup-threshold'],
 
     [`Opportunity ${opportunityPct.toFixed(2)}%`, '● informational', 'info-popup-warn'],
     ['  (not counted in severity score)', '', 'info-popup-threshold'],
 
     // ── Pending ──
-    ['── PENDING ──',              '',                  ''],
+    ['── PENDING ──', '', ''],
     [`${pendingCases} cases pending to fix`, `● +${pendingScore} pts`, pendingScore >= 3 ? 'info-popup-risk' : pendingScore >= 2 ? 'info-popup-warn' : 'info-popup-ok'],
-    ['  > 20  →  +3 pts',          '',                  'info-popup-threshold'],
-    ['  10–20  →  +2 pts',         '',                  'info-popup-threshold'],
-    ['  < 10  →  +1 pt',           '',                  'info-popup-threshold'],
+    ['  > 20  →  +3 pts', '', 'info-popup-threshold'],
+    ['  10–20  →  +2 pts', '', 'info-popup-threshold'],
+    ['  < 10  →  +1 pt', '', 'info-popup-threshold'],
 
     // ── Result ──
-    ['─────────────',              '',                  ''],
-    [`Total: ${finalScore} pts`,   finalStatus,         finalScore >= 7 ? 'info-popup-risk' : finalScore >= 4 ? 'info-popup-warn' : 'info-popup-ok'],
-    ['─────────────',              '',                  ''],
-    ['🚨 AT RISK',                 '≥ 7 pts',           'info-popup-risk'],
-    ['⚠ NEEDS ATTENTION',         '4–6 pts',           'info-popup-warn'],
-    ['✓ UNDER CONTROL',           '< 4 pts',           'info-popup-ok'],
+    ['─────────────', '', ''],
+    [`Total: ${finalScore} pts`, finalStatus, finalScore >= 7 ? 'info-popup-risk' : finalScore >= 4 ? 'info-popup-warn' : 'info-popup-ok'],
+    ['─────────────', '', ''],
+    ['🚨 AT RISK', '≥ 7 pts', 'info-popup-risk'],
+    ['⚠ NEEDS ATTENTION', '4–6 pts', 'info-popup-warn'],
+    ['✓ UNDER CONTROL', '< 4 pts', 'info-popup-ok'],
   ];
 
   setTimeout(() => {
@@ -1831,21 +1841,21 @@ if (document.getElementById('daily-report')) document.getElementById('daily-repo
     if (fBtn) fBtn.onclick = e => showInfoPopup(e, 'Final Status', finalRows);
   }, 50);
 
-const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',monospace;white-space:pre-wrap;line-height:1.8;color:${color};">${txt}</div>`;
-  const SEP = ()                         => L('─'.repeat(52), 'var(--border)');
-  const TTL = (txt, icon='')             => `<div style="font-family:'Space Mono',monospace;line-height:1.8;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:6px;">${txt}${icon}</div>`;
-  const INFO = (id)                      => `<span class="info-icon" id="${id}">ℹ</span>`;
+  const L = (txt, color = 'var(--text)') => `<div style="font-family:'Space Mono',monospace;white-space:pre-wrap;line-height:1.8;color:${color};">${txt}</div>`;
+  const SEP = () => L('─'.repeat(52), 'var(--border)');
+  const TTL = (txt, icon = '') => `<div style="font-family:'Space Mono',monospace;line-height:1.8;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:6px;">${txt}${icon}</div>`;
+  const INFO = (id) => `<span class="info-icon" id="${id}">ℹ</span>`;
 
   document.getElementById('weekly-report').innerHTML = [
     L('▎ QA SHADOW — WEEKLY SUMMARY', 'var(--accent)'),
-    L(`▎ Week ${WEEK_RANGE || (DAYS.length ? DAYS[0]+' – '+DAYS[DAYS.length-1] : 'N/A')}  ·  ${DAYS.length} days loaded`, 'var(--text)'),
+    L(`▎ Week ${WEEK_RANGE || (DAYS.length ? DAYS[0] + ' – ' + DAYS[DAYS.length - 1] : 'N/A')}  ·  ${DAYS.length} days loaded`, 'var(--text)'),
     SEP(),
 
     TTL(' COVERAGE'),
     L(`  Team members : ${owners.length}`, 'var(--text)'),
     L(`  Total cases  : ${total}`, 'var(--text)'),
     L(`  QA Shadows   : ${qaShadows || 'N/A'}`, 'var(--text)'),
-    L(`  Days worked  : ${DAYS.length} days (${DAYS[0]} – ${DAYS[DAYS.length-1]})`, 'var(--text)'),
+    L(`  Days worked  : ${DAYS.length} days (${DAYS[0]} – ${DAYS[DAYS.length - 1]})`, 'var(--text)'),
     L(''),
 
     // TTL(' RESULTS'),
@@ -1854,28 +1864,28 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
     // L(`  ▲ Failed      ${String(failed).padStart(4)}   (${Math.round(failed/total*100)}%)`, 'var(--failed)'),
     // L(`  ✕ Critical    ${String(critical).padStart(4)}   (${Math.round(critical/total*100)}%)`, 'var(--critical)'),
     // SEP(),
-TTL(' RESULTS'),
+    TTL(' RESULTS'),
 
-L(
-  `  ✓ ${'Passed'.padEnd(12)} ${String(passed).padStart(4)}   (${passRate}%)` +
-  `     ● ${'Opportunity'.padEnd(12)} ${String(opportunity).padStart(4)}   (${Math.round(opportunity / total * 100)}%)`,
-  'var(--passed)'
-),
+    L(
+      `  ✓ ${'Passed'.padEnd(12)} ${String(passed).padStart(4)}   (${passRate}%)` +
+      `     ● ${'Opportunity'.padEnd(12)} ${String(opportunity).padStart(4)}   (${Math.round(opportunity / total * 100)}%)`,
+      'var(--passed)'
+    ),
 
-L(
-  `  ▲ ${'Failed'.padEnd(12)} ${String(failed).padStart(4)}   (${Math.round(failed / total * 100)}%)`,
-  'var(--failed)'
-),
+    L(
+      `  ▲ ${'Failed'.padEnd(12)} ${String(failed).padStart(4)}   (${Math.round(failed / total * 100)}%)`,
+      'var(--failed)'
+    ),
 
-L(
-  `  ✕ ${'Critical'.padEnd(12)} ${String(critical).padStart(4)}   (${Math.round(critical / total * 100)}%)`,
-  'var(--critical)'
-),
+    L(
+      `  ✕ ${'Critical'.padEnd(12)} ${String(critical).padStart(4)}   (${Math.round(critical / total * 100)}%)`,
+      'var(--critical)'
+    ),
 
-SEP(),
+    SEP(),
     TTL(' BUG PATTERNS'),
     ...(Object.keys(catCount).length
-      ? sortDesc(catCount).map(([c,n]) => L(`  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${errors>0?Math.round(n/errors*100):0}% of errors`, 'var(--text)'))
+      ? sortDesc(catCount).map(([c, n]) => L(`  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${errors > 0 ? Math.round(n / errors * 100) : 0}% of errors`, 'var(--text)'))
       : [L('  No bugs recorded', 'var(--text)')]),
     SEP(),
 
@@ -1936,7 +1946,7 @@ SEP(),
     TTL(' QUEUE &amp; CONTROL', INFO('queue-info-btn')),
     L(`  Status  : ${queueStatus} (${pendingCases} pending cases to fix)`, 'var(--text)'),
     L(`  WOMS    : Verify pending/rework queues`, 'var(--text)'),
-    L(`  ${DAYS.length < 5 ? `${5-DAYS.length} day(s) pending — updates on re-upload` : 'Full week loaded'}`, 'var(--text)'),
+    L(`  ${DAYS.length < 5 ? `${5 - DAYS.length} day(s) pending — updates on re-upload` : 'Full week loaded'}`, 'var(--text)'),
     L(''),
 
     // TTL(' NEEDS ATTENTION'),
@@ -1944,16 +1954,16 @@ SEP(),
     // SEP(),
 
     TTL(` FINAL STATUS: ${finalStatus}`, INFO('final-info-btn')),
-    L(`  Critical    : ${criticalPct.toFixed(2)}% (threshold 1%)`,    criticalPct    > 1  ? 'var(--critical)' : 'var(--passed)'),
-    L(`  Failed      : ${failedPct.toFixed(2)}% (threshold 3%)`,      failedPct      > 3  ? 'var(--failed)'   : 'var(--passed)'),
-    L(`  Opportunity : ${opportunityPct.toFixed(2)}% (informational)`, opportunityPct > 8  ? 'var(--observed)' : 'var(--passed)'),
+    L(`  Critical    : ${criticalPct.toFixed(2)}% (threshold 1%)`, criticalPct > 1 ? 'var(--critical)' : 'var(--passed)'),
+    L(`  Failed      : ${failedPct.toFixed(2)}% (threshold 3%)`, failedPct > 3 ? 'var(--failed)' : 'var(--passed)'),
+    L(`  Opportunity : ${opportunityPct.toFixed(2)}% (informational)`, opportunityPct > 8 ? 'var(--observed)' : 'var(--passed)'),
   ].join('');
 
   // Bind tooltip icons — hover (stays open while hovering popup)
   setTimeout(() => {
     const popup = document.getElementById('info-popup');
-    const qBtn  = document.getElementById('queue-info-btn');
-    const fBtn  = document.getElementById('final-info-btn');
+    const qBtn = document.getElementById('queue-info-btn');
+    const fBtn = document.getElementById('final-info-btn');
 
     let hideTimer = null;
 
@@ -2015,21 +2025,21 @@ function toggleCardFlip(event, cardEl) {
   const flipped = cardEl.getAttribute('data-flipped') === 'true';
   cardEl.setAttribute('data-flipped', String(!flipped));
 }
-let analyticsSubTab            = 'cases';
-let analyticsVolGranularity    = 'day';
-let analyticsVolChartType      = 'bar';
-let analyticsErrGranularity    = 'day';
-let analyticsErrChartType      = 'bar';
-let analyticsSelectedMember    = null;
+let analyticsSubTab = 'cases';
+let analyticsVolGranularity = 'day';
+let analyticsVolChartType = 'bar';
+let analyticsErrGranularity = 'day';
+let analyticsErrChartType = 'bar';
+let analyticsSelectedMember = null;
 let analyticsErrSelectedMember = null;
-let analyticsErrTeam           = 'general';
+let analyticsErrTeam = 'general';
 
 const ERR_TEAMS = {
-  general: { label: 'Team General',    members: null },
-  it:      { label: 'IT Team',         members: ['Nicole Gongora','Mikaela Cardenas','Jorge Loza','Dylan Jitton','Paulo Tintaya','Nestor Apaza','Sebastian Salazar','Jesus Macedo'] },
-  rangers: { label: 'Web Rangers',     members: ['Diego Delgadillo','Javier Callejas','Romel Pinto','Michael Luna','Kattya Torrez'] },
-  sin:     { label: 'Sin Nombre',      members: ['Diego Torrez','Gustavo Pillco','Richard Villalba','Ariel Vargas'] },
-  slim:    { label: 'The Slim Shadys', members: ['Luis Ajhuacho','Cidar Dealencar','Ignacio Lizarazu','Ambar Rojas'] },
+  general: { label: 'Team General', members: null },
+  it: { label: 'IT Team', members: ['Nicole Gongora', 'Mikaela Cardenas', 'Jorge Loza', 'Dylan Jitton', 'Paulo Tintaya', 'Nestor Apaza', 'Sebastian Salazar', 'Jesus Macedo'] },
+  rangers: { label: 'Web Rangers', members: ['Diego Delgadillo', 'Javier Callejas', 'Romel Pinto', 'Michael Luna', 'Kattya Torrez'] },
+  sin: { label: 'Sin Nombre', members: ['Diego Torrez', 'Gustavo Pillco', 'Richard Villalba', 'Ariel Vargas'] },
+  slim: { label: 'The Slim Shadys', members: ['Luis Ajhuacho', 'Cidar Dealencar', 'Ignacio Lizarazu', 'Ambar Rojas'] },
 };
 
 function getErrTeamData() {
@@ -2049,8 +2059,8 @@ function renderErrTeamFilterUI() {
   if (!el) return;
   el.innerHTML = `<div style="display:flex;gap:6px;flex-wrap:wrap;">
     ${Object.entries(ERR_TEAMS).map(([key, t]) =>
-      `<button class="atoggle-err${analyticsErrTeam === key ? ' active' : ''}" onclick="setErrTeam('${key}')">${t.label}</button>`
-    ).join('')}
+    `<button class="atoggle-err${analyticsErrTeam === key ? ' active' : ''}" onclick="setErrTeam('${key}')">${t.label}</button>`
+  ).join('')}
   </div>`;
 }
 
@@ -2060,7 +2070,7 @@ function renderErrTeamFilterUI() {
 function setAnalyticsSubTab(tab) {
   analyticsSubTab = tab;
   document.querySelectorAll('.asub').forEach(b => b.classList.toggle('active', b.dataset.sub === tab));
-  document.getElementById('analytics-sub-cases').style.display  = tab === 'cases'  ? '' : 'none';
+  document.getElementById('analytics-sub-cases').style.display = tab === 'cases' ? '' : 'none';
   document.getElementById('analytics-sub-errors').style.display = tab === 'errors' ? '' : 'none';
   if (tab === 'cases') {
     renderTeamStats();
@@ -2082,10 +2092,10 @@ function setAnalyticsSubTab(tab) {
 // ─────────────────────────────────────────────────────────────
 function renderCasesMemberErrorChart() {
   renderMemberErrorChart({
-    member:      analyticsSelectedMember,
-    gran:        analyticsVolGranularity,
-    chartType:   analyticsVolChartType,
-    targetId:    'analytics-cases-member-error',
+    member: analyticsSelectedMember,
+    gran: analyticsVolGranularity,
+    chartType: analyticsVolChartType,
+    targetId: 'analytics-cases-member-error',
     errRateMode: false,
   });
 }
@@ -2143,7 +2153,7 @@ function positionChartTip(e) {
   const x = e.clientX + 14;
   const y = e.clientY - t.offsetHeight / 2;
   t.style.left = Math.min(x, window.innerWidth - t.offsetWidth - 12) + 'px';
-  t.style.top  = Math.max(8, y) + 'px';
+  t.style.top = Math.max(8, y) + 'px';
 }
 function hideChartTip() {
   const t = document.getElementById('analytics-tooltip');
@@ -2153,10 +2163,10 @@ function hideChartTip() {
 function _statusTipHtml(pd) {
   if (pd.total === 0) return `<div class="ct-period">${pd.label}</div><div class="ct-empty">No data</div>`;
   const statuses = [
-    { label: 'Passed',      val: pd.passed,      color: 'var(--passed)'   },
-    { label: 'Opportunity', val: pd.opportunity, color: 'var(--observed)'  },
-    { label: 'Failed',      val: pd.failed,      color: 'var(--failed)'   },
-    { label: 'Critical',    val: pd.critical,    color: 'var(--critical)'  },
+    { label: 'Passed', val: pd.passed, color: 'var(--passed)' },
+    { label: 'Opportunity', val: pd.opportunity, color: 'var(--observed)' },
+    { label: 'Failed', val: pd.failed, color: 'var(--failed)' },
+    { label: 'Critical', val: pd.critical, color: 'var(--critical)' },
   ];
   const rows = statuses.filter(s => s.val > 0)
     .map(s => `<div class="ct-row"><span class="ct-dot" style="background:${s.color}"></span><span class="ct-name">${s.label}</span><span class="ct-val">${s.val}</span></div>`)
@@ -2174,23 +2184,23 @@ function getPeriodKey(dayStr, gran) {
   if (!dayStr) return '';
   if (dayStr.split('/').length !== 3) return dayStr;
   const date = parseMDY(dayStr);
-  if (gran === 'day')   return dayStr;
-  if (gran === 'month') return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+  if (gran === 'day') return dayStr;
+  if (gran === 'month') return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   // week → key = Monday of that week
-  const dow    = date.getDay();
+  const dow = date.getDay();
   const monday = new Date(date);
   monday.setDate(date.getDate() - ((dow + 6) % 7));
-  const mm = String(monday.getMonth()+1).padStart(2,'0');
-  const dd = String(monday.getDate()).padStart(2,'0');
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
   const yy = String(monday.getFullYear()).slice(-2);
   return `${mm}/${dd}/${yy}`;
 }
 
 function formatPeriodKey(key, gran) {
   if (gran === 'month') {
-    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const [, m] = key.split('-');
-    return `${MONTHS[parseInt(m)-1]}`;
+    return `${MONTHS[parseInt(m) - 1]}`;
   }
   return key;
 }
@@ -2201,7 +2211,7 @@ function getSortedPeriods(gran) {
     const parse = k => {
       if (gran === 'month') {
         const [yr, mo] = k.split('-');
-        return new Date(parseInt(yr), parseInt(mo)-1, 1);
+        return new Date(parseInt(yr), parseInt(mo) - 1, 1);
       }
       return parseMDY(k);
     };
@@ -2214,7 +2224,7 @@ function getSortedPeriods(gran) {
 // ─────────────────────────────────────────────────────────────
 function getAllWorkingDays(firstKey, lastKey) {
   const toKey = d =>
-    `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`;
+    `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
   const first = parseMDY(firstKey), last = parseMDY(lastKey);
   const days = [];
   const cur = new Date(first);
@@ -2233,16 +2243,16 @@ function getAllWorkingDays(firstKey, lastKey) {
 
 function formatAnalyticsDateRange(periods, gran) {
   if (!periods.length) return '';
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const parseKey = k => {
-    if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(parseInt(yr), parseInt(mo)-1, 1); }
+    if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(parseInt(yr), parseInt(mo) - 1, 1); }
     return parseMDY(k);
   };
   const fmt = d => gran === 'month'
     ? `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
     : `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
   const first = parseKey(periods[0]);
-  const last  = parseKey(periods[periods.length - 1]);
+  const last = parseKey(periods[periods.length - 1]);
   return periods.length === 1 ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
 }
 
@@ -2255,11 +2265,11 @@ function renderTeamStats() {
 
   if (!DATA.length) { el.innerHTML = ''; return; }
 
-  const total       = DATA.length;
-  const passed      = count(DATA, x => x.status === 'Passed');
+  const total = DATA.length;
+  const passed = count(DATA, x => x.status === 'Passed');
   const opportunity = count(DATA, x => x.status === 'Opportunity');
-  const failed      = count(DATA, x => x.status === 'Failed');
-  const critical    = count(DATA, x => x.status === 'Critical');
+  const failed = count(DATA, x => x.status === 'Failed');
+  const critical = count(DATA, x => x.status === 'Critical');
 
   el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;">
     <div class="analytics-stat-mini">
@@ -2289,12 +2299,12 @@ function renderTeamStats() {
 // ANALYTICS — TEAM VOLUME CHART
 // ─────────────────────────────────────────────────────────────
 function renderVolChart() {
-  const gran    = analyticsVolGranularity;
-  const el      = document.getElementById('analytics-vol-chart');
+  const gran = analyticsVolGranularity;
+  const el = document.getElementById('analytics-vol-chart');
   if (!el) return;
 
   const actualPeriods = getSortedPeriods(gran);
-  const rangeEl       = document.getElementById('analytics-vol-range');
+  const rangeEl = document.getElementById('analytics-vol-range');
 
   if (!actualPeriods.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:.78rem;padding:24px;text-align:center;">No data loaded.</div>';
@@ -2306,19 +2316,19 @@ function renderVolChart() {
     ? getAllWorkingDays(actualPeriods[0], actualPeriods[actualPeriods.length - 1])
     : actualPeriods;
 
-  const toCanon = k => { const [mo,dy,yy]=k.split('/'); return `${mo.padStart(2,'0')}/${dy.padStart(2,'0')}/${yy}`; };
+  const toCanon = k => { const [mo, dy, yy] = k.split('/'); return `${mo.padStart(2, '0')}/${dy.padStart(2, '0')}/${yy}`; };
 
   const dataLookup = new Map();
   actualPeriods.forEach(p => {
-    const key   = gran === 'day' ? toCanon(p) : p;
+    const key = gran === 'day' ? toCanon(p) : p;
     const cases = DATA.filter(x => getPeriodKey(x.day, gran) === p);
     dataLookup.set(key, {
-      label:       gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
-      total:       cases.length,
-      passed:      count(cases, x => x.status === 'Passed'),
+      label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
+      total: cases.length,
+      passed: count(cases, x => x.status === 'Passed'),
       opportunity: count(cases, x => x.status === 'Opportunity'),
-      failed:      count(cases, x => x.status === 'Failed'),
-      critical:    count(cases, x => x.status === 'Critical'),
+      failed: count(cases, x => x.status === 'Failed'),
+      critical: count(cases, x => x.status === 'Critical'),
     });
   });
 
@@ -2329,22 +2339,22 @@ function renderVolChart() {
   if (rangeEl) rangeEl.textContent = formatAnalyticsDateRange(actualPeriods, gran);
 
   const maxTotal = Math.max(...periodData.map(p => p.total), 1);
-  const H        = 290;
-  const pad      = { top: 20, bottom: 80 };
-  const chartH   = H - pad.top - pad.bottom;
-  const leftW    = 64;
+  const H = 290;
+  const pad = { top: 20, bottom: 80 };
+  const chartH = H - pad.top - pad.bottom;
+  const leftW = 64;
   const rightPad = 20;
   let barGap, barW, startPad, chartBodyW;
   if (gran === 'day') {
-    barGap     = 50;
-    barW       = 28;
-    startPad   = barGap / 2;
+    barGap = 50;
+    barW = 28;
+    startPad = barGap / 2;
     chartBodyW = Math.max(startPad + periods.length * barGap + rightPad, 300);
   } else {
     const containerW = Math.max((el.clientWidth || 900) - leftW, 300);
-    barGap     = containerW / periods.length;
-    barW       = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
-    startPad   = 0;
+    barGap = containerW / periods.length;
+    barW = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
+    startPad = 0;
     chartBodyW = containerW;
   }
   const cx = i => startPad + i * barGap + barGap / 2;
@@ -2354,9 +2364,9 @@ function renderVolChart() {
   const yMid = (pad.top + chartH / 2).toFixed(1);
   let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Cases</text>`;
   for (let i = 0; i <= 4; i++) {
-    const y   = pad.top + (i / 4) * chartH;
+    const y = pad.top + (i / 4) * chartH;
     const val = Math.round(maxTotal * (1 - i / 4));
-    leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}</text>`;
+    leftContent += `<text x="${leftW - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}</text>`;
   }
 
   // ── Grid ─────────────────────────────────────────────────
@@ -2368,27 +2378,27 @@ function renderVolChart() {
     rightGrid += `<line x1="${gridX1}" y1="${y}" x2="${gridX2}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>`;
   }
 
-  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
+  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
   if (!window._chartTips) window._chartTips = {};
 
   const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">
-    ${['Critical','Failed','Opportunity','Passed'].map(s =>
-      `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`
-    ).join('')}</div>`;
+    ${['Critical', 'Failed', 'Opportunity', 'Passed'].map(s =>
+    `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`
+  ).join('')}</div>`;
 
   let rightContent = '', xLbls = '';
 
   if (analyticsVolChartType === 'bar') {
     // ── BAR MODE ─────────────────────────────────────────────
     periodData.forEach((pd, i) => {
-      const bx  = cx(i) - barW / 2;
+      const bx = cx(i) - barW / 2;
       const key = `vol_${i}`;
       window._chartTips[key] = _statusTipHtml(pd);
       const segs = [
-        { val: pd.critical,    color: 'var(--critical)' },
-        { val: pd.failed,      color: 'var(--failed)'   },
-        { val: pd.opportunity, color: 'var(--observed)'  },
-        { val: pd.passed,      color: 'var(--passed)'    },
+        { val: pd.critical, color: 'var(--critical)' },
+        { val: pd.failed, color: 'var(--failed)' },
+        { val: pd.opportunity, color: 'var(--observed)' },
+        { val: pd.passed, color: 'var(--passed)' },
       ];
       let yOff = pad.top + chartH, topY = pad.top + chartH, barRects = '';
       segs.forEach(s => {
@@ -2397,9 +2407,9 @@ function renderVolChart() {
         yOff -= h; topY = yOff;
         barRects += `<rect x="${bx.toFixed(1)}" y="${yOff.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${s.color}" rx="1"/>`;
       });
-      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
+      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY - 4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
       rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/>${barRects}${lbl}</g>`;
-      const tx = cx(i).toFixed(1), ty = (H-54).toFixed(1);
+      const tx = cx(i).toFixed(1), ty = (H - 54).toFixed(1);
       xLbls += `<text x="${tx}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${tx} ${ty})">${pd.label}</text>`;
     });
 
@@ -2425,12 +2435,12 @@ function renderVolChart() {
       const errRate = pd.total > 0 ? errs / pd.total : 0;
       const col = errRate === 0 ? 'var(--passed)' : errRate > 0.3 ? 'var(--critical)' : errRate > 0.15 ? 'var(--failed)' : 'var(--observed)';
       dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
-      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y)-9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
-      const ty = (H-54).toFixed(1);
+      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y) - 9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
+      const ty = (H - 54).toFixed(1);
       xLbls += `<text x="${x}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${x} ${ty})">${pd.label}</text>`;
     });
     const areaFull = linePts.length > 0
-      ? [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ')
+      ? [`${cx(0).toFixed(1)},${(pad.top + chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length - 1).toFixed(1)},${(pad.top + chartH).toFixed(1)}`].join(' ')
       : '';
 
     el.innerHTML = `
@@ -2455,7 +2465,7 @@ function renderCompletedChart() {
     return;
   }
 
-  const gran       = analyticsVolGranularity;
+  const gran = analyticsVolGranularity;
   const datedCases = DATA.filter(x => x.completed_date);
 
   if (!datedCases.length) {
@@ -2473,19 +2483,19 @@ function renderCompletedChart() {
     ? getAllWorkingDays(actualPeriods[0], actualPeriods[actualPeriods.length - 1])
     : actualPeriods;
 
-  const toCanon = k => { const [mo,dy,yy]=k.split('/'); return `${mo.padStart(2,'0')}/${dy.padStart(2,'0')}/${yy}`; };
+  const toCanon = k => { const [mo, dy, yy] = k.split('/'); return `${mo.padStart(2, '0')}/${dy.padStart(2, '0')}/${yy}`; };
 
   const dataLookup = new Map();
   actualPeriods.forEach(p => {
-    const key   = gran === 'day' ? toCanon(p) : p;
+    const key = gran === 'day' ? toCanon(p) : p;
     const cases = datedCases.filter(x => getPeriodKey(x.completed_date, gran) === p);
     dataLookup.set(key, {
-      label:       gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
-      total:       cases.length,
-      passed:      count(cases, x => x.status === 'Passed'),
+      label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
+      total: cases.length,
+      passed: count(cases, x => x.status === 'Passed'),
       opportunity: count(cases, x => x.status === 'Opportunity'),
-      failed:      count(cases, x => x.status === 'Failed'),
-      critical:    count(cases, x => x.status === 'Critical'),
+      failed: count(cases, x => x.status === 'Failed'),
+      critical: count(cases, x => x.status === 'Critical'),
     });
   });
 
@@ -2494,22 +2504,22 @@ function renderCompletedChart() {
   );
 
   const maxTotal = Math.max(...periodData.map(p => p.total), 1);
-  const H        = 290;
-  const pad      = { top: 20, bottom: 80 };
-  const chartH   = H - pad.top - pad.bottom;
-  const leftW    = 64;
+  const H = 290;
+  const pad = { top: 20, bottom: 80 };
+  const chartH = H - pad.top - pad.bottom;
+  const leftW = 64;
   const rightPad = 20;
   let barGap, barW, startPad, chartBodyW;
   if (gran === 'day') {
-    barGap     = 50;
-    barW       = 28;
-    startPad   = barGap / 2;
+    barGap = 50;
+    barW = 28;
+    startPad = barGap / 2;
     chartBodyW = Math.max(startPad + periods.length * barGap + rightPad, 300);
   } else {
     const containerW = Math.max((el.clientWidth || 900) - leftW, 300);
-    barGap     = containerW / periods.length;
-    barW       = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
-    startPad   = 0;
+    barGap = containerW / periods.length;
+    barW = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
+    startPad = 0;
     chartBodyW = containerW;
   }
   const cx = i => startPad + i * barGap + barGap / 2;
@@ -2518,9 +2528,9 @@ function renderCompletedChart() {
   const yMid = (pad.top + chartH / 2).toFixed(1);
   let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Cases</text>`;
   for (let i = 0; i <= 4; i++) {
-    const y   = pad.top + (i / 4) * chartH;
+    const y = pad.top + (i / 4) * chartH;
     const val = Math.round(maxTotal * (1 - i / 4));
-    leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}</text>`;
+    leftContent += `<text x="${leftW - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}</text>`;
   }
 
   let rightGrid = '';
@@ -2531,25 +2541,25 @@ function renderCompletedChart() {
     rightGrid += `<line x1="${gridX1}" y1="${y}" x2="${gridX2}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>`;
   }
 
-  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
+  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
   if (!window._chartTips) window._chartTips = {};
 
   const header = `<div style="font-size:.72rem;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Cases Completed Over Time</div>`;
-  const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${['Critical','Failed','Opportunity','Passed'].map(s=>`<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`).join('')}</div>`;
+  const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${['Critical', 'Failed', 'Opportunity', 'Passed'].map(s => `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`).join('')}</div>`;
   const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">Cases grouped by owner completion date (Date column)</div>`;
 
   let rightContent = '', xLbls = '';
 
   if (analyticsVolChartType === 'bar') {
     periodData.forEach((pd, i) => {
-      const bx  = cx(i) - barW / 2;
+      const bx = cx(i) - barW / 2;
       const key = `comp_${i}`;
       window._chartTips[key] = _statusTipHtml(pd);
       const segs = [
-        { val: pd.critical,    color: 'var(--critical)' },
-        { val: pd.failed,      color: 'var(--failed)'   },
-        { val: pd.opportunity, color: 'var(--observed)'  },
-        { val: pd.passed,      color: 'var(--passed)'    },
+        { val: pd.critical, color: 'var(--critical)' },
+        { val: pd.failed, color: 'var(--failed)' },
+        { val: pd.opportunity, color: 'var(--observed)' },
+        { val: pd.passed, color: 'var(--passed)' },
       ];
       let yOff = pad.top + chartH, topY = pad.top + chartH, barRects = '';
       segs.forEach(s => {
@@ -2558,9 +2568,9 @@ function renderCompletedChart() {
         yOff -= h; topY = yOff;
         barRects += `<rect x="${bx.toFixed(1)}" y="${yOff.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${s.color}" rx="1"/>`;
       });
-      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
+      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY - 4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
       rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/>${barRects}${lbl}</g>`;
-      const tx = cx(i).toFixed(1), ty = (H-54).toFixed(1);
+      const tx = cx(i).toFixed(1), ty = (H - 54).toFixed(1);
       xLbls += `<text x="${tx}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${tx} ${ty})">${pd.label}</text>`;
     });
 
@@ -2585,12 +2595,12 @@ function renderCompletedChart() {
       const errRate = pd.total > 0 ? errs / pd.total : 0;
       const col = errRate === 0 ? 'var(--passed)' : errRate > 0.3 ? 'var(--critical)' : errRate > 0.15 ? 'var(--failed)' : 'var(--observed)';
       dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
-      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y)-9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
-      const ty = (H-54).toFixed(1);
+      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y) - 9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
+      const ty = (H - 54).toFixed(1);
       xLbls += `<text x="${x}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${x} ${ty})">${pd.label}</text>`;
     });
     const areaFull = linePts.length > 0
-      ? [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ')
+      ? [`${cx(0).toFixed(1)},${(pad.top + chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length - 1).toFixed(1)},${(pad.top + chartH).toFixed(1)}`].join(' ')
       : '';
 
     el.innerHTML = `${header}
@@ -2634,12 +2644,12 @@ function renderAnalyticsMemberFilter(searchTerm = '') {
 
 function toggleAnalyticsPersonDropdown() {
   // Close any case-log dropdowns that might be open
-  ['date','status','qaby','category'].forEach(n => {
+  ['date', 'status', 'qaby', 'category'].forEach(n => {
     document.getElementById(`filter-dropdown-${n}`)?.classList.remove('open');
     document.getElementById(`filter-btn-${n}`)?.classList.remove('open');
   });
 
-  const dd  = document.getElementById('analytics-person-dropdown');
+  const dd = document.getElementById('analytics-person-dropdown');
   const btn = document.getElementById('analytics-person-btn');
   if (!dd || !btn) return;
   const isOpen = dd.classList.toggle('open');
@@ -2673,10 +2683,10 @@ function renderMemberStats() {
 
   const ownCases = DATA.filter(x => x.owner === analyticsSelectedMember);
   const reviewed = DATA.filter(x => ownerMatchesQaBy(analyticsSelectedMember, x.qa_by));
-  const total    = ownCases.length;
-  const critical    = count(ownCases, x => x.status === 'Critical');
-  const failed      = count(ownCases, x => x.status === 'Failed');
-  const passed      = count(ownCases, x => x.status === 'Passed');
+  const total = ownCases.length;
+  const critical = count(ownCases, x => x.status === 'Critical');
+  const failed = count(ownCases, x => x.status === 'Failed');
+  const passed = count(ownCases, x => x.status === 'Passed');
   const opportunity = count(ownCases, x => x.status === 'Opportunity');
 
   el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -2712,10 +2722,10 @@ function renderMemberStats() {
 // opts: { member, gran, chartType, targetId }  — all optional, defaults to Errors sub-tab vars
 // ─────────────────────────────────────────────────────────────
 function renderMemberErrorChart(opts = {}) {
-  const member      = opts.member      ?? analyticsErrSelectedMember;
-  const gran        = opts.gran        ?? analyticsErrGranularity;
-  const chartType   = opts.chartType   ?? analyticsErrChartType;
-  const targetId    = opts.targetId    ?? 'analytics-member-error';
+  const member = opts.member ?? analyticsErrSelectedMember;
+  const gran = opts.gran ?? analyticsErrGranularity;
+  const chartType = opts.chartType ?? analyticsErrChartType;
+  const targetId = opts.targetId ?? 'analytics-member-error';
   const errRateMode = opts.errRateMode ?? true;
 
   const el = document.getElementById(targetId);
@@ -2740,7 +2750,7 @@ function renderMemberErrorChart(opts = {}) {
     .filter(Boolean)
     .sort((a, b) => {
       const parse = k => {
-        if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(parseInt(yr), parseInt(mo)-1, 1); }
+        if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(parseInt(yr), parseInt(mo) - 1, 1); }
         return parseMDY(k);
       };
       return parse(a) - parse(b);
@@ -2750,18 +2760,18 @@ function renderMemberErrorChart(opts = {}) {
     ? getAllWorkingDays(actualPeriods[0], actualPeriods[actualPeriods.length - 1])
     : actualPeriods;
 
-  const toCanon = k => { const [mo,dy,yy]=k.split('/'); return `${mo.padStart(2,'0')}/${dy.padStart(2,'0')}/${yy}`; };
+  const toCanon = k => { const [mo, dy, yy] = k.split('/'); return `${mo.padStart(2, '0')}/${dy.padStart(2, '0')}/${yy}`; };
 
   const dataLookup = new Map();
   actualPeriods.forEach(p => {
-    const key   = gran === 'day' ? toCanon(p) : p;
+    const key = gran === 'day' ? toCanon(p) : p;
     const cases = datedCases.filter(x => getPeriodKey(x.completed_date, gran) === p);
-    const passed      = count(cases, x => x.status === 'Passed');
+    const passed = count(cases, x => x.status === 'Passed');
     const opportunity = count(cases, x => x.status === 'Opportunity');
-    const failed      = count(cases, x => x.status === 'Failed');
-    const critical    = count(cases, x => x.status === 'Critical');
-    const errs        = failed + critical;
-    const rate        = cases.length > 0 ? Math.round(errs / cases.length * 100) : 0;
+    const failed = count(cases, x => x.status === 'Failed');
+    const critical = count(cases, x => x.status === 'Critical');
+    const errs = failed + critical;
+    const rate = cases.length > 0 ? Math.round(errs / cases.length * 100) : 0;
     dataLookup.set(key, {
       label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
       total: cases.length, passed, opportunity, failed, critical, errs, rate
@@ -2776,38 +2786,38 @@ function renderMemberErrorChart(opts = {}) {
   let trendHtml = '';
   const active = periodData.filter(p => p.total > 0);
   if (active.length >= 3) {
-    const mid  = Math.floor(active.length / 2);
+    const mid = Math.floor(active.length / 2);
     const avg1 = active.slice(0, mid).reduce((s, p) => s + p.rate, 0) / mid;
     const avg2 = active.slice(mid).reduce((s, p) => s + p.rate, 0) / (active.length - mid);
     const improving = avg2 < avg1;
-    const col   = improving ? 'var(--passed)' : 'var(--critical)';
+    const col = improving ? 'var(--passed)' : 'var(--critical)';
     const label = improving ? '↓ Improving' : '↑ Needs attention';
     trendHtml = `<span style="font-size:.75rem;font-family:'Space Mono',monospace;color:${col};font-weight:700;">${label}</span>`;
   }
 
-  const H        = 280;
-  const pad      = { top: 20, bottom: 80 };
-  const chartH   = H - pad.top - pad.bottom;
-  const leftW    = 64;
+  const H = 280;
+  const pad = { top: 20, bottom: 80 };
+  const chartH = H - pad.top - pad.bottom;
+  const leftW = 64;
   const rightPad = 20;
   let barGap, barW, startPad, chartBodyW;
   if (gran === 'day') {
-    barGap     = 50;
-    barW       = 28;
-    startPad   = barGap / 2;
+    barGap = 50;
+    barW = 28;
+    startPad = barGap / 2;
     chartBodyW = Math.max(startPad + periods.length * barGap + rightPad, 300);
   } else {
     const containerW = Math.max((el.clientWidth || 900) - leftW, 300);
-    barGap     = containerW / Math.max(periods.length, 1);
-    barW       = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
-    startPad   = barGap / 2;
+    barGap = containerW / Math.max(periods.length, 1);
+    barW = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
+    startPad = barGap / 2;
     chartBodyW = containerW;
   }
-  const cx       = i => startPad + i * barGap;
-  const errCol   = r => r === 0 ? 'var(--passed)' : r > 30 ? 'var(--critical)' : r > 15 ? 'var(--failed)' : 'var(--observed)';
-  const gridX1   = startPad.toFixed(1);
-  const gridX2   = (chartBodyW - rightPad).toFixed(1);
-  const xTitle   = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
+  const cx = i => startPad + i * barGap;
+  const errCol = r => r === 0 ? 'var(--passed)' : r > 30 ? 'var(--critical)' : r > 15 ? 'var(--failed)' : 'var(--observed)';
+  const gridX1 = startPad.toFixed(1);
+  const gridX2 = (chartBodyW - rightPad).toFixed(1);
+  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
   if (!window._chartTips) window._chartTips = {};
 
   if (errRateMode) {
@@ -2819,7 +2829,7 @@ function renderMemberErrorChart(opts = {}) {
     let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Error %</text>`;
     for (let i = 0; i <= 4; i++) {
       const y = pad.top + (i / 4) * chartH;
-      leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${Math.round(maxRate * (1 - i / 4))}%</text>`;
+      leftContent += `<text x="${leftW - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${Math.round(maxRate * (1 - i / 4))}%</text>`;
     }
     let rightGrid = '';
     for (let i = 0; i <= 4; i++) {
@@ -2829,7 +2839,7 @@ function renderMemberErrorChart(opts = {}) {
 
     const header = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;"><div style="font-size:.72rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Error Rate Over Time — ${member}</div>${trendHtml}</div>`;
     const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">(Failed + Critical) / Total · by owner completion date</div>`;
-    const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${[['var(--passed)','0% — Clean'],['var(--observed)','1–15%'],['var(--failed)','16–30%'],['var(--critical)','>30%']].map(([c,l])=>`<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c};display:inline-block;"></span>${l}</span>`).join('')}</div>`;
+    const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${[['var(--passed)', '0% — Clean'], ['var(--observed)', '1–15%'], ['var(--failed)', '16–30%'], ['var(--critical)', '>30%']].map(([c, l]) => `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c};display:inline-block;"></span>${l}</span>`).join('')}</div>`;
 
     let rightContent = '', xLbls = '';
     if (chartType === 'line') {
@@ -2840,12 +2850,12 @@ function renderMemberErrorChart(opts = {}) {
         linePts.push(`${x},${y}`);
         const col = errCol(pd.rate);
         dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
-        if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y)-9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text>`;
-        const ty = (H-54).toFixed(1);
+        if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y) - 9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text>`;
+        const ty = (H - 54).toFixed(1);
         xLbls += `<text x="${x}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${x} ${ty})">${pd.label}</text>`;
       });
-      const areaFull = linePts.length > 0 ? [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...linePts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ') : '';
-      el.innerHTML = `${header}<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="err-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${areaFull?`<polygon points="${areaFull}" fill="var(--critical)" opacity="0.07"/>`:''}${linePts.length>1?`<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--critical)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:''}${labels}${dots}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
+      const areaFull = linePts.length > 0 ? [`${cx(0).toFixed(1)},${(pad.top + chartH).toFixed(1)}`, ...linePts, `${cx(periodData.length - 1).toFixed(1)},${(pad.top + chartH).toFixed(1)}`].join(' ') : '';
+      el.innerHTML = `${header}<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="err-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${areaFull ? `<polygon points="${areaFull}" fill="var(--critical)" opacity="0.07"/>` : ''}${linePts.length > 1 ? `<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--critical)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${labels}${dots}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
     } else {
       periodData.forEach((pd, i) => {
         const bx = cx(i) - barW / 2, key = `err_${i}`;
@@ -2854,11 +2864,11 @@ function renderMemberErrorChart(opts = {}) {
         if (pd.total > 0) {
           const h = Math.max(3, (pd.rate / maxRate) * chartH);
           const yTop = pad.top + chartH - h;
-          rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/><rect x="${bx.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="2" opacity="0.85"/><text x="${cx(i).toFixed(1)}" y="${(yTop-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text></g>`;
+          rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/><rect x="${bx.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="2" opacity="0.85"/><text x="${cx(i).toFixed(1)}" y="${(yTop - 4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text></g>`;
         } else {
           rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/></g>`;
         }
-        const tx = cx(i).toFixed(1), ty = (H-54).toFixed(1);
+        const tx = cx(i).toFixed(1), ty = (H - 54).toFixed(1);
         xLbls += `<text x="${tx}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${tx} ${ty})">${pd.label}</text>`;
       });
       el.innerHTML = `${header}<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="err-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${rightContent}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
@@ -2873,7 +2883,7 @@ function renderMemberErrorChart(opts = {}) {
     let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Cases</text>`;
     for (let i = 0; i <= 4; i++) {
       const y = pad.top + (i / 4) * chartH;
-      leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${Math.round(maxTotal * (1 - i / 4))}</text>`;
+      leftContent += `<text x="${leftW - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${Math.round(maxTotal * (1 - i / 4))}</text>`;
     }
     let rightGrid = '';
     for (let i = 0; i <= 4; i++) {
@@ -2883,7 +2893,7 @@ function renderMemberErrorChart(opts = {}) {
 
     const header = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;"><div style="font-size:.72rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Case Outcomes Over Time — ${member}</div>${trendHtml}</div>`;
     const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">Cases completed by owner, classified by QA outcome</div>`;
-    const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${['Critical','Failed','Opportunity','Passed'].map(s=>`<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`).join('')}</div>`;
+    const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${['Critical', 'Failed', 'Opportunity', 'Passed'].map(s => `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`).join('')}</div>`;
 
     let rightContent = '', xLbls = '';
     if (chartType === 'line') {
@@ -2894,22 +2904,22 @@ function renderMemberErrorChart(opts = {}) {
         linePts.push(`${x},${y}`); areaPts.push(`${x},${y}`);
         const col = pd.rate === 0 ? 'var(--passed)' : pd.rate > 30 ? 'var(--critical)' : pd.rate > 15 ? 'var(--failed)' : 'var(--observed)';
         dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
-        if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y)-9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
-        const ty = (H-54).toFixed(1);
+        if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y) - 9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
+        const ty = (H - 54).toFixed(1);
         xLbls += `<text x="${x}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${x} ${ty})">${pd.label}</text>`;
       });
-      const areaFull = linePts.length > 0 ? [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ') : '';
-      el.innerHTML = `${header}<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="cases-member-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${areaFull?`<polygon points="${areaFull}" fill="var(--accent)" opacity="0.08"/>`:''}${linePts.length>1?`<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:''}${labels}${dots}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
+      const areaFull = linePts.length > 0 ? [`${cx(0).toFixed(1)},${(pad.top + chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length - 1).toFixed(1)},${(pad.top + chartH).toFixed(1)}`].join(' ') : '';
+      el.innerHTML = `${header}<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="cases-member-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${areaFull ? `<polygon points="${areaFull}" fill="var(--accent)" opacity="0.08"/>` : ''}${linePts.length > 1 ? `<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${labels}${dots}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
     } else {
       periodData.forEach((pd, i) => {
         const bx = cx(i) - barW / 2, key = `err_${i}`;
         window._chartTips[key] = _statusTipHtml(pd);
-        const segs = [{val:pd.critical,color:'var(--critical)'},{val:pd.failed,color:'var(--failed)'},{val:pd.opportunity,color:'var(--observed)'},{val:pd.passed,color:'var(--passed)'}];
+        const segs = [{ val: pd.critical, color: 'var(--critical)' }, { val: pd.failed, color: 'var(--failed)' }, { val: pd.opportunity, color: 'var(--observed)' }, { val: pd.passed, color: 'var(--passed)' }];
         let yOff = pad.top + chartH, topY = pad.top + chartH, barRects = '';
-        segs.forEach(s => { if (!s.val) return; const h=Math.max(3,(s.val/maxTotal)*chartH); yOff-=h; topY=yOff; barRects+=`<rect x="${bx.toFixed(1)}" y="${yOff.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${s.color}" rx="1"/>`;});
-        const lbl = pd.total>0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
+        segs.forEach(s => { if (!s.val) return; const h = Math.max(3, (s.val / maxTotal) * chartH); yOff -= h; topY = yOff; barRects += `<rect x="${bx.toFixed(1)}" y="${yOff.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${s.color}" rx="1"/>`; });
+        const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY - 4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
         rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/>${barRects}${lbl}</g>`;
-        const tx = cx(i).toFixed(1), ty = (H-54).toFixed(1);
+        const tx = cx(i).toFixed(1), ty = (H - 54).toFixed(1);
         xLbls += `<text x="${tx}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${tx} ${ty})">${pd.label}</text>`;
       });
       el.innerHTML = `${header}<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="cases-member-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${rightContent}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
@@ -2924,7 +2934,7 @@ function renderMemberReviewerChart() {
   const el = document.getElementById('analytics-member-reviewer');
   if (!el || !analyticsSelectedMember) return;
 
-  const gran     = analyticsVolGranularity;
+  const gran = analyticsVolGranularity;
   const reviewed = DATA.filter(x => ownerMatchesQaBy(analyticsSelectedMember, x.qa_by));
 
   if (!reviewed.length) {
@@ -2933,7 +2943,7 @@ function renderMemberReviewerChart() {
   }
 
   const allDataPeriods = getSortedPeriods(gran);
-  const actualPeriods  = allDataPeriods.filter(p =>
+  const actualPeriods = allDataPeriods.filter(p =>
     reviewed.some(x => getPeriodKey(x.day, gran) === p)
   );
 
@@ -2941,19 +2951,19 @@ function renderMemberReviewerChart() {
     ? getAllWorkingDays(allDataPeriods[0], allDataPeriods[allDataPeriods.length - 1])
     : allDataPeriods;
 
-  const toCanon = k => { const [mo,dy,yy]=k.split('/'); return `${mo.padStart(2,'0')}/${dy.padStart(2,'0')}/${yy}`; };
+  const toCanon = k => { const [mo, dy, yy] = k.split('/'); return `${mo.padStart(2, '0')}/${dy.padStart(2, '0')}/${yy}`; };
 
   const dataLookup = new Map();
   actualPeriods.forEach(p => {
-    const key   = gran === 'day' ? toCanon(p) : p;
+    const key = gran === 'day' ? toCanon(p) : p;
     const cases = reviewed.filter(x => getPeriodKey(x.day, gran) === p);
     dataLookup.set(key, {
-      label:       gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
-      total:       cases.length,
-      passed:      count(cases, x => x.status === 'Passed'),
+      label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
+      total: cases.length,
+      passed: count(cases, x => x.status === 'Passed'),
       opportunity: count(cases, x => x.status === 'Opportunity'),
-      failed:      count(cases, x => x.status === 'Failed'),
-      critical:    count(cases, x => x.status === 'Critical'),
+      failed: count(cases, x => x.status === 'Failed'),
+      critical: count(cases, x => x.status === 'Critical'),
     });
   });
 
@@ -2962,22 +2972,22 @@ function renderMemberReviewerChart() {
   );
 
   const maxTotal = Math.max(...periodData.map(p => p.total), 1);
-  const H        = 290;
-  const pad      = { top: 20, bottom: 80 };
-  const chartH   = H - pad.top - pad.bottom;
-  const leftW    = 64;
+  const H = 290;
+  const pad = { top: 20, bottom: 80 };
+  const chartH = H - pad.top - pad.bottom;
+  const leftW = 64;
   const rightPad = 20;
   let barGap, barW, startPad, chartBodyW;
   if (gran === 'day') {
-    barGap     = 50;
-    barW       = 28;
-    startPad   = barGap / 2;
+    barGap = 50;
+    barW = 28;
+    startPad = barGap / 2;
     chartBodyW = Math.max(startPad + periods.length * barGap + rightPad, 300);
   } else {
     const containerW = Math.max((el.clientWidth || 900) - leftW, 300);
-    barGap     = containerW / periods.length;
-    barW       = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
-    startPad   = 0;
+    barGap = containerW / periods.length;
+    barW = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
+    startPad = 0;
     chartBodyW = containerW;
   }
   const cx = i => startPad + i * barGap + barGap / 2;
@@ -2987,9 +2997,9 @@ function renderMemberReviewerChart() {
   const yMid = (pad.top + chartH / 2).toFixed(1);
   let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Cases</text>`;
   for (let i = 0; i <= 4; i++) {
-    const y   = pad.top + (i / 4) * chartH;
+    const y = pad.top + (i / 4) * chartH;
     const val = Math.round(maxTotal * (1 - i / 4));
-    leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}</text>`;
+    leftContent += `<text x="${leftW - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${val}</text>`;
   }
 
   // ── Grid ──────────────────────────────────────────────────
@@ -3001,28 +3011,28 @@ function renderMemberReviewerChart() {
     rightGrid += `<line x1="${revGridX1}" y1="${y}" x2="${revGridX2}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>`;
   }
 
-  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
+  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
   if (!window._chartTips) window._chartTips = {};
 
   const chartHeader = `<div style="font-size:.72rem;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Cases Reviewed by ${analyticsSelectedMember}</div>`;
   const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">
-    ${['Critical','Failed','Opportunity','Passed'].map(s =>
-      `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`
-    ).join('')}</div>`;
+    ${['Critical', 'Failed', 'Opportunity', 'Passed'].map(s =>
+    `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${STATUS_COLORS[s]};display:inline-block;"></span>${s}</span>`
+  ).join('')}</div>`;
 
   let rightContent = '', xLbls = '';
 
   if (analyticsVolChartType === 'bar') {
     // ── BAR MODE ─────────────────────────────────────────────
     periodData.forEach((pd, i) => {
-      const bx  = cx(i) - barW / 2;
+      const bx = cx(i) - barW / 2;
       const key = `rev_${i}`;
       window._chartTips[key] = _statusTipHtml(pd);
       const segs = [
-        { val: pd.critical,    color: 'var(--critical)' },
-        { val: pd.failed,      color: 'var(--failed)'   },
-        { val: pd.opportunity, color: 'var(--observed)'  },
-        { val: pd.passed,      color: 'var(--passed)'    },
+        { val: pd.critical, color: 'var(--critical)' },
+        { val: pd.failed, color: 'var(--failed)' },
+        { val: pd.opportunity, color: 'var(--observed)' },
+        { val: pd.passed, color: 'var(--passed)' },
       ];
       let yOff = pad.top + chartH, topY = pad.top + chartH, barRects = '';
       segs.forEach(s => {
@@ -3031,9 +3041,9 @@ function renderMemberReviewerChart() {
         yOff -= h; topY = yOff;
         barRects += `<rect x="${bx.toFixed(1)}" y="${yOff.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${s.color}" rx="1"/>`;
       });
-      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
+      const lbl = pd.total > 0 ? `<text x="${cx(i).toFixed(1)}" y="${(topY - 4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>` : '';
       rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/>${barRects}${lbl}</g>`;
-      const tx = cx(i).toFixed(1), ty = (H-54).toFixed(1);
+      const tx = cx(i).toFixed(1), ty = (H - 54).toFixed(1);
       xLbls += `<text x="${tx}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${tx} ${ty})">${pd.label}</text>`;
     });
 
@@ -3059,12 +3069,12 @@ function renderMemberReviewerChart() {
       const errRate = pd.total > 0 ? errs / pd.total : 0;
       const col = errRate === 0 ? 'var(--passed)' : errRate > 0.3 ? 'var(--critical)' : errRate > 0.15 ? 'var(--failed)' : 'var(--observed)';
       dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
-      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y)-9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
-      const ty = (H-54).toFixed(1);
+      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y) - 9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.total}</text>`;
+      const ty = (H - 54).toFixed(1);
       xLbls += `<text x="${x}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${x} ${ty})">${pd.label}</text>`;
     });
     const areaFull = linePts.length > 0
-      ? [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ')
+      ? [`${cx(0).toFixed(1)},${(pad.top + chartH).toFixed(1)}`, ...areaPts, `${cx(periodData.length - 1).toFixed(1)},${(pad.top + chartH).toFixed(1)}`].join(' ')
       : '';
 
     el.innerHTML = `${chartHeader}
@@ -3090,18 +3100,18 @@ function renderErrTeamStats() {
 
   if (!DATA.length || !window._hasDateColumn) { el.innerHTML = ''; return; }
 
-  const gran       = analyticsErrGranularity;
+  const gran = analyticsErrGranularity;
   const datedCases = getErrTeamData().filter(x => x.completed_date);
   if (!datedCases.length) { el.innerHTML = ''; return; }
 
-  const total   = datedCases.length;
-  const errors  = count(datedCases, x => x.status === 'Failed' || x.status === 'Critical');
+  const total = datedCases.length;
+  const errors = count(datedCases, x => x.status === 'Failed' || x.status === 'Critical');
   const errRate = total > 0 ? Math.round(errors / total * 100) : 0;
 
   const actualPeriods = [...new Set(datedCases.map(x => getPeriodKey(x.completed_date, gran)))]
     .filter(Boolean)
     .sort((a, b) => {
-      const parse = k => { if (gran === 'month') { const [yr,mo]=k.split('-'); return new Date(+yr,+mo-1,1); } return parseMDY(k); };
+      const parse = k => { if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(+yr, +mo - 1, 1); } return parseMDY(k); };
       return parse(a) - parse(b);
     });
 
@@ -3112,26 +3122,26 @@ function renderErrTeamStats() {
 
   let trendEl = '';
   if (rates.length >= 4) {
-    const slope    = calcLinearSlope(rates);
-    const unit     = gran === 'day' ? 'day' : gran === 'week' ? 'wk' : 'mo';
+    const slope = calcLinearSlope(rates);
+    const unit = gran === 'day' ? 'day' : gran === 'week' ? 'wk' : 'mo';
     const slopeStr = (slope >= 0 ? '+' : '') + slope.toFixed(2) + '%/' + unit;
 
     let trendLabel, trendColor, trendCls;
-    if      (slope < -1.0) { trendLabel = '↓ Improving';          trendColor = 'var(--passed)';   trendCls = 'info-popup-ok';   }
-    else if (slope < -0.3) { trendLabel = '↓ Slight improvement'; trendColor = 'var(--passed)';   trendCls = 'info-popup-ok';   }
-    else if (slope <= 0.3) { trendLabel = '→ Stable';             trendColor = 'var(--muted)';    trendCls = '';                }
-    else if (slope <= 1.0) { trendLabel = '↑ Watch';              trendColor = 'var(--observed)'; trendCls = 'info-popup-warn'; }
-    else                   { trendLabel = '↑ Worsening';          trendColor = 'var(--critical)'; trendCls = 'info-popup-risk'; }
+    if (slope < -1.0) { trendLabel = '↓ Improving'; trendColor = 'var(--passed)'; trendCls = 'info-popup-ok'; }
+    else if (slope < -0.3) { trendLabel = '↓ Slight improvement'; trendColor = 'var(--passed)'; trendCls = 'info-popup-ok'; }
+    else if (slope <= 0.3) { trendLabel = '→ Stable'; trendColor = 'var(--muted)'; trendCls = ''; }
+    else if (slope <= 1.0) { trendLabel = '↑ Watch'; trendColor = 'var(--observed)'; trendCls = 'info-popup-warn'; }
+    else { trendLabel = '↑ Worsening'; trendColor = 'var(--critical)'; trendCls = 'info-popup-risk'; }
 
     window._trendTeamInfoRows = [
-      ['Current slope',    slopeStr,                  trendCls],
-      ['Periods analyzed', `${rates.length}`,         ''],
+      ['Current slope', slopeStr, trendCls],
+      ['Periods analyzed', `${rates.length}`, ''],
       ['Fits a straight line through all team error rates over time. A negative slope means the error rate is falling on average across all periods.', '', 'info-popup-threshold'],
-      ['↓ Improving',          '< −1.0%/period',  'info-popup-ok'],
-      ['↓ Slight improvement', '−1.0% to −0.3%',  'info-popup-ok'],
-      ['→ Stable',             '−0.3% to +0.3%',  ''],
-      ['↑ Watch',              '+0.3% to +1.0%',  'info-popup-warn'],
-      ['↑ Worsening',          '> +1.0%/period',  'info-popup-risk'],
+      ['↓ Improving', '< −1.0%/period', 'info-popup-ok'],
+      ['↓ Slight improvement', '−1.0% to −0.3%', 'info-popup-ok'],
+      ['→ Stable', '−0.3% to +0.3%', ''],
+      ['↑ Watch', '+0.3% to +1.0%', 'info-popup-warn'],
+      ['↑ Worsening', '> +1.0%/period', 'info-popup-risk'],
       ['Requires at least 4 periods with data.', '', 'info-popup-threshold'],
     ];
 
@@ -3166,7 +3176,7 @@ function renderErrTeamStats() {
 // ANALYTICS — ERROR SUB-TAB: TEAM CHART
 // ─────────────────────────────────────────────────────────────
 function renderErrTeamChart() {
-  const el      = document.getElementById('analytics-err-team-chart');
+  const el = document.getElementById('analytics-err-team-chart');
   const rangeEl = document.getElementById('analytics-err-range');
   if (!el) return;
 
@@ -3176,116 +3186,116 @@ function renderErrTeamChart() {
     return;
   }
 
-  const gran       = analyticsErrGranularity;
+  const gran = analyticsErrGranularity;
   const datedCases = getErrTeamData().filter(x => x.completed_date);
   if (!datedCases.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:.78rem;padding:16px;">No completion-date data found.</div>';
     return;
   }
 
-  const toCanon = k => { const [mo,dy,yy]=k.split('/'); return `${mo.padStart(2,'0')}/${dy.padStart(2,'0')}/${yy}`; };
+  const toCanon = k => { const [mo, dy, yy] = k.split('/'); return `${mo.padStart(2, '0')}/${dy.padStart(2, '0')}/${yy}`; };
 
   const actualPeriods = [...new Set(datedCases.map(x => getPeriodKey(x.completed_date, gran)))]
     .filter(Boolean)
     .sort((a, b) => {
-      const parse = k => { if (gran==='month') { const [yr,mo]=k.split('-'); return new Date(+yr,+mo-1,1); } return parseMDY(k); };
+      const parse = k => { if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(+yr, +mo - 1, 1); } return parseMDY(k); };
       return parse(a) - parse(b);
     });
 
   const periods = (gran === 'day' && actualPeriods.length >= 2)
-    ? getAllWorkingDays(actualPeriods[0], actualPeriods[actualPeriods.length-1])
+    ? getAllWorkingDays(actualPeriods[0], actualPeriods[actualPeriods.length - 1])
     : actualPeriods;
 
   const dataLookup = new Map();
   actualPeriods.forEach(p => {
-    const key   = gran === 'day' ? toCanon(p) : p;
+    const key = gran === 'day' ? toCanon(p) : p;
     const cases = datedCases.filter(x => getPeriodKey(x.completed_date, gran) === p);
     const passed = count(cases, x => x.status === 'Passed');
     const opportunity = count(cases, x => x.status === 'Opportunity');
-    const failed  = count(cases, x => x.status === 'Failed');
+    const failed = count(cases, x => x.status === 'Failed');
     const critical = count(cases, x => x.status === 'Critical');
     const errs = failed + critical;
     dataLookup.set(key, {
-      label: gran === 'day' ? toCanon(p).slice(0,5) : formatPeriodKey(p, gran),
+      label: gran === 'day' ? toCanon(p).slice(0, 5) : formatPeriodKey(p, gran),
       total: cases.length, passed, opportunity, failed, critical,
       errs, rate: cases.length > 0 ? Math.round(errs / cases.length * 100) : 0
     });
   });
 
   const periodData = periods.map(p =>
-    dataLookup.get(p) || { label: gran==='day' ? p.slice(0,5) : p, total:0, passed:0, opportunity:0, failed:0, critical:0, errs:0, rate:0 }
+    dataLookup.get(p) || { label: gran === 'day' ? p.slice(0, 5) : p, total: 0, passed: 0, opportunity: 0, failed: 0, critical: 0, errs: 0, rate: 0 }
   );
 
   if (rangeEl) rangeEl.textContent = formatAnalyticsDateRange(actualPeriods, gran);
 
   // Y-axis: error rate % — scale to next 10% ceiling (min 10%)
   const maxRate = Math.ceil(Math.max(...periodData.map(p => p.rate), 10) / 10) * 10;
-  const H=290, pad={top:20,bottom:80}, chartH=H-pad.top-pad.bottom, leftW=64, rightPad=20;
+  const H = 290, pad = { top: 20, bottom: 80 }, chartH = H - pad.top - pad.bottom, leftW = 64, rightPad = 20;
   let barGap, barW, startPad, chartBodyW;
   if (gran === 'day') {
-    barGap=50; barW=28; startPad=barGap/2;
-    chartBodyW = Math.max(startPad + periods.length*barGap + rightPad, 300);
+    barGap = 50; barW = 28; startPad = barGap / 2;
+    chartBodyW = Math.max(startPad + periods.length * barGap + rightPad, 300);
   } else {
     const containerW = Math.max((el.clientWidth || 900) - leftW, 300);
-    barGap = containerW / Math.max(periods.length,1);
-    barW   = Math.min(barGap*0.5, gran==='week' ? 60 : 80);
-    startPad = barGap/2; chartBodyW = containerW;
+    barGap = containerW / Math.max(periods.length, 1);
+    barW = Math.min(barGap * 0.5, gran === 'week' ? 60 : 80);
+    startPad = barGap / 2; chartBodyW = containerW;
   }
-  const cx     = i => startPad + i*barGap;
-  const yS     = v => pad.top + chartH - (v / maxRate) * chartH;
+  const cx = i => startPad + i * barGap;
+  const yS = v => pad.top + chartH - (v / maxRate) * chartH;
   const errCol = r => r === 0 ? 'var(--passed)' : r > 30 ? 'var(--critical)' : r > 15 ? 'var(--failed)' : 'var(--observed)';
 
-  const yMid = (pad.top + chartH/2).toFixed(1);
+  const yMid = (pad.top + chartH / 2).toFixed(1);
   let leftContent = `<text x="12" y="${yMid}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace" transform="rotate(-90 12 ${yMid})">Error %</text>`;
-  for (let i=0; i<=4; i++) {
-    const y = pad.top + (i/4)*chartH;
-    leftContent += `<text x="${leftW-6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${Math.round(maxRate*(1-i/4))}%</text>`;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (i / 4) * chartH;
+    leftContent += `<text x="${leftW - 6}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-family="Space Mono,monospace">${Math.round(maxRate * (1 - i / 4))}%</text>`;
   }
 
   let rightGrid = '';
-  for (let i=0; i<=4; i++) {
-    const y = pad.top + (i/4)*chartH;
-    rightGrid += `<line x1="${startPad.toFixed(1)}" y1="${y}" x2="${(chartBodyW-rightPad).toFixed(1)}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (i / 4) * chartH;
+    rightGrid += `<line x1="${startPad.toFixed(1)}" y1="${y}" x2="${(chartBodyW - rightPad).toFixed(1)}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>`;
   }
-  const xTitle = `<text x="${((startPad+chartBodyW-rightPad)/2).toFixed(1)}" y="${H-8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
+  const xTitle = `<text x="${((startPad + chartBodyW - rightPad) / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10" font-family="Space Mono,monospace">Period</text>`;
   if (!window._chartTips) window._chartTips = {};
 
-  const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${[['var(--passed)','0% — Clean'],['var(--observed)','1–15%'],['var(--failed)','16–30%'],['var(--critical)','>30%']].map(([c,l])=>`<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c};display:inline-block;"></span>${l}</span>`).join('')}</div>`;
+  const legend = `<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">${[['var(--passed)', '0% — Clean'], ['var(--observed)', '1–15%'], ['var(--failed)', '16–30%'], ['var(--critical)', '>30%']].map(([c, l]) => `<span style="font-size:.68rem;display:flex;align-items:center;gap:5px;"><span style="width:9px;height:9px;border-radius:2px;background:${c};display:inline-block;"></span>${l}</span>`).join('')}</div>`;
   const footer = `<div style="font-size:.63rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;">(Failed + Critical) / Total · grouped by owner completion date</div>`;
 
   let rightContent = '', xLbls = '';
 
   if (analyticsErrChartType === 'bar') {
     periodData.forEach((pd, i) => {
-      const bx = cx(i) - barW/2, key = `eteam_${i}`;
+      const bx = cx(i) - barW / 2, key = `eteam_${i}`;
       window._chartTips[key] = _rateTipHtml(pd);
       const col = errCol(pd.rate);
       if (pd.total > 0) {
         const h = Math.max(3, (pd.rate / maxRate) * chartH);
         const yTop = pad.top + chartH - h;
-        rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/><rect x="${bx.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="2" opacity="0.85"/><text x="${cx(i).toFixed(1)}" y="${(yTop-4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text></g>`;
+        rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/><rect x="${bx.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="2" opacity="0.85"/><text x="${cx(i).toFixed(1)}" y="${(yTop - 4).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text></g>`;
       } else {
         rightContent += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><rect x="${bx.toFixed(1)}" y="${pad.top}" width="${barW.toFixed(1)}" height="${chartH}" fill="transparent"/></g>`;
       }
-      const tx=cx(i).toFixed(1), ty=(H-54).toFixed(1);
+      const tx = cx(i).toFixed(1), ty = (H - 54).toFixed(1);
       xLbls += `<text x="${tx}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${tx} ${ty})">${pd.label}</text>`;
     });
     el.innerHTML = `<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="err-team-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${rightContent}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
 
   } else {
-    let linePts=[], dots='', labels='';
+    let linePts = [], dots = '', labels = '';
     periodData.forEach((pd, i) => {
-      const x=cx(i).toFixed(1), y=yS(pd.rate).toFixed(1), key=`eteam_${i}`;
+      const x = cx(i).toFixed(1), y = yS(pd.rate).toFixed(1), key = `eteam_${i}`;
       window._chartTips[key] = _rateTipHtml(pd);
       linePts.push(`${x},${y}`);
       const col = errCol(pd.rate);
       dots += `<g onmouseenter="showChartTip(event,window._chartTips['${key}'])" onmousemove="positionChartTip(event)" onmouseleave="hideChartTip()" style="cursor:pointer;"><circle cx="${x}" cy="${y}" r="12" fill="transparent"/><circle cx="${x}" cy="${y}" r="5" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/></g>`;
-      if (pd.total>0) labels += `<text x="${x}" y="${(parseFloat(y)-9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text>`;
-      const ty=(H-54).toFixed(1);
+      if (pd.total > 0) labels += `<text x="${x}" y="${(parseFloat(y) - 9).toFixed(1)}" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="9" font-family="Space Mono,monospace">${pd.rate}%</text>`;
+      const ty = (H - 54).toFixed(1);
       xLbls += `<text x="${x}" y="${ty}" text-anchor="end" fill="rgba(255,255,255,0.75)" font-size="9" font-family="Space Mono,monospace" transform="rotate(-40 ${x} ${ty})">${pd.label}</text>`;
     });
-    const areaFull = linePts.length > 0 ? [`${cx(0).toFixed(1)},${(pad.top+chartH).toFixed(1)}`, ...linePts, `${cx(periodData.length-1).toFixed(1)},${(pad.top+chartH).toFixed(1)}`].join(' ') : '';
-    el.innerHTML = `<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="err-team-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${areaFull?`<polygon points="${areaFull}" fill="var(--critical)" opacity="0.07"/>`:''  }${linePts.length>1?`<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--critical)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:'' }${labels}${dots}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
+    const areaFull = linePts.length > 0 ? [`${cx(0).toFixed(1)},${(pad.top + chartH).toFixed(1)}`, ...linePts, `${cx(periodData.length - 1).toFixed(1)},${(pad.top + chartH).toFixed(1)}`].join(' ') : '';
+    el.innerHTML = `<div style="display:flex;align-items:stretch;overflow:hidden;"><svg width="${leftW}" height="${H}" viewBox="0 0 ${leftW} ${H}" style="flex-shrink:0;display:block;">${leftContent}</svg><div class="err-team-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><svg width="${chartBodyW}" height="${H}" viewBox="0 0 ${chartBodyW} ${H}" style="display:block;">${rightGrid}${areaFull ? `<polygon points="${areaFull}" fill="var(--critical)" opacity="0.07"/>` : ''}${linePts.length > 1 ? `<polyline points="${linePts.join(' ')}" fill="none" stroke="var(--critical)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${labels}${dots}${xLbls}${xTitle}</svg></div></div>${legend}${footer}`;
   }
 }
 
@@ -3315,7 +3325,7 @@ function renderErrMemberFilter(searchTerm = '') {
 }
 
 function toggleAnalyticsErrPersonDropdown() {
-  const dd  = document.getElementById('analytics-err-person-dropdown');
+  const dd = document.getElementById('analytics-err-person-dropdown');
   const btn = document.getElementById('analytics-err-person-btn');
   if (!dd || !btn) return;
   const isOpen = dd.classList.toggle('open');
@@ -3343,8 +3353,8 @@ function selectAnalyticsErrMember(name) {
 function calcLinearSlope(values) {
   const n = values.length;
   if (n < 2) return 0;
-  const sumX  = values.reduce((s, _, i) => s + i, 0);
-  const sumY  = values.reduce((s, v)    => s + v, 0);
+  const sumX = values.reduce((s, _, i) => s + i, 0);
+  const sumY = values.reduce((s, v) => s + v, 0);
   const sumXY = values.reduce((s, v, i) => s + i * v, 0);
   const sumX2 = values.reduce((s, _, i) => s + i * i, 0);
   const denom = n * sumX2 - sumX * sumX;
@@ -3359,20 +3369,20 @@ function renderErrMemberStats() {
   const el = document.getElementById('analytics-err-member-stats');
   if (!el || !analyticsErrSelectedMember) return;
 
-  const gran     = analyticsErrGranularity;
+  const gran = analyticsErrGranularity;
   const ownCases = DATA.filter(x => x.owner === analyticsErrSelectedMember);
-  const total    = ownCases.length;
-  const errors   = count(ownCases, x => x.status === 'Failed' || x.status === 'Critical');
-  const errRate  = total > 0 ? Math.round(errors / total * 100) : 0;
+  const total = ownCases.length;
+  const errors = count(ownCases, x => x.status === 'Failed' || x.status === 'Critical');
+  const errRate = total > 0 ? Math.round(errors / total * 100) : 0;
 
   const datedCases = ownCases.filter(x => x.completed_date);
   const periods = datedCases.length
     ? [...new Set(datedCases.map(x => getPeriodKey(x.completed_date, gran)))]
-        .filter(Boolean)
-        .sort((a, b) => {
-          const parse = k => { if (gran==='month') { const [yr,mo]=k.split('-'); return new Date(+yr,+mo-1,1); } return parseMDY(k); };
-          return parse(a) - parse(b);
-        })
+      .filter(Boolean)
+      .sort((a, b) => {
+        const parse = k => { if (gran === 'month') { const [yr, mo] = k.split('-'); return new Date(+yr, +mo - 1, 1); } return parseMDY(k); };
+        return parse(a) - parse(b);
+      })
     : [];
 
   // Compute error rate per period for linear regression
@@ -3383,26 +3393,26 @@ function renderErrMemberStats() {
 
   let trendEl = '';
   if (rates.length >= 4) {
-    const slope    = calcLinearSlope(rates);
-    const unit     = gran === 'day' ? 'day' : gran === 'week' ? 'wk' : 'mo';
+    const slope = calcLinearSlope(rates);
+    const unit = gran === 'day' ? 'day' : gran === 'week' ? 'wk' : 'mo';
     const slopeStr = (slope >= 0 ? '+' : '') + slope.toFixed(2) + '%/' + unit;
 
     let trendLabel, trendColor, trendCls;
-    if      (slope < -1.0) { trendLabel = '↓ Improving';          trendColor = 'var(--passed)';   trendCls = 'info-popup-ok';   }
-    else if (slope < -0.3) { trendLabel = '↓ Slight improvement'; trendColor = 'var(--passed)';   trendCls = 'info-popup-ok';   }
-    else if (slope <= 0.3) { trendLabel = '→ Stable';             trendColor = 'var(--muted)';    trendCls = '';                }
-    else if (slope <= 1.0) { trendLabel = '↑ Watch';              trendColor = 'var(--observed)'; trendCls = 'info-popup-warn'; }
-    else                   { trendLabel = '↑ Worsening';          trendColor = 'var(--critical)'; trendCls = 'info-popup-risk'; }
+    if (slope < -1.0) { trendLabel = '↓ Improving'; trendColor = 'var(--passed)'; trendCls = 'info-popup-ok'; }
+    else if (slope < -0.3) { trendLabel = '↓ Slight improvement'; trendColor = 'var(--passed)'; trendCls = 'info-popup-ok'; }
+    else if (slope <= 0.3) { trendLabel = '→ Stable'; trendColor = 'var(--muted)'; trendCls = ''; }
+    else if (slope <= 1.0) { trendLabel = '↑ Watch'; trendColor = 'var(--observed)'; trendCls = 'info-popup-warn'; }
+    else { trendLabel = '↑ Worsening'; trendColor = 'var(--critical)'; trendCls = 'info-popup-risk'; }
 
     window._trendInfoRows = [
-      ['Current slope',    slopeStr,           trendCls],
-      ['Periods analyzed', `${rates.length}`,  ''],
+      ['Current slope', slopeStr, trendCls],
+      ['Periods analyzed', `${rates.length}`, ''],
       ['Fits a straight line through all error rates over time. A negative slope means the error rate is falling on average — not just comparing first vs last.', '', 'info-popup-threshold'],
-      ['↓ Improving',          '< −1.0%/period',  'info-popup-ok'],
-      ['↓ Slight improvement', '−1.0% to −0.3%',  'info-popup-ok'],
-      ['→ Stable',             '−0.3% to +0.3%',  ''],
-      ['↑ Watch',              '+0.3% to +1.0%',  'info-popup-warn'],
-      ['↑ Worsening',          '> +1.0%/period',  'info-popup-risk'],
+      ['↓ Improving', '< −1.0%/period', 'info-popup-ok'],
+      ['↓ Slight improvement', '−1.0% to −0.3%', 'info-popup-ok'],
+      ['→ Stable', '−0.3% to +0.3%', ''],
+      ['↑ Watch', '+0.3% to +1.0%', 'info-popup-warn'],
+      ['↑ Worsening', '> +1.0%/period', 'info-popup-risk'],
       ['Requires at least 4 periods with data.', '', 'info-popup-threshold'],
     ];
 
@@ -3436,11 +3446,11 @@ function renderErrMemberStats() {
 function renderAnalytics() {
   if (!DATA.length) {
     const empty = '<div style="color:var(--muted);font-size:.78rem;padding:24px;text-align:center;">Upload a CSV to see analytics.</div>';
-    ['analytics-team-stats','analytics-vol-chart','analytics-completed-chart','analytics-member-stats','analytics-cases-member-error','analytics-member-reviewer',
-     'analytics-err-team-stats','analytics-err-team-filter','analytics-err-team-chart','analytics-err-member-stats','analytics-member-error'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = empty;
-    });
+    ['analytics-team-stats', 'analytics-vol-chart', 'analytics-completed-chart', 'analytics-member-stats', 'analytics-cases-member-error', 'analytics-member-reviewer',
+      'analytics-err-team-stats', 'analytics-err-team-filter', 'analytics-err-team-chart', 'analytics-err-member-stats', 'analytics-member-error'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = empty;
+      });
     return;
   }
   if (analyticsSubTab === 'cases') {
@@ -3466,10 +3476,10 @@ function showPanel(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
   event.target.classList.add('active');
-  if (id === 'report')    { renderReport(); renderOverview(); }
-  if (id === 'team')      renderTeam();
+  if (id === 'report') { renderReport(); renderOverview(); }
+  if (id === 'team') renderTeam();
   if (id === 'analytics') renderAnalytics();
-  if (id === 'cases')     renderCases();
+  if (id === 'cases') renderCases();
 }
 
 function copyText(id) {
@@ -3485,9 +3495,9 @@ function rerender() {
   renderReport();
   renderOverview();
   const active = document.querySelector('.panel.active')?.id?.replace('panel-', '');
-  if (active === 'team')      renderTeam();
+  if (active === 'team') renderTeam();
   if (active === 'analytics') renderAnalytics();
-  if (active === 'cases')     renderCases();
+  if (active === 'cases') renderCases();
 }
 // ─────────────────────────────────────────────────────────────
 // INFO TOOLTIP
@@ -3509,7 +3519,7 @@ function showInfoPopup(event, title, rows) {
   const pw = 300;
   const vw = window.innerWidth, vh = window.innerHeight;
   popup.style.left = (x + pw + 16 > vw ? x - pw - 8 : x + 12) + 'px';
-  popup.style.top  = (y + 200 > vh ? vh - 220 : y) + 'px';
+  popup.style.top = (y + 200 > vh ? vh - 220 : y) + 'px';
   popup.classList.add('active');
   event.stopPropagation();
 }
@@ -3543,17 +3553,262 @@ renderOverview();
 // Cases sub-tab: vol-scroll ↔ completed-scroll ↔ cases-member-scroll ↔ rev-scroll
 // Errors sub-tab: err-team-scroll ↔ err-scroll
 // ─────────────────────────────────────────────────────────────
-document.addEventListener('scroll', function(e) {
+document.addEventListener('scroll', function (e) {
   const CASES_SYNC = ['vol-scroll', 'completed-scroll', 'cases-member-scroll', 'rev-scroll'];
-  const ERR_SYNC   = ['err-team-scroll', 'err-scroll'];
+  const ERR_SYNC = ['err-team-scroll', 'err-scroll'];
   const isCases = CASES_SYNC.some(c => e.target.classList && e.target.classList.contains(c));
-  const isErr   = ERR_SYNC.some(c => e.target.classList && e.target.classList.contains(c));
+  const isErr = ERR_SYNC.some(c => e.target.classList && e.target.classList.contains(c));
   if (!isCases && !isErr) return;
   const SYNC = isCases ? CASES_SYNC : ERR_SYNC;
-  const pos  = e.target.scrollLeft;
+  const pos = e.target.scrollLeft;
   SYNC.forEach(cls => {
     document.querySelectorAll('.' + cls).forEach(el => {
       if (el !== e.target && el.scrollLeft !== pos) el.scrollLeft = pos;
     });
   });
 }, true);
+
+document
+  .getElementById("generateAiReport")
+  .addEventListener("click", () => {
+    generateAIReport();
+  });
+
+async function generateAIReport() {
+  console.log("Generating AI report...");
+
+  const button = document.getElementById("generateAiReport");
+
+  try {
+    button.disabled = true;
+    button.textContent = "Generando...";
+
+    const reportData = {
+      week: WEEK_RANGE,
+      total: DATA.length,
+      passed: count(DATA, x => x.status === 'Passed'),
+      opportunity: count(DATA, x => x.status === 'Opportunity'),
+      failed: count(DATA, x => x.status === 'Failed'),
+      critical: count(DATA, x => x.status === 'Critical'),
+      errors:
+        count(DATA, x => x.status === 'Failed') +
+        count(DATA, x => x.status === 'Critical'),
+      owners: [...new Set(DATA.map(x => x.owner))].length,
+      passRate: Math.round(
+        count(DATA, x => x.status === 'Passed') /
+        DATA.length *
+        100
+      ),
+    };
+
+    console.log(reportData);
+
+    const report = await window.generateReport(reportData);
+
+    console.log(report);
+
+    // Mostrar el informe dentro del modal
+    document.getElementById("ai-report-content").innerHTML = report;
+
+    // Abrir modal
+    openAIReportModal();
+
+  } catch (error) {
+
+    console.error("Error generating AI report:", error);
+
+    document.getElementById("ai-report-content").innerHTML = `
+      <div style="
+        padding:20px;
+        border:1px solid #ff5555;
+        color:#ff5555;
+      ">
+        Error generating AI report.
+        <br>
+        <small>${error.message}</small>
+      </div>
+    `;
+
+    openAIReportModal();
+
+  } finally {
+
+    button.disabled = false;
+    button.textContent = "Generar informe con IA";
+
+  }
+}
+
+function openAIReportModal() {
+  const modal = document.getElementById("ai-report-modal");
+
+  modal.classList.add("active");
+
+  document.body.style.overflow = "hidden";
+}
+
+
+function closeAIReportModal() {
+  const modal = document.getElementById("ai-report-modal");
+
+  modal.classList.remove("active");
+
+  document.body.style.overflow = "";
+}
+
+async function generateAndPrintReport() {
+
+  const button = document.getElementById("print-ai-report");
+
+  try {
+
+    button.disabled = true;
+    button.textContent = "Generating report...";
+
+    /*
+     * 1. Construimos los datos normalmente
+     */
+    const reportData = {
+      week: WEEK_RANGE,
+      total: DATA.length,
+
+      passed: count(DATA, x => x.status === 'Passed'),
+
+      opportunity: count(
+        DATA,
+        x => x.status === 'Opportunity'
+      ),
+
+      failed: count(
+        DATA,
+        x => x.status === 'Failed'
+      ),
+
+      critical: count(
+        DATA,
+        x => x.status === 'Critical'
+      ),
+
+      errors:
+        count(DATA, x => x.status === 'Failed') +
+        count(DATA, x => x.status === 'Critical'),
+
+      owners: [
+        ...new Set(DATA.map(x => x.owner))
+      ].length,
+
+      passRate: Math.round(
+        count(DATA, x => x.status === 'Passed') /
+        DATA.length *
+        100
+      )
+    };
+
+
+    /*
+     * 2. Intentamos generar el informe con IA
+     */
+    let report;
+
+    try {
+
+      if (
+        typeof window.generateReport !== "function"
+      ) {
+        throw new Error(
+          "AI model is not available"
+        );
+      }
+
+      console.log(
+        "Attempting AI report generation..."
+      );
+
+      report = await window.generateReport(
+        reportData
+      );
+
+      /*
+       * Verificamos que realmente haya contenido
+       */
+      if (
+        !report ||
+        typeof report !== "string" ||
+        !report.trim()
+      ) {
+        throw new Error(
+          "AI returned an empty report"
+        );
+      }
+
+      console.log(
+        "AI report generated successfully"
+      );
+
+    } catch (aiError) {
+
+      /*
+       * 3. Si la IA falla,
+       *    usamos el informe tradicional
+       */
+      console.warn(
+        "AI unavailable. Using standard report.",
+        aiError
+      );
+
+      report = getCurrentReport();
+
+    }
+
+
+    /*
+     * 4. Mostramos el resultado en el modal
+     */
+    document.getElementById(
+      "ai-report-content"
+    ).innerHTML = report;
+
+
+    /*
+     * Guardamos el informe actual
+     * para poder imprimirlo desde el modal
+     */
+    window.currentPrintableReport = report;
+
+
+    /*
+     * 5. Abrimos modal
+     */
+    openAIReportModal();
+
+
+  } catch (error) {
+
+    console.error(
+      "Error generating report:",
+      error
+    );
+
+    /*
+     * Incluso si ocurre un error inesperado,
+     * intentamos usar el informe tradicional.
+     */
+    const fallbackReport = getCurrentReport();
+
+    document.getElementById(
+      "ai-report-content"
+    ).innerHTML = fallbackReport;
+
+    window.currentPrintableReport =
+      fallbackReport;
+
+    openAIReportModal();
+
+  } finally {
+
+    button.disabled = false;
+
+    button.innerHTML =
+      "🖨 Print / Save PDF";
+  }
+}
