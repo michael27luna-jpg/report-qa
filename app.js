@@ -205,23 +205,156 @@ document.getElementById('csv-file-input').addEventListener('change', function (e
   if (!file) return;
   runAudit(file);
   const reader = new FileReader();
-  reader.onload = ev => {
+  // reader.onload = ev => {
+  //   try {
+  //     const parsed = parseCSV(ev.target.result);
+  //     DATA = [...parsed];
+  //     const statusEl = document.getElementById('import-status');
+  //     if (!parsed.length) {
+  //       statusEl.textContent = '⚠ File loaded but no valid rows found. Check column headers.';
+  //       statusEl.style.color = 'var(--observed)';
+  //     } else {
+  //       statusEl.textContent = `✓ Loaded ${parsed.length} cases across ${getDays().length} day(s).`;
+  //       statusEl.style.color = 'var(--passed)';
+  //     }
+  //     updateQAAssistantState();
+  //     rerender();
+  //   } catch (err) {
+  //     document.getElementById('import-status').textContent = '✗ Parse error: ' + err.message;
+  //     document.getElementById('import-status').style.color = 'var(--critical)';
+  //   }
+  // };
+    reader.onload = async ev => {
+
     try {
-      const parsed = parseCSV(ev.target.result);
-      DATA = [...parsed];
-      const statusEl = document.getElementById('import-status');
+
+      // ==================================================
+      // PARSE CSV
+      // ==================================================
+
+      const parsed =
+        parseCSV(
+          ev.target.result
+        );
+
+      DATA = [
+        ...parsed
+      ];
+
+
+      const statusEl =
+        document.getElementById(
+          'import-status'
+        );
+
+
+      // ==================================================
+      // NO VALID DATA
+      // ==================================================
+
       if (!parsed.length) {
-        statusEl.textContent = '⚠ File loaded but no valid rows found. Check column headers.';
-        statusEl.style.color = 'var(--observed)';
-      } else {
-        statusEl.textContent = `✓ Loaded ${parsed.length} cases across ${getDays().length} day(s).`;
-        statusEl.style.color = 'var(--passed)';
+
+        qaAssistantSessionState =
+          'no-data';
+
+        statusEl.textContent =
+          '⚠ File loaded but no valid rows found. Check column headers.';
+
+        statusEl.style.color =
+          'var(--observed)';
+
+        updateQAAssistantState();
+
+        rerender();
+
+        return;
       }
+
+
+      // ==================================================
+      // DASHBOARD DATA READY
+      // ==================================================
+
+      statusEl.textContent =
+        `✓ Loaded ${parsed.length} cases across ${getDays().length} day(s).`;
+
+      statusEl.style.color =
+        'var(--passed)';
+
+
+      // Dashboard must work independently
+      // from the AI backend.
       rerender();
+
+
+      // ==================================================
+      // PREPARE AI SESSION
+      // ==================================================
+
+      qaAssistantSessionState =
+        'preparing';
+
+      updateQAAssistantState();
+
+
+      try {
+
+        // Deletes previous conversation/session
+        // and creates a new one containing current DATA.
+        await resetQASession();
+
+
+        qaAssistantSessionState =
+          'ready';
+
+
+        console.log(
+          '[QA CHAT] AI assistant ready:',
+          qaSessionId,
+          '| Cases:',
+          DATA.length
+        );
+
+
+      } catch (sessionError) {
+
+        qaAssistantSessionState =
+          'error';
+
+
+        console.error(
+          '[QA CHAT] Could not initialize AI session:',
+          sessionError
+        );
+
+      }
+
+
+      updateQAAssistantState();
+
+
     } catch (err) {
-      document.getElementById('import-status').textContent = '✗ Parse error: ' + err.message;
-      document.getElementById('import-status').style.color = 'var(--critical)';
+
+      qaAssistantSessionState =
+        'error';
+
+
+      document.getElementById(
+        'import-status'
+      ).textContent =
+        '✗ Parse error: ' +
+        err.message;
+
+
+      document.getElementById(
+        'import-status'
+      ).style.color =
+        'var(--critical)';
+
+
+      updateQAAssistantState();
     }
+
   };
   reader.readAsText(file);
 });
@@ -664,46 +797,219 @@ function renderOverview() {
     { label: 'Unknown',      value: typeCount.Unknown, color: TYPE_COLORS.Unknown },
   ]);
 
-  // ── Bug Categories bar + percentage (stacked by type) ──
-  const catCount  = {};
-  const catByType = {};
-  d.forEach(r => r.categories.forEach(c => {
-    catCount[c] = (catCount[c] || 0) + 1;
-    if (!catByType[c]) catByType[c] = { LP: 0, Posting: 0, Unknown: 0 };
-    catByType[c][r.type] = (catByType[c][r.type] || 0) + 1;
-  }));
+  // // ── Bug Categories bar + percentage (stacked by type) ──
+  // const catCount  = {};
+  // const catByType = {};
+  // d.forEach(r => r.categories.forEach(c => {
+  //   catCount[c] = (catCount[c] || 0) + 1;
+  //   if (!catByType[c]) catByType[c] = { LP: 0, Posting: 0, Unknown: 0 };
+  //   catByType[c][r.type] = (catByType[c][r.type] || 0) + 1;
+  // }));
 
-  if (!Object.keys(catCount).length) {
+  // if (!Object.keys(catCount).length) {
+  //   document.getElementById('cat-bars').innerHTML =
+  //     '<div style="color:var(--muted);font-size:.78rem;">No bug categories detected</div>';
+  // } else {
+  //   const maxCat = Math.max(...Object.values(catCount), 1);
+  //   document.getElementById('cat-bars').innerHTML =
+  //     sortDesc(catCount).map(([cat, cnt]) => {
+  //       const pct = errors > 0 ? Math.round(cnt / errors * 100) : 0;
+  //       const bt  = catByType[cat] || { LP: 0, Posting: 0, Unknown: 0 };
+  //       return `<div class="bar-row">
+  //         <div class="bar-name">${cat}</div>
+  //         <div class="bar-track">
+  //           <div style="display:flex;height:100%;">
+  //             ${bt.LP      > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP/maxCat*100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
+  //             ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting/maxCat*100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
+  //             ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown/maxCat*100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
+  //           </div>
+  //         </div>
+  //         <div style="display:flex;gap:6px;align-items:center;min-width:68px;justify-content:flex-end;">
+  //           <span style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);">${pct}%</span>
+  //           <span class="bar-count">${cnt}</span>
+  //         </div>
+  //       </div>`;
+  //     }).join('') +
+  //     `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of total errors (${errors})</div>` +
+  //     `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+  //       ${['LP','Posting','Unknown'].map(t =>
+  //         `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
+  //           <span style="width:8px;height:8px;border-radius:2px;background:${TYPE_COLORS[t]};display:inline-block;opacity:.85"></span>${t === 'LP' ? 'Landing Page' : t}
+  //         </span>`).join('')}
+  //     </div>`;
+  // }
+  // ── Bug Categories bar + percentage ──
+  const categoryAnalysis =
+    getQACategoryAnalysis({
+      data: d
+    });
+
+  if (!categoryAnalysis.categories.length) {
     document.getElementById('cat-bars').innerHTML =
       '<div style="color:var(--muted);font-size:.78rem;">No bug categories detected</div>';
   } else {
-    const maxCat = Math.max(...Object.values(catCount), 1);
+    const maxCategoryCount = Math.max(
+      ...categoryAnalysis.categories.map(
+        item => item.count
+      ),
+      1
+    );
+
     document.getElementById('cat-bars').innerHTML =
-      sortDesc(catCount).map(([cat, cnt]) => {
-        const pct = errors > 0 ? Math.round(cnt / errors * 100) : 0;
-        const bt  = catByType[cat] || { LP: 0, Posting: 0, Unknown: 0 };
-        return `<div class="bar-row">
-          <div class="bar-name">${cat}</div>
-          <div class="bar-track">
-            <div style="display:flex;height:100%;">
-              ${bt.LP      > 0 ? `<div title="LP: ${bt.LP}"           style="width:${bt.LP/maxCat*100}%;background:${TYPE_COLORS.LP};opacity:.85"></div>` : ''}
-              ${bt.Posting > 0 ? `<div title="Posting: ${bt.Posting}" style="width:${bt.Posting/maxCat*100}%;background:${TYPE_COLORS.Posting};opacity:.85"></div>` : ''}
-              ${bt.Unknown > 0 ? `<div title="Unknown: ${bt.Unknown}" style="width:${bt.Unknown/maxCat*100}%;background:${TYPE_COLORS.Unknown};opacity:.6"></div>` : ''}
+      categoryAnalysis.categories.map(item => {
+        const percentage = Math.round(
+          item.percentageOfScope
+        );
+
+        const byType = item.byType;
+
+        return `
+          <div class="bar-row">
+            <div class="bar-name">
+              ${item.category}
+            </div>
+
+            <div class="bar-track">
+              <div style="display:flex;height:100%;">
+                ${
+                  byType.LP > 0
+                    ? `
+                      <div
+                        title="LP: ${byType.LP}"
+                        style="
+                          width:${byType.LP / maxCategoryCount * 100}%;
+                          background:${TYPE_COLORS.LP};
+                          opacity:.85;
+                        "
+                      ></div>
+                    `
+                    : ''
+                }
+
+                ${
+                  byType.Posting > 0
+                    ? `
+                      <div
+                        title="Posting: ${byType.Posting}"
+                        style="
+                          width:${byType.Posting / maxCategoryCount * 100}%;
+                          background:${TYPE_COLORS.Posting};
+                          opacity:.85;
+                        "
+                      ></div>
+                    `
+                    : ''
+                }
+
+                ${
+                  byType.Unknown > 0
+                    ? `
+                      <div
+                        title="Unknown: ${byType.Unknown}"
+                        style="
+                          width:${byType.Unknown / maxCategoryCount * 100}%;
+                          background:${TYPE_COLORS.Unknown};
+                          opacity:.6;
+                        "
+                      ></div>
+                    `
+                    : ''
+                }
+              </div>
+            </div>
+
+            <div
+              style="
+                display:flex;
+                gap:6px;
+                align-items:center;
+                min-width:68px;
+                justify-content:flex-end;
+              "
+            >
+              <span
+                style="
+                  font-family:'Space Mono',monospace;
+                  font-size:.65rem;
+                  color:var(--muted);
+                "
+              >
+                ${percentage}%
+              </span>
+
+              <span class="bar-count">
+                ${item.count}
+              </span>
             </div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;min-width:68px;justify-content:flex-end;">
-            <span style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);">${pct}%</span>
-            <span class="bar-count">${cnt}</span>
-          </div>
-        </div>`;
+        `;
       }).join('') +
-      `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of total errors (${errors})</div>` +
-      `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
-        ${['LP','Posting','Unknown'].map(t =>
-          `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
-            <span style="width:8px;height:8px;border-radius:2px;background:${TYPE_COLORS[t]};display:inline-block;opacity:.85"></span>${t === 'LP' ? 'Landing Page' : t}
-          </span>`).join('')}
-      </div>`;
+
+      `
+        <div
+          style="
+            font-size:.63rem;
+            color:var(--muted);
+            margin-top:6px;
+            font-family:'Space Mono',monospace;
+          "
+        >
+          % of non-passed cases
+          (${categoryAnalysis.scopedCases})
+        </div>
+
+        <div
+          style="
+            font-size:.61rem;
+            color:var(--muted);
+            margin-top:4px;
+            font-family:'Space Mono',monospace;
+          "
+        >
+          One case may contain multiple categories.
+        </div>
+
+        <div
+          style="
+            display:flex;
+            gap:12px;
+            margin-top:8px;
+            flex-wrap:wrap;
+          "
+        >
+          ${
+            ['LP', 'Posting', 'Unknown']
+              .map(type => `
+                <span
+                  style="
+                    font-size:.65rem;
+                    display:flex;
+                    align-items:center;
+                    gap:4px;
+                  "
+                >
+                  <span
+                    style="
+                      width:8px;
+                      height:8px;
+                      border-radius:2px;
+                      background:${TYPE_COLORS[type]};
+                      display:inline-block;
+                      opacity:.85;
+                    "
+                  ></span>
+
+                  ${
+                    type === 'LP'
+                      ? 'Landing Page'
+                      : type
+                  }
+                </span>
+              `)
+              .join('')
+          }
+        </div>
+      `;
   }
 
   // ── Top Bug Contributors (stacked by type) ──
@@ -817,8 +1123,22 @@ function renderQADonutGrid(d, DAYS, byDay, qaByCount, qaColors) {
     const errs = fa + cr;
     const id   = 'dday-' + day.replace(/\//g, '');
 
+    // const qaSplit = {};
+    // dc.forEach(r => { if (r.qa_by) qaSplit[r.qa_by] = (qaSplit[r.qa_by] || 0) + 1; });
     const qaSplit = {};
-    dc.forEach(r => { if (r.qa_by) qaSplit[r.qa_by] = (qaSplit[r.qa_by] || 0) + 1; });
+
+    dc.forEach(item => {
+      const reviewer =
+        getQAReviewerDisplayName(
+          item.qa_by,
+          d
+        );
+
+      if (!reviewer) return;
+
+      qaSplit[reviewer] =
+        (qaSplit[reviewer] || 0) + 1;
+    });
 
     // return `<div class="qa-donut-card">
     //   <div class="card-title">${day}</div>
@@ -1408,68 +1728,120 @@ function renderCases() {
 // ─────────────────────────────────────────────────────────────
 function filterCases() {
   const search = (document.getElementById('case-search')?.value || '').toLowerCase().trim();
-  let rows = [...DATA];
+  // let rows = [...DATA];
 
-  // ── Completed Date range filter ──
-  if (activeFilters.dateCompletedFrom) {
-    const from = parseMDY(activeFilters.dateCompletedFrom);
-    const to   = parseMDY(activeFilters.dateCompletedTo || activeFilters.dateCompletedFrom);
-    rows = rows.filter(x => {
-      if (!x.completed_date) return false;
-      const d = parseMDY(x.completed_date);
-      return d >= from && d <= to;
+  // // ── Completed Date range filter ──
+  // if (activeFilters.dateCompletedFrom) {
+  //   const from = parseMDY(activeFilters.dateCompletedFrom);
+  //   const to   = parseMDY(activeFilters.dateCompletedTo || activeFilters.dateCompletedFrom);
+  //   rows = rows.filter(x => {
+  //     if (!x.completed_date) return false;
+  //     const d = parseMDY(x.completed_date);
+  //     return d >= from && d <= to;
+  //   });
+  // }
+
+  // // ── QA Date range filter ──
+  // if (activeFilters.dateFrom) {
+  //   const from = parseMDY(activeFilters.dateFrom);
+  //   const to   = parseMDY(activeFilters.dateTo || activeFilters.dateFrom);
+  //   rows = rows.filter(x => {
+  //     const d = parseMDY(x.day);
+  //     return d >= from && d <= to;
+  //   });
+  // }
+
+  // // // ── Status filter (multi) ──
+  // // if (activeFilters.status.length) {
+  // //   rows = rows.filter(x => {
+  // //     if (activeFilters.status.includes('Pending'))   return x.status !== 'Passed' && (!x.fix_comment || !x.fix_comment.trim());
+  // //     if (activeFilters.status.includes('Responded')) return x.fix_comment && x.fix_comment.trim();
+  // //     return activeFilters.status.includes(x.status);
+  // //   });
+  // // }
+  // // ── Status filter (multi) ──
+  // if (activeFilters.status.length) {
+  //   rows = rows.filter(item =>
+  //     activeFilters.status.some(
+  //       selectedStatus => {
+  //         if (selectedStatus === 'Pending') {
+  //           return isQAPendingCase(item);
+  //         }
+
+  //         if (selectedStatus === 'Responded') {
+  //           return isQARespondedCase(item);
+  //         }
+
+  //         return item.status === selectedStatus;
+  //       }
+  //     )
+  //   );
+  // }
+  // // ── QA By filter (multi) ──
+  // if (activeFilters.qaby.length) {
+  //   rows = rows.filter(x => activeFilters.qaby.includes(x.qa_by));
+  // }
+
+  // // ── Owner filter (multi) ──
+  // if (activeFilters.owner.length) {
+  //   rows = rows.filter(x => activeFilters.owner.includes(x.owner));
+  // }
+
+  // // ── Category filter (multi) ──
+  // if (activeFilters.category.length) {
+  //   rows = rows.filter(x => activeFilters.category.some(c => x.categories.includes(c)));
+  // }
+
+  // // ── Type filter (multi) ──
+  // if (activeFilters.type.length) {
+  //   rows = rows.filter(x => activeFilters.type.includes(x.type));
+  // }
+
+  // // ── Text search ──
+  // if (search) {
+  //   rows = rows.filter(r =>
+  //     r.owner.toLowerCase().includes(search)       ||
+  //     r.task_id.toLowerCase().includes(search)     ||
+  //     r.summary.toLowerCase().includes(search)     ||
+  //     r.fix_comment.toLowerCase().includes(search) ||
+  //     r.qa_by.toLowerCase().includes(search)
+  //   );
+  // }
+
+  const rows =
+    filterQACases({
+      data: DATA,
+
+      qaDateFrom:
+        activeFilters.dateFrom,
+
+      qaDateTo:
+        activeFilters.dateTo,
+
+      completedDateFrom:
+        activeFilters.dateCompletedFrom,
+
+      completedDateTo:
+        activeFilters.dateCompletedTo,
+
+      owners:
+        activeFilters.owner,
+
+      reviewers:
+        activeFilters.qaby,
+
+      statuses:
+        activeFilters.status,
+
+      categories:
+        activeFilters.category,
+
+      types:
+        activeFilters.type,
+
+      text:
+        search
     });
-  }
-
-  // ── QA Date range filter ──
-  if (activeFilters.dateFrom) {
-    const from = parseMDY(activeFilters.dateFrom);
-    const to   = parseMDY(activeFilters.dateTo || activeFilters.dateFrom);
-    rows = rows.filter(x => {
-      const d = parseMDY(x.day);
-      return d >= from && d <= to;
-    });
-  }
-
-  // ── Status filter (multi) ──
-  if (activeFilters.status.length) {
-    rows = rows.filter(x => {
-      if (activeFilters.status.includes('Pending'))   return x.status !== 'Passed' && (!x.fix_comment || !x.fix_comment.trim());
-      if (activeFilters.status.includes('Responded')) return x.fix_comment && x.fix_comment.trim();
-      return activeFilters.status.includes(x.status);
-    });
-  }
-
-  // ── QA By filter (multi) ──
-  if (activeFilters.qaby.length) {
-    rows = rows.filter(x => activeFilters.qaby.includes(x.qa_by));
-  }
-
-  // ── Owner filter (multi) ──
-  if (activeFilters.owner.length) {
-    rows = rows.filter(x => activeFilters.owner.includes(x.owner));
-  }
-
-  // ── Category filter (multi) ──
-  if (activeFilters.category.length) {
-    rows = rows.filter(x => activeFilters.category.some(c => x.categories.includes(c)));
-  }
-
-  // ── Type filter (multi) ──
-  if (activeFilters.type.length) {
-    rows = rows.filter(x => activeFilters.type.includes(x.type));
-  }
-
-  // ── Text search ──
-  if (search) {
-    rows = rows.filter(r =>
-      r.owner.toLowerCase().includes(search)       ||
-      r.task_id.toLowerCase().includes(search)     ||
-      r.summary.toLowerCase().includes(search)     ||
-      r.fix_comment.toLowerCase().includes(search) ||
-      r.qa_by.toLowerCase().includes(search)
-    );
-  }
 
   const hasActiveFilters = activeFilters.dateCompletedFrom || activeFilters.dateFrom ||
                         activeFilters.status.length || activeFilters.qaby.length ||
@@ -1919,65 +2291,170 @@ function renderReport() {
   const passRate    = Math.round((passed + opportunity) / total * 100);
   const owners      = [...new Set(d.map(x => x.owner))];
 
-  const catCount = {};
-  d.forEach(r => r.categories.forEach(c => catCount[c] = (catCount[c] || 0) + 1));
+  // const catCount = {};
+  // d.forEach(r => r.categories.forEach(c => catCount[c] = (catCount[c] || 0) + 1));
+  const categoryAnalysis =
+    getQACategoryAnalysis({
+      data: d
+    });
 
-  const qaByCount = {};
-  d.forEach(r => { if (r.qa_by) qaByCount[r.qa_by] = (qaByCount[r.qa_by] || 0) + 1; });
-  const qaShadows = Object.entries(qaByCount).map(([n,c]) => `${n} (${c})`).join(', ');
+  const catCount = Object.fromEntries(
+    categoryAnalysis.categories.map(item => [
+      item.category,
+      item.count
+    ])
+  );
+
+  // const qaByCount = {};
+  // d.forEach(r => { if (r.qa_by) qaByCount[r.qa_by] = (qaByCount[r.qa_by] || 0) + 1; });
+  // const qaShadows = Object.entries(qaByCount).map(([n,c]) => `${n} (${c})`).join(', ');
+  const qaReviewerAnalysis =
+    getQAReviewerAnalysis({
+      data: d,
+      limit: 0
+    });
+
+  const qaShadows =
+    qaReviewerAnalysis.reviewers
+      .map(
+        reviewer =>
+          `${reviewer.reviewer} (${reviewer.total})`
+      )
+      .join(', ');
 
   const ownerMap = groupBy(d, 'owner');
-  const atRisk = Object.entries(ownerMap)
-    .filter(([, cases]) => {
-      const errRate = Math.round(count(cases, x => x.status === 'Failed' || x.status === 'Critical') / cases.length * 100);
-      return errRate > 10;
-    })
-    .map(([o]) => o);
+  // const atRisk = Object.entries(ownerMap)
+  //   .filter(([, cases]) => {
+  //     const errRate = Math.round(count(cases, x => x.status === 'Failed' || x.status === 'Critical') / cases.length * 100);
+  //     return errRate > 10;
+  //   })
+  //   .map(([o]) => o);
 
   // Pending cases: has a bug (non-Passed) but no fix_comment yet
-  const pendingCases = count(d, x => x.status !== 'Passed' && (!x.fix_comment || x.fix_comment.trim() === ''));
-  const queueStatus =
-    pendingCases > 10 ? '🚨 At Risk'  :
-    pendingCases >= 5 ? '⚠ Watch'    :
-                         '✓ Stable';
+  // const pendingCases = count(d, x => x.status !== 'Passed' && (!x.fix_comment || x.fix_comment.trim() === ''));
+  // const queueStatus =
+  //   pendingCases > 10 ? '🚨 At Risk'  :
+  //   pendingCases >= 5 ? '⚠ Watch'    :
+  //                        '✓ Stable';
+  const queueAnalysis =
+    getQAQueueAnalysis({
+      data: d,
+      limit: 0
+    });
+
+  // const pendingCases =
+  //   queueAnalysis.pendingCount;
+
+  // const queueStatus =
+  //   queueAnalysis.queueStatus.label;
+
 
   const daysLabel = DAYS.length > 0
     ? `${DAYS[0]}${DAYS.length > 1 ? ' – ' + DAYS[DAYS.length - 1] : ''}`
     : WEEK_RANGE;
- // ── Final Status logic ──
-  const criticalPct    = total > 0 ? (critical    / total) * 100 : 0;
-  const failedPct      = total > 0 ? (failed      / total) * 100 : 0;
-  const opportunityPct = total > 0 ? (opportunity / total) * 100 : 0;
+//  // ── Final Status logic ──
+//   const criticalPct    = total > 0 ? (critical    / total) * 100 : 0;
+//   const failedPct      = total > 0 ? (failed      / total) * 100 : 0;
+//   const opportunityPct = total > 0 ? (opportunity / total) * 100 : 0;
 
-  // Opportunity no longer affects severity score — tracked separately
-  const severityScore =
-    (criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0) +
-    (failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0);
+//   // Opportunity no longer affects severity score — tracked separately
+//   const severityScore =
+//     (criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0) +
+//     (failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0);
+
+//   const pendingScore =
+//     pendingCases > 20 ? 3 :
+//     pendingCases >= 10 ? 2 : 1;
+
+//   const finalScore = severityScore + pendingScore;
+
+//   const finalStatus =
+//     finalScore >= 7 ? '🚨 AT RISK' :
+//     finalScore >= 4 ? '⚠ NEEDS ATTENTION' :
+//     errors === 0    ? '✓ CLEAN WEEK' :
+//                       'UNDER CONTROL';
+
+  const weeklyStatusAnalysis =
+    getQAWeeklyStatusAnalysis({
+      data: d
+    });
+
+  const criticalPct =
+    weeklyStatusAnalysis
+      .metrics
+      .criticalRate;
+
+  const failedPct =
+    weeklyStatusAnalysis
+      .metrics
+      .failedRate;
+
+  const opportunityPct =
+    weeklyStatusAnalysis
+      .metrics
+      .opportunityRate;
+
+  const pendingCases =
+    weeklyStatusAnalysis
+      .metrics
+      .pending;
+
+  const criticalPts =
+    weeklyStatusAnalysis
+      .scoring
+      .critical
+      .points;
+
+  const failedPts =
+    weeklyStatusAnalysis
+      .scoring
+      .failed
+      .points;
 
   const pendingScore =
-    pendingCases > 20 ? 3 :
-    pendingCases >= 10 ? 2 : 1;
+    weeklyStatusAnalysis
+      .scoring
+      .pending
+      .points;
 
-  const finalScore = severityScore + pendingScore;
+  const severityScore =
+    weeklyStatusAnalysis
+      .scoring
+      .severityScore;
+
+  const finalScore =
+    weeklyStatusAnalysis
+      .scoring
+      .finalScore;
 
   const finalStatus =
-    finalScore >= 7 ? '🚨 AT RISK' :
-    finalScore >= 4 ? '⚠ NEEDS ATTENTION' :
-    errors === 0    ? '✓ CLEAN WEEK' :
-                      'UNDER CONTROL';
+    weeklyStatusAnalysis
+      .status
+      .label;
 
-if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent =
-`QA Shadow – Daily EOD (${daysLabel})
+  const queueStatus =
+    weeklyStatusAnalysis
+      .queueStatus
+      .label;
 
-• Reviewed: ${owners.length} members / ${total} cases
-• QA Shadows: ${qaShadows || 'N/A'}
-• Pass rate: ${passRate}% (${passed + opportunity}/${total})
-• Opportunities: ${opportunity}
-• Errors: ${errors} — Failed: ${failed} · Critical: ${critical}
-• Top bugs: ${sortDesc(catCount).slice(0,3).map(([c,n])=>`${c} (${n}x)`).join(', ') || 'None'}
-• At risk: ${atRisk.length ? atRisk.join(', ') : 'None'}
-• Queues: Stable (verify in WOMS)
-• Status: ${critical > 0 ? '⚠ Critical — immediate follow-up needed' : errors === 0 ? '✓ Clean' : 'Under control'}`;
+  const atRisk =
+    weeklyStatusAnalysis
+      .riskOwners
+      .map(item => item.owner);
+
+  if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent =
+  `QA Shadow – Daily EOD (${daysLabel})
+
+  • Reviewed: ${owners.length} members / ${total} cases
+  • QA Shadows: ${qaShadows || 'N/A'}
+  • Pass rate: ${passRate}% (${passed + opportunity}/${total})
+  • Opportunities: ${opportunity}
+  • Errors: ${errors} — Failed: ${failed} · Critical: ${critical}
+  • Top bugs: ${sortDesc(catCount).slice(0,3).map(([c,n])=>`${c} (${n}x)`).join(', ') || 'None'}
+  • At risk: ${atRisk.length ? atRisk.join(', ') : 'None'}
+  • Queues: ${queueStatus} (${pendingCases} pending)
+  • Status: ${finalStatus}`;
+    // • Status: ${critical > 0 ? '⚠ Critical — immediate follow-up needed' : errors === 0 ? '✓ Clean' : 'Under control'}`;
 
   const queueRows = [
     ['Pending cases',    `${pendingCases}`,  pendingCases > 10 ? 'info-popup-risk' : pendingCases >= 5 ? 'info-popup-warn' : 'info-popup-ok'],
@@ -1987,8 +2464,8 @@ if (document.getElementById('daily-report')) document.getElementById('daily-repo
     ['🚨 At Risk',      '> 10 pending', 'info-popup-risk'],
   ];
 
-  const criticalPts  = criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0;
-  const failedPts    = failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0;
+  // const criticalPts  = criticalPct > 1  ? 3 : criticalPct > 0   ? 1 : 0;
+  // const failedPts    = failedPct   > 3  ? 2 : failedPct   > 1.5 ? 1 : 0;
 
   const finalRows = [
     // ── Severity ──
@@ -2020,6 +2497,7 @@ if (document.getElementById('daily-report')) document.getElementById('daily-repo
     ['🚨 AT RISK',                 '≥ 7 pts',           'info-popup-risk'],
     ['⚠ NEEDS ATTENTION',         '4–6 pts',           'info-popup-warn'],
     ['✓ UNDER CONTROL',           '< 4 pts',           'info-popup-ok'],
+    ['✓ CLEAN WEEK', '0 errors + 0 pending', 'info-popup-ok']
   ];
 
   setTimeout(() => {
@@ -2071,10 +2549,30 @@ L(
 ),
 
 SEP(),
+    // TTL(' BUG PATTERNS'),
+    // ...(Object.keys(catCount).length
+    //   ? sortDesc(catCount).map(([c,n]) => L(`  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${errors>0?Math.round(n/errors*100):0}% of errors`, 'var(--text)'))
+    //   : [L('  No bugs recorded', 'var(--text)')]),
+    // SEP(),
     TTL(' BUG PATTERNS'),
-    ...(Object.keys(catCount).length
-      ? sortDesc(catCount).map(([c,n]) => L(`  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${errors>0?Math.round(n/errors*100):0}% of errors`, 'var(--text)'))
-      : [L('  No bugs recorded', 'var(--text)')]),
+
+    ...(categoryAnalysis.categories.length
+      ? categoryAnalysis.categories.map(item =>
+          L(
+            `  › ${item.category.padEnd(10)} ` +
+            `${String(item.count).padStart(3)} cases - ` +
+            `${Math.round(item.percentageOfScope)}% of non-passed cases`,
+            'var(--text)'
+          )
+        )
+      : [
+          L(
+            '  No bugs recorded',
+            'var(--text)'
+          )
+        ]
+    ),
+
     SEP(),
 
     // TTL(' TEAM PERFORMANCE  (top 8 by volume)'),
@@ -2109,7 +2607,15 @@ SEP(),
       .map(([o, cases]) => {
         const totalCases = cases.length;
         const errs = count(cases, x => x.status === 'Failed' || x.status === 'Critical');
-        const pr = Math.round(count(cases, x => x.status === 'Passed') / totalCases * 100);
+        // const pr = Math.round(count(cases, x => x.status === 'Passed') / totalCases * 100);
+        const pr = Math.round(
+          count(
+            cases,
+            x =>
+              x.status === 'Passed' ||
+              x.status === 'Opportunity'
+          ) / totalCases * 100
+        );
         const errRate = Math.round(errs / totalCases * 100);
 
         const attention = errRate > 10
@@ -2142,6 +2648,37 @@ SEP(),
     // SEP(),
 
     TTL(` FINAL STATUS: ${finalStatus}`, INFO('final-info-btn')),
+    L(''),
+
+    TTL(' STATUS EXPLANATION'),
+
+    ...weeklyStatusAnalysis.reasons.map(
+      reason =>
+        L(
+          `  › ${reason.message} (+${reason.points} pts)`,
+          reason.severity === 'risk'
+            ? 'var(--critical)'
+            : reason.severity === 'warning'
+              ? 'var(--observed)'
+              : 'var(--text)'
+        )
+    ),
+
+    L(''),
+
+    TTL(' RECOMMENDED ACTIONS'),
+
+    ...weeklyStatusAnalysis.recommendations.map(
+      recommendation =>
+        L(
+          `  › ${recommendation.message}`,
+          recommendation.priority === 'high'
+            ? 'var(--critical)'
+            : recommendation.priority === 'medium'
+              ? 'var(--observed)'
+              : 'var(--text)'
+        )
+    ),
     L(`  Critical    : ${criticalPct.toFixed(2)}% (threshold 1%)`,    criticalPct    > 1  ? 'var(--critical)' : 'var(--passed)'),
     L(`  Failed      : ${failedPct.toFixed(2)}% (threshold 3%)`,      failedPct      > 3  ? 'var(--failed)'   : 'var(--passed)'),
     L(`  Opportunity : ${opportunityPct.toFixed(2)}% (informational)`, opportunityPct > 8  ? 'var(--observed)' : 'var(--passed)'),
@@ -2192,14 +2729,132 @@ function _buildFirstNameIndex() {
   });
   _firstNameIndexLen = DATA.length;
 }
+
+function getQAOwnerNames(data = DATA) {
+  const safeData = Array.isArray(data)
+    ? data
+    : [];
+
+  return [
+    ...new Set(
+      safeData
+        .map(item => item.owner)
+        .filter(Boolean)
+    )
+  ];
+}
+
+function resolveQAReviewerIdentity(
+  qaBy,
+  data = DATA
+) {
+  const rawName =
+    String(qaBy || '').trim();
+
+  if (!rawName) {
+    return {
+      rawName: '',
+      canonicalName: null,
+      displayName: null,
+      resolved: false
+    };
+  }
+
+  const normalizedRaw =
+    normalizeQAText(rawName);
+
+  // Busca alias sin depender de mayúsculas o tildes
+  const aliasEntry =
+    Object.entries(QA_ALIAS).find(
+      ([alias]) =>
+        normalizeQAText(alias) ===
+        normalizedRaw
+    );
+
+  if (aliasEntry) {
+    return {
+      rawName,
+      canonicalName: aliasEntry[1],
+      displayName: aliasEntry[1],
+      resolved: true
+    };
+  }
+
+  const owners =
+    getQAOwnerNames(data);
+
+  // Coincidencia exacta con nombre completo
+  const exactOwner =
+    owners.find(
+      owner =>
+        normalizeQAText(owner) ===
+        normalizedRaw
+    );
+
+  if (exactOwner) {
+    return {
+      rawName,
+      canonicalName: exactOwner,
+      displayName: exactOwner,
+      resolved: true
+    };
+  }
+
+  // Coincidencia por primer nombre
+  const firstNameMatches =
+    owners.filter(owner => {
+      const firstName =
+        normalizeQAText(owner)
+          .split(' ')[0];
+
+      return firstName === normalizedRaw;
+    });
+
+  if (firstNameMatches.length === 1) {
+    return {
+      rawName,
+      canonicalName:
+        firstNameMatches[0],
+
+      displayName:
+        firstNameMatches[0],
+
+      resolved: true
+    };
+  }
+
+  // Conserva el valor original si no puede resolverlo
+  return {
+    rawName,
+    canonicalName: null,
+    displayName: rawName,
+    resolved: false
+  };
+}
+
 // Devuelve el owner canónico para un valor de qa_by, o null si no se resuelve.
+// function canonicalOwnerFor(qaBy) {
+//   const q = (qaBy || '').trim();
+//   if (!q) return null;
+//   if (QA_ALIAS[q]) return QA_ALIAS[q];
+//   if (_firstNameIndex === null || _firstNameIndexLen !== DATA.length) _buildFirstNameIndex();
+//   const m = _firstNameIndex[q.toLowerCase()];
+//   return (m && m.length === 1) ? m[0] : null;  // si es ambiguo, no adivina
+// }
 function canonicalOwnerFor(qaBy) {
-  const q = (qaBy || '').trim();
-  if (!q) return null;
-  if (QA_ALIAS[q]) return QA_ALIAS[q];
-  if (_firstNameIndex === null || _firstNameIndexLen !== DATA.length) _buildFirstNameIndex();
-  const m = _firstNameIndex[q.toLowerCase()];
-  return (m && m.length === 1) ? m[0] : null;  // si es ambiguo, no adivina
+  return resolveQAReviewerIdentity(
+    qaBy,
+    DATA
+  ).canonicalName;
+}
+function getQAReviewerDisplayName(
+  qaBy,
+  data = DATA
+) {
+  return resolveQAReviewerIdentity(
+    qaBy,
+    data
+  ).displayName;
 }
 
 function ownerMatchesQaBy(ownerName, qaBy) {
@@ -3755,3 +4410,6321 @@ document.addEventListener('scroll', function(e) {
     });
   });
 }, true);
+
+// ======================================================
+// QA AI SESSION UI STATE
+// ======================================================
+
+let qaAssistantSessionState = 'no-data';
+// no-data | preparing | ready | error
+
+let qaAssistantBusy = false;
+
+// ═══════════════════════════════════════
+// QA AI ASSISTANT — PANEL CONTROLS
+// ═══════════════════════════════════════
+
+// function updateQAAssistantState() {
+//   const hasData = Array.isArray(DATA) && DATA.length > 0;
+
+//   const status = document.getElementById('qa-ai-status');
+//   const input = document.getElementById('qa-ai-input');
+//   const sendButton = document.getElementById('qa-ai-send');
+//   const suggestions = document.querySelectorAll('.qa-ai-suggestion');
+//   const trigger = document.getElementById('qa-ai-trigger');
+
+//   if (status) {
+//     status.textContent = hasData
+//       ? `Data ready · ${DATA.length} cases loaded`
+//       : 'No dataset loaded';
+
+//     status.classList.toggle('ready', hasData);
+//   }
+
+//   if (input) {
+//     input.disabled = !hasData;
+//     input.placeholder = hasData
+//       ? 'Ask a question about QA dataset...'
+//       : 'Upload a CSV before asking questions...';
+//   }
+
+//   if (sendButton) {
+//     sendButton.disabled = !hasData;
+//   }
+
+//   suggestions.forEach(button => {
+//     button.disabled = !hasData;
+//   });
+
+//   if (trigger) {
+//     trigger.classList.toggle('ready', hasData);
+//     trigger.title = hasData
+//       ? `${DATA.length} QA cases available`
+//       : 'Upload a CSV to enable the assistant';
+//   }
+//   updateQAAssistantWelcomeMessage(hasData);
+//   updateQAAssistantSendState();
+// }
+
+function updateQAAssistantState() {
+
+  const hasData =
+    Array.isArray(DATA) &&
+    DATA.length > 0;
+
+  const isPreparing =
+    qaAssistantSessionState === 'preparing';
+
+  const isReady =
+    hasData &&
+    qaAssistantSessionState === 'ready' &&
+    Boolean(qaSessionId);
+
+  const hasError =
+    qaAssistantSessionState === 'error';
+
+
+  const status =
+    document.getElementById(
+      'qa-ai-status'
+    );
+
+  const input =
+    document.getElementById(
+      'qa-ai-input'
+    );
+
+  const sendButton =
+    document.getElementById(
+      'qa-ai-send'
+    );
+
+  const clearButton =
+    document.getElementById(
+      'qa-ai-clear'
+    );
+
+  const suggestions =
+    document.querySelectorAll(
+      '.qa-ai-suggestion'
+    );
+
+  const trigger =
+    document.getElementById(
+      'qa-ai-trigger'
+    );
+
+
+  // ====================================================
+  // STATUS TEXT
+  // ====================================================
+
+  if (status) {
+
+    if (!hasData) {
+
+      status.textContent =
+        'No dataset loaded';
+
+    } else if (isPreparing) {
+
+      status.textContent =
+        `Preparing AI assistant · ${DATA.length} cases`;
+
+    } else if (isReady) {
+
+      status.textContent =
+        `AI assistant ready · ${DATA.length} cases`;
+
+    } else if (hasError) {
+
+      status.textContent =
+        'AI assistant unavailable';
+
+    } else {
+
+      status.textContent =
+        'AI assistant not ready';
+    }
+
+
+    status.classList.toggle(
+      'ready',
+      isReady
+    );
+  }
+
+
+  // ====================================================
+  // INPUT
+  // ====================================================
+
+  if (input) {
+
+    input.disabled =
+      !isReady ||
+      qaAssistantBusy;
+
+
+    if (!hasData) {
+
+      input.placeholder =
+        'Upload a CSV before asking questions...';
+
+    } else if (isPreparing) {
+
+      input.placeholder =
+        'Preparing AI assistant...';
+
+    } else if (hasError) {
+
+      input.placeholder =
+        'AI assistant unavailable...';
+
+    } else {
+
+      input.placeholder =
+        'Ask a question about QA dataset...';
+    }
+  }
+
+
+  // ====================================================
+  // BUTTONS
+  // ====================================================
+
+  if (sendButton) {
+
+    sendButton.disabled =
+      !isReady ||
+      qaAssistantBusy;
+  }
+
+
+  if (clearButton) {
+
+    clearButton.disabled =
+      !hasData ||
+      isPreparing ||
+      qaAssistantBusy;
+  }
+
+
+  suggestions.forEach(button => {
+
+    button.disabled =
+      !isReady ||
+      qaAssistantBusy;
+
+  });
+
+
+  // ====================================================
+  // FLOATING TRIGGER
+  // ====================================================
+
+  if (trigger) {
+
+    trigger.classList.toggle(
+      'ready',
+      isReady
+    );
+
+    trigger.title =
+      isReady
+        ? `${DATA.length} QA cases available`
+        : hasData
+          ? 'Preparing AI assistant'
+          : 'Upload a CSV to enable the assistant';
+  }
+
+
+  updateQAAssistantWelcomeMessage(
+    hasData
+  );
+
+  updateQAAssistantSendState();
+}
+
+// function updateQAAssistantWelcomeMessage(hasData) {
+//   const messages = document.getElementById('qa-ai-messages');
+
+//   if (!messages) return;
+
+//   const message = hasData
+//     ? `Your QA dataset is ready.\n\n${DATA.length} cases were loaded successfully. You can now ask questions about cases, team members, statuses, errors and QA activity.`
+//     : 'Upload a CSV file to start asking questions about your QA data.';
+
+//   messages.innerHTML = `
+//     <div class="qa-ai-message qa-ai-message-assistant">
+//       <div class="qa-ai-message-label">QA Assistant</div>
+
+//       <div class="qa-ai-message-content">
+//         ${message}
+//       </div>
+//     </div>
+//   `;
+// }
+function updateQAAssistantWelcomeMessage(
+  hasData
+) {
+
+  const messages =
+    document.getElementById(
+      'qa-ai-messages'
+    );
+
+  if (!messages) return;
+
+
+  let message;
+
+
+  if (!hasData) {
+
+    message =
+      'Upload a CSV file to start asking questions about your QA data.';
+
+  } else if (
+    qaAssistantSessionState ===
+    'preparing'
+  ) {
+
+    message =
+      `Preparing the AI assistant for ${DATA.length} QA cases...`;
+
+  } else if (
+    qaAssistantSessionState ===
+    'error'
+  ) {
+
+    message =
+      `The dashboard loaded ${DATA.length} QA cases successfully, but the AI assistant could not be initialized.`;
+
+  } else {
+
+    message =
+      `Your QA dataset is ready.\n\n${DATA.length} cases were loaded successfully. You can now ask Claude questions about cases, team members, errors, categories, QA activity and performance.`;
+
+  }
+
+
+  messages.innerHTML = `
+    <div class="qa-ai-message qa-ai-message-assistant">
+
+      <div class="qa-ai-message-label">
+        QA Assistant
+      </div>
+
+      <div class="qa-ai-message-content">
+        ${message}
+      </div>
+
+    </div>
+  `;
+}
+
+function openQAAssistant() {
+  const panel = document.getElementById('qa-ai-panel');
+  const overlay = document.getElementById('qa-ai-overlay');
+
+  if (!panel || !overlay) return;
+
+  panel.classList.add('open');
+  overlay.classList.add('open');
+
+  panel.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeQAAssistant() {
+  const panel = document.getElementById('qa-ai-panel');
+  const overlay = document.getElementById('qa-ai-overlay');
+
+  if (!panel || !overlay) return;
+
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+
+  panel.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+// document.addEventListener('DOMContentLoaded', () => {
+//   const trigger = document.getElementById('qa-ai-trigger');
+//   const closeButton = document.getElementById('qa-ai-close');
+//   const overlay = document.getElementById('qa-ai-overlay');
+
+//   trigger?.addEventListener('click', openQAAssistant);
+//   closeButton?.addEventListener('click', closeQAAssistant);
+//   overlay?.addEventListener('click', closeQAAssistant);
+
+//   updateQAAssistantState();
+// });
+document.addEventListener('DOMContentLoaded', () => {
+  const trigger =
+    document.getElementById('qa-ai-trigger');
+
+  const closeButton =
+    document.getElementById('qa-ai-close');
+
+  const overlay =
+    document.getElementById('qa-ai-overlay');
+
+  const input =
+    document.getElementById('qa-ai-input');
+
+  const sendButton =
+    document.getElementById('qa-ai-send');
+
+  const clearButton =
+    document.getElementById('qa-ai-clear');
+
+  const suggestions =
+    document.querySelectorAll('.qa-ai-suggestion');
+
+  trigger?.addEventListener(
+    'click',
+    openQAAssistant
+  );
+
+  closeButton?.addEventListener(
+    'click',
+    closeQAAssistant
+  );
+
+  overlay?.addEventListener(
+    'click',
+    closeQAAssistant
+  );
+
+  sendButton?.addEventListener(
+    'click',
+    () => sendQAAssistantMessage()
+  );
+
+  clearButton?.addEventListener(
+    'click',
+    clearQAAssistantChat
+  );
+
+  input?.addEventListener('input', () => {
+    resizeQAAssistantInput();
+    updateQAAssistantSendState();
+  });
+
+  input?.addEventListener('keydown', event => {
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      sendQAAssistantMessage();
+    }
+  });
+
+  suggestions.forEach(button => {
+    button.addEventListener('click', () => {
+      const question =
+        button.dataset.question || '';
+
+      sendQAAssistantMessage(question);
+    });
+  });
+
+  updateQAAssistantState();
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    closeQAAssistant();
+  }
+});
+
+function addQAAssistantMessage(role, text) {
+  const messages = document.getElementById('qa-ai-messages');
+
+  if (!messages || !text) return;
+
+  const message = document.createElement('div');
+  const isUser = role === 'user';
+
+  message.className = `qa-ai-message ${
+    isUser
+      ? 'qa-ai-message-user'
+      : 'qa-ai-message-assistant'
+  }`;
+
+  const label = document.createElement('div');
+  label.className = 'qa-ai-message-label';
+  label.textContent = isUser ? 'You' : 'QA Assistant';
+
+  const content = document.createElement('div');
+  content.className = 'qa-ai-message-content';
+  content.textContent = text;
+
+  message.appendChild(label);
+  message.appendChild(content);
+
+  messages.appendChild(message);
+
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// function getMockQAAssistantResponse(question) {
+//   const normalizedQuestion = question
+//     .trim()
+//     .toLowerCase();
+
+//   if (
+//     normalizedQuestion.includes('summarize') ||
+//     normalizedQuestion.includes('summary')
+//   ) {
+//     return `The current dataset contains ${DATA.length} valid QA cases. Detailed metrics will be connected in the next development step.`;
+//   }
+
+//   if (
+//     normalizedQuestion.includes('pending')
+//   ) {
+//     return 'Pending-case analysis is not connected yet. This question was received successfully.';
+//   }
+
+//   if (
+//     normalizedQuestion.includes('error rate')
+//   ) {
+//     return 'Error-rate analysis is not connected yet. This question was received successfully.';
+//   }
+
+//   if (
+//     normalizedQuestion.includes('bug category') ||
+//     normalizedQuestion.includes('category')
+//   ) {
+//     return 'Bug-category analysis is not connected yet. This question was received successfully.';
+//   }
+
+//   return `I received your question: "${question}"\n\nThis is currently a simulated response.`;
+// }
+function getLocalQAAssistantResponse(question) {
+  // const normalizedQuestion = question
+  //   .trim()
+  //   .toLowerCase();
+  const normalizedQuestion =
+  normalizeQAText(question);
+
+  const comparisonOwners =
+  findQAOwnersForComparison(
+    question
+  );
+
+  const asksForMemberComparison =
+    normalizedQuestion.includes('compare') ||
+    normalizedQuestion.includes('comparison') ||
+    normalizedQuestion.includes('versus') ||
+    containsNormalizedPhrase(
+      normalizedQuestion,
+      'vs'
+    ) ||
+    normalizedQuestion.includes('difference between') ||
+    normalizedQuestion.includes('who performs better') ||
+    normalizedQuestion.includes('comparar') ||
+    normalizedQuestion.includes('compara') ||
+    normalizedQuestion.includes('comparacion') ||
+    normalizedQuestion.includes('diferencia entre') ||
+    normalizedQuestion.includes('quien tiene mejor rendimiento');
+
+  const ownerResult =
+    findQAOwnerInQuestion(question);
+
+  const detectedCategory =
+  findQACategoryInQuestion(question);
+
+  const reviewerResult =
+  findQAReviewerInQuestion(
+    question
+  );
+
+  const combinedFilterRequest =
+  parseQACombinedFilterQuestion(
+    question
+  );
+
+  const asksForWeeklyStatus =
+    normalizedQuestion.includes('weekly status') ||
+    normalizedQuestion.includes('week status') ||
+    normalizedQuestion.includes('final status') ||
+    normalizedQuestion.includes('status of the week') ||
+    normalizedQuestion.includes('weekly health') ||
+    normalizedQuestion.includes('estado semanal') ||
+    normalizedQuestion.includes('estado de la semana') ||
+    normalizedQuestion.includes('estado final') ||
+    normalizedQuestion.includes('como esta la semana') ||
+    normalizedQuestion.includes('por que estamos at risk') ||
+    normalizedQuestion.includes('por que estamos en riesgo');
+
+  const asksForWeeklyScoringRules =
+    normalizedQuestion.includes('how is the weekly status calculated') ||
+    normalizedQuestion.includes('how is final status calculated') ||
+    normalizedQuestion.includes('weekly scoring rules') ||
+    normalizedQuestion.includes('status thresholds') ||
+    normalizedQuestion.includes('como se calcula el estado semanal') ||
+    normalizedQuestion.includes('como se calcula el estado final') ||
+    normalizedQuestion.includes('reglas del estado semanal') ||
+    normalizedQuestion.includes('umbrales del estado');
+
+
+
+  const asksForQAReviewActivity =
+    normalizedQuestion.includes('as qa') ||
+    normalizedQuestion.includes('qa reviewer') ||
+    normalizedQuestion.includes('qa activity') ||
+    normalizedQuestion.includes('review activity') ||
+    normalizedQuestion.includes('cases reviewed') ||
+    normalizedQuestion.includes('reviews completed') ||
+    normalizedQuestion.includes('reviewed by') ||
+    normalizedQuestion.includes('did review') ||
+    normalizedQuestion.includes('como qa') ||
+    normalizedQuestion.includes('actividad de qa') ||
+    normalizedQuestion.includes('actividad del qa') ||
+    normalizedQuestion.includes('casos revisados') ||
+    normalizedQuestion.includes('revisiones') ||
+    normalizedQuestion.includes('reviso');
+
+  const asksWhoReviewedMost =
+    normalizedQuestion.includes('who reviewed the most') ||
+    normalizedQuestion.includes('most qa reviews') ||
+    normalizedQuestion.includes('highest number of reviews') ||
+    normalizedQuestion.includes('quien reviso mas') ||
+    normalizedQuestion.includes('mas revisiones');
+
+  const asksWhoFoundMostErrors =
+    normalizedQuestion.includes('who found the most errors') ||
+    normalizedQuestion.includes('most errors found') ||
+    normalizedQuestion.includes('who detected the most errors') ||
+    normalizedQuestion.includes('quien encontro mas errores') ||
+    normalizedQuestion.includes('quien detecto mas errores');
+
+  const asksForQALeaderboard =
+    normalizedQuestion.includes('qa reviewer activity') ||
+    normalizedQuestion.includes('qa activity ranking') ||
+    normalizedQuestion.includes('reviewer leaderboard') ||
+    normalizedQuestion.includes('actividad de los qa') ||
+    normalizedQuestion.includes('ranking de revisores');
+
+  const asksForPending =
+    normalizedQuestion.includes('pending') ||
+    normalizedQuestion.includes('pendiente') ||
+    normalizedQuestion.includes('without fix comment') ||
+    normalizedQuestion.includes('sin fix comment') ||
+    normalizedQuestion.includes('sin respuesta');
+
+  const asksForResponded =
+    normalizedQuestion.includes('responded') ||
+    normalizedQuestion.includes('response') ||
+    normalizedQuestion.includes('replied') ||
+    normalizedQuestion.includes('answered') ||
+    normalizedQuestion.includes('respondido') ||
+    normalizedQuestion.includes('respondida') ||
+    normalizedQuestion.includes('con respuesta') ||
+    normalizedQuestion.includes('con fix comment');
+
+  const asksForCaseList =
+    normalizedQuestion.includes('show') ||
+    normalizedQuestion.includes('list') ||
+    normalizedQuestion.includes('which cases') ||
+    normalizedQuestion.includes('details') ||
+    normalizedQuestion.includes('muestra') ||
+    normalizedQuestion.includes('lista') ||
+    normalizedQuestion.includes('cuales') ||
+    normalizedQuestion.includes('detalles');
+
+  const asksWhoHasMostPending =
+    normalizedQuestion.includes('most pending') ||
+    normalizedQuestion.includes('highest number of pending') ||
+    normalizedQuestion.includes('mas pendientes') ||
+    normalizedQuestion.includes('mayor cantidad de pendientes');
+
+  const asksForTopCategory =
+    normalizedQuestion.includes('top bug category') ||
+    normalizedQuestion.includes('top category') ||
+    normalizedQuestion.includes('most common category') ||
+    normalizedQuestion.includes('most frequent category') ||
+    normalizedQuestion.includes('categoria principal') ||
+    normalizedQuestion.includes('categoria mas comun') ||
+    normalizedQuestion.includes('categoria mas frecuente');
+
+  const asksForCategoryBreakdown =
+    normalizedQuestion.includes('category breakdown') ||
+    normalizedQuestion.includes('categories breakdown') ||
+    normalizedQuestion.includes('bug categories') ||
+    normalizedQuestion.includes('list categories') ||
+    normalizedQuestion.includes('desglose de categorias') ||
+    normalizedQuestion.includes('resumen de categorias') ||
+    normalizedQuestion.includes('lista de categorias');
+
+  // ── Highest error rate ──
+  if (
+    normalizedQuestion.includes('highest error rate') ||
+    normalizedQuestion.includes('mayor tasa de error') ||
+    normalizedQuestion.includes('tasa de error mas alta')
+  ) {
+    return buildQAHighestErrorRateResponse();
+  }
+
+  // ── Highest number of errors ──
+  if (
+    normalizedQuestion.includes('highest number of errors') ||
+    normalizedQuestion.includes('most errors') ||
+    normalizedQuestion.includes('more errors') ||
+    normalizedQuestion.includes('mas errores') ||
+    normalizedQuestion.includes('mayor cantidad de errores')
+  ) {
+    return buildQATopErrorMemberResponse();
+  }
+
+  // ── Best pass rate ──
+  if (
+    normalizedQuestion.includes('best pass rate') ||
+    normalizedQuestion.includes('highest pass rate') ||
+    normalizedQuestion.includes('mejor pass rate') ||
+    normalizedQuestion.includes('mejor tasa de aprobación') ||
+    normalizedQuestion.includes('mejor tasa de aprobacion')
+  ) {
+    return buildQABestPassRateResponse();
+  }
+
+  // ── QA reviewer with most reviews ──
+  if (asksWhoReviewedMost) {
+    return buildQATopReviewerResponse();
+  }
+
+  // ── QA reviewer who found most errors ──
+  if (asksWhoFoundMostErrors) {
+    return buildQATopErrorFinderResponse();
+  }
+
+  // ── General reviewer activity ──
+  if (
+    asksForQALeaderboard &&
+    !reviewerResult.match
+  ) {
+    return buildQAReviewerLeaderboardResponse();
+  }
+
+  // ── Weekly scoring rules ──
+  if (asksForWeeklyScoringRules) {
+    return buildQAWeeklyScoringRulesResponse();
+  }
+
+  // ── Weekly final status ──
+  if (asksForWeeklyStatus) {
+    return buildQAWeeklyStatusResponse();
+  }
+
+  // ── Member comparison ──
+  if (asksForMemberComparison) {
+    if (comparisonOwners.ambiguous) {
+      return buildQAAmbiguousMemberResponse(
+        comparisonOwners.options
+      );
+    }
+
+    if (comparisonOwners.matches.length < 2) {
+      return [
+        'I need two team members to create a comparison.',
+        '',
+        'Examples:',
+        '• Compare Michael Luna and Cidar Dealencar',
+        '• Michael vs Cidar',
+        '• Compara a Michael con Cidar'
+      ].join('\n');
+    }
+
+    if (comparisonOwners.matches.length > 2) {
+      return [
+        'I found more than two team members.',
+        '',
+        ...comparisonOwners.matches.map(
+          owner => `• ${owner}`
+        ),
+        '',
+        'Please select only two members.'
+      ].join('\n');
+    }
+
+    return buildQAMemberComparisonResponse(
+      comparisonOwners.matches[0],
+      comparisonOwners.matches[1]
+    );
+  }
+
+  // ── Ambiguous reviewer ──
+  if (
+    asksForQAReviewActivity &&
+    reviewerResult.ambiguous
+  ) {
+    return buildQAAmbiguousMemberResponse(
+      reviewerResult.options
+    );
+  }
+
+  // ── Specific reviewer ──
+  if (
+    asksForQAReviewActivity &&
+    reviewerResult.match
+  ) {
+    const reviewerName =
+      reviewerResult.match.displayName;
+
+    if (asksForCaseList) {
+      return buildQAReviewerCasesResponse(
+        reviewerName
+      );
+    }
+
+    return buildQAReviewerSummaryResponse(
+      reviewerName
+    );
+  }
+
+  // ── Reviewer requested but name not found ──
+  if (
+    asksForQAReviewActivity &&
+    !reviewerResult.match
+  ) {
+    return [
+      'I could not identify the QA reviewer.',
+      '',
+      'Try using a full name or ask:',
+      '• Who completed the most QA reviews?',
+      '• Show QA reviewer activity',
+      '• How many cases did Michael review as QA?'
+    ].join('\n');
+  }
+  
+  // ── Owner with most pending cases ──
+  if (asksWhoHasMostPending) {
+    return buildQATopPendingOwnerResponse();
+  }
+
+  if (ownerResult.ambiguous) {
+    return buildQAAmbiguousMemberResponse(
+      ownerResult.options
+    );
+  }
+
+  if (ownerResult.match) {
+    const member =
+      getQAMemberMetrics(ownerResult.match);
+
+    // ── Member pending cases ──
+    if (asksForPending) {
+      if (asksForCaseList) {
+        return buildQAPendingListResponse({
+          owner: ownerResult.match
+        });
+      }
+
+      return buildQAPendingSummaryResponse({
+        owner: ownerResult.match
+      });
+    }
+
+    // ── Member responded cases ──
+    if (asksForResponded) {
+      if (asksForCaseList) {
+        return buildQARespondedListResponse({
+          owner: ownerResult.match
+        });
+      }
+
+      return buildQARespondedSummaryResponse({
+        owner: ownerResult.match
+      });
+    }
+
+    // ── Member top category ──
+    if (asksForTopCategory) {
+      return buildQATopCategoryResponse({
+        owner: ownerResult.match
+      });
+    }
+
+    // ── Specific member category ──
+    if (detectedCategory) {
+      return buildQACategoryDetailResponse(
+        detectedCategory,
+        {
+          owner: ownerResult.match
+        }
+      );
+    }
+
+    // ── Member category breakdown ──
+    if (asksForCategoryBreakdown) {
+      return buildQACategoryBreakdownResponse({
+        owner: ownerResult.match
+      });
+    }
+
+    // Member error rate
+    if (
+      normalizedQuestion.includes('error rate') ||
+      normalizedQuestion.includes('tasa de error')
+    ) {
+      return [
+        `${member.owner}'s error rate is ${formatQAPercentage(member.errorRate)}.`,
+        '',
+        `${member.failed} Failed + ${member.critical} Critical = ${member.errors} errors out of ${member.total} cases.`
+      ].join('\n');
+    }
+
+    // Member pass rate
+    if (
+      normalizedQuestion.includes('pass rate') ||
+      normalizedQuestion.includes('approval rate') ||
+      normalizedQuestion.includes('tasa de aprobación') ||
+      normalizedQuestion.includes('tasa de aprobacion')
+    ) {
+      return [
+        `${member.owner}'s pass rate is ${formatQAPercentage(member.passRate)}.`,
+        '',
+        `${member.passed} Passed + ${member.opportunity} Opportunity = ${member.passed + member.opportunity} acceptable cases out of ${member.total}.`
+      ].join('\n');
+    }
+
+    // Member errors
+    if (
+      normalizedQuestion.includes('how many errors') ||
+      normalizedQuestion.includes('errors does') ||
+      normalizedQuestion.includes('errores tiene') ||
+      normalizedQuestion.includes('cuántos errores') ||
+      normalizedQuestion.includes('cuantos errores')
+    ) {
+      return `${member.owner} has ${member.errors} errors: ${member.failed} Failed and ${member.critical} Critical.`;
+    }
+
+    // Member critical
+    if (
+      normalizedQuestion.includes('critical')
+    ) {
+      return `${member.owner} has ${member.critical} Critical cases out of ${member.total} total cases.`;
+    }
+
+    // Member failed
+    if (
+      normalizedQuestion.includes('failed')
+    ) {
+      return `${member.owner} has ${member.failed} Failed cases out of ${member.total} total cases.`;
+    }
+
+    // General member summary
+    if (
+      normalizedQuestion.includes('how did') ||
+      normalizedQuestion.includes('performance') ||
+      normalizedQuestion.includes('summary') ||
+      normalizedQuestion.includes('summarize') ||
+      normalizedQuestion.includes('cómo le fue') ||
+      normalizedQuestion.includes('como le fue') ||
+      normalizedQuestion.includes('rendimiento') ||
+      normalizedQuestion.includes('resumen')
+    ) {
+      return buildQAMemberSummaryResponse(
+        ownerResult.match
+      );
+    }
+
+    return buildQAMemberSummaryResponse(
+      ownerResult.match
+    );
+  }
+
+  // ── Combined case filters ──
+  if (combinedFilterRequest.shouldHandle) {
+    if (
+      combinedFilterRequest.asksForList
+    ) {
+      return buildQAFilteredCasesResponse(
+        combinedFilterRequest.options
+      );
+    }
+
+    return buildQAFilteredSummaryResponse(
+      combinedFilterRequest.options
+    );
+  }
+
+  // ── General pending cases ──
+  if (asksForPending) {
+    if (asksForCaseList) {
+      return buildQAPendingListResponse();
+    }
+
+    return buildQAPendingSummaryResponse();
+  }
+
+  // ── General responded cases ──
+  if (asksForResponded) {
+    if (asksForCaseList) {
+      return buildQARespondedListResponse();
+    }
+
+    return buildQARespondedSummaryResponse();
+  }
+
+  // ── General top category ──
+  if (asksForTopCategory) {
+    return buildQATopCategoryResponse();
+  }
+
+  // ── Specific category ──
+  if (detectedCategory) {
+    return buildQACategoryDetailResponse(
+      detectedCategory
+    );
+  }
+
+  // ── General category breakdown ──
+  if (asksForCategoryBreakdown) {
+    return buildQACategoryBreakdownResponse();
+  }
+
+  const summary = getQAGeneralSummary();
+
+  // ── General summary ──
+  if (
+    normalizedQuestion.includes('summarize') ||
+    normalizedQuestion.includes('summary') ||
+    normalizedQuestion.includes('overview') ||
+    normalizedQuestion.includes('resumen')
+  ) {
+    return buildQAGeneralSummaryResponse();
+  }
+
+  // ── Total cases ──
+  if (
+    normalizedQuestion.includes('how many cases') ||
+    normalizedQuestion.includes('total cases') ||
+    normalizedQuestion.includes('cases loaded') ||
+    normalizedQuestion.includes('cuántos casos') ||
+    normalizedQuestion.includes('cuantos casos') ||
+    normalizedQuestion.includes('total de casos')
+  ) {
+    return `There are ${summary.total} valid QA cases in the current dataset.`;
+  }
+
+  // ── Passed ──
+  if (
+    normalizedQuestion.includes('how many passed') ||
+    normalizedQuestion.includes('passed cases') ||
+    normalizedQuestion.includes('cuántos passed') ||
+    normalizedQuestion.includes('cuantos passed') ||
+    normalizedQuestion.includes('casos aprobados')
+  ) {
+    const percentage = summary.total > 0
+      ? (summary.passed / summary.total) * 100
+      : 0;
+
+    return `${summary.passed} cases have Passed status, representing ${formatQAPercentage(percentage)} of the dataset.`;
+  }
+
+  // ── Opportunity ──
+  if (
+    normalizedQuestion.includes('how many opportunity') ||
+    normalizedQuestion.includes('opportunity cases') ||
+    normalizedQuestion.includes('cuántos opportunity') ||
+    normalizedQuestion.includes('cuantos opportunity')
+  ) {
+    const percentage = summary.total > 0
+      ? (summary.opportunity / summary.total) * 100
+      : 0;
+
+    return `${summary.opportunity} cases have Opportunity status, representing ${formatQAPercentage(percentage)} of the dataset.`;
+  }
+
+  // ── Failed ──
+  if (
+    normalizedQuestion.includes('how many failed') ||
+    normalizedQuestion.includes('failed cases') ||
+    normalizedQuestion.includes('cuántos failed') ||
+    normalizedQuestion.includes('cuantos failed') ||
+    normalizedQuestion.includes('casos fallidos')
+  ) {
+    const percentage = summary.total > 0
+      ? (summary.failed / summary.total) * 100
+      : 0;
+
+    return `${summary.failed} cases have Failed status, representing ${formatQAPercentage(percentage)} of the dataset.`;
+  }
+
+  // ── Critical ──
+  if (
+    normalizedQuestion.includes('how many critical') ||
+    normalizedQuestion.includes('critical cases') ||
+    normalizedQuestion.includes('cuántos critical') ||
+    normalizedQuestion.includes('cuantos critical') ||
+    normalizedQuestion.includes('casos críticos') ||
+    normalizedQuestion.includes('casos criticos')
+  ) {
+    const percentage = summary.total > 0
+      ? (summary.critical / summary.total) * 100
+      : 0;
+
+    return `${summary.critical} cases have Critical status, representing ${formatQAPercentage(percentage)} of the dataset.`;
+  }
+
+  // ── Pass rate ──
+  if (
+    normalizedQuestion.includes('pass rate') ||
+    normalizedQuestion.includes('approval rate') ||
+    normalizedQuestion.includes('tasa de aprobación') ||
+    normalizedQuestion.includes('tasa de aprobacion')
+  ) {
+    return [
+      `The current pass rate is ${formatQAPercentage(summary.passRate)}.`,
+      '',
+      `This is calculated using Passed + Opportunity:`,
+      `${summary.passed} Passed + ${summary.opportunity} Opportunity = ${summary.passed + summary.opportunity} acceptable cases out of ${summary.total}.`
+    ].join('\n');
+  }
+
+  // ── Error rate ──
+  if (
+    normalizedQuestion.includes('error rate') ||
+    normalizedQuestion.includes('failure rate') ||
+    normalizedQuestion.includes('tasa de error')
+  ) {
+    return [
+      `The current error rate is ${formatQAPercentage(summary.errorRate)}.`,
+      '',
+      `This is calculated using Failed + Critical:`,
+      `${summary.failed} Failed + ${summary.critical} Critical = ${summary.errors} errors out of ${summary.total} cases.`
+    ].join('\n');
+  }
+
+  // ── Total errors ──
+  if (
+    normalizedQuestion.includes('how many errors') ||
+    normalizedQuestion.includes('total errors') ||
+    normalizedQuestion.includes('cuántos errores') ||
+    normalizedQuestion.includes('cuantos errores')
+  ) {
+    return `${summary.errors} errors were found: ${summary.failed} Failed and ${summary.critical} Critical.`;
+  }
+
+  return [
+    `I received your question: "${question}"`,
+    '',
+    'This local version currently supports questions about:',
+    '• General dataset summary',
+    '• Status counts and rates',
+    '• Individual member performance',
+    '• Member error and pass rates',
+    '• Member with the most errors',
+    '• Member with the highest error rate',
+    '• Member with the highest pass rate',
+    '• Top bug category',
+    '• Category breakdown',
+    '• Categories by team member',
+    '• Pending cases and queue status',
+    '• Responded cases',
+    '• Responded cases that remain open',
+    '• Owner with the most pending cases',
+    '• QA reviews completed by each reviewer',
+    '• QA activity by reviewer',
+    '• Reviewer who completed the most reviews',
+    '• Reviewer who found the most errors',
+    '• Cases reviewed by a specific QA',
+    '• Performance comparison between two team members',
+    '• Weekly status, score and explanation',
+    '• Weekly risks and recommended actions',
+  ].join('\n');
+}
+function showQAAssistantTyping() {
+  const messages = document.getElementById('qa-ai-messages');
+
+  if (!messages) return;
+
+  removeQAAssistantTyping();
+
+  const typing = document.createElement('div');
+
+  typing.className =
+    'qa-ai-message qa-ai-message-assistant qa-ai-typing-message';
+
+  typing.id = 'qa-ai-typing';
+
+  typing.innerHTML = `
+    <div class="qa-ai-message-label">QA Assistant</div>
+
+    <div class="qa-ai-message-content qa-ai-typing-content">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  `;
+
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function removeQAAssistantTyping() {
+  document.getElementById('qa-ai-typing')?.remove();
+}
+// function sendQAAssistantMessage(questionFromSuggestion = '') {
+//   const input = document.getElementById('qa-ai-input');
+//   const sendButton = document.getElementById('qa-ai-send');
+
+//   if (!input || !sendButton) return;
+
+//   const question = (
+//     questionFromSuggestion ||
+//     input.value
+//   ).trim();
+
+//   if (!question) return;
+
+//   if (!Array.isArray(DATA) || DATA.length === 0) {
+//     addQAAssistantMessage(
+//       'assistant',
+//       'Upload a valid CSV before asking questions.'
+//     );
+
+//     return;
+//   }
+
+//   addQAAssistantMessage('user', question);
+
+//   input.value = '';
+//   resizeQAAssistantInput();
+//   updateQAAssistantSendState();
+
+//   input.disabled = true;
+//   sendButton.disabled = true;
+
+//   showQAAssistantTyping();
+
+//   window.setTimeout(() => {
+//     removeQAAssistantTyping();
+
+//     // const response =
+//     //   getMockQAAssistantResponse(question);
+//     const response = getLocalQAAssistantResponse(question);
+
+//     addQAAssistantMessage(
+//       'assistant',
+//       response
+//     );
+
+//     input.disabled = false;
+//     // sendButton.disabled = false;
+//     updateQAAssistantSendState();
+//     input.focus();
+//   }, 700);
+// }
+async function sendQAAssistantMessage(
+  questionFromSuggestion = ''
+) {
+
+  const input =
+    document.getElementById(
+      'qa-ai-input'
+    );
+
+  const sendButton =
+    document.getElementById(
+      'qa-ai-send'
+    );
+
+
+  if (
+    !input ||
+    !sendButton
+  ) {
+    return;
+  }
+
+
+  // Prevent multiple simultaneous requests
+  if (qaAssistantBusy) {
+    return;
+  }
+
+
+  const question = (
+    questionFromSuggestion ||
+    input.value
+  ).trim();
+
+
+  if (!question) {
+    return;
+  }
+
+
+  // ====================================================
+  // DATA VALIDATION
+  // ====================================================
+
+  if (
+    !Array.isArray(DATA) ||
+    DATA.length === 0
+  ) {
+
+    addQAAssistantMessage(
+      'assistant',
+      'Upload a valid CSV before asking questions.'
+    );
+
+    return;
+  }
+
+
+  // ====================================================
+  // SESSION VALIDATION
+  // ====================================================
+
+  if (
+    qaAssistantSessionState !==
+    'ready'
+  ) {
+
+    const message =
+      qaAssistantSessionState ===
+      'preparing'
+        ? 'The AI assistant is still preparing the current dataset.'
+        : 'The AI assistant is not available right now.';
+
+    addQAAssistantMessage(
+      'assistant',
+      message
+    );
+
+    return;
+  }
+
+
+  // ====================================================
+  // USER MESSAGE
+  // ====================================================
+
+  addQAAssistantMessage(
+    'user',
+    question
+  );
+
+
+  input.value = '';
+
+  resizeQAAssistantInput();
+
+
+  // ====================================================
+  // LOCK UI
+  // ====================================================
+
+  qaAssistantBusy = true;
+
+  input.disabled = true;
+
+  sendButton.disabled = true;
+
+
+  document
+    .querySelectorAll(
+      '.qa-ai-suggestion'
+    )
+    .forEach(
+      button =>
+        button.disabled = true
+    );
+
+
+  showQAAssistantTyping();
+
+
+  // ====================================================
+  // CALL REAL AI BACKEND
+  // ====================================================
+
+  try {
+
+    const response =
+      await sendQAChatMessage(
+        question
+      );
+
+
+    removeQAAssistantTyping();
+
+
+    if (
+      !response ||
+      !response.reply
+    ) {
+
+      throw new Error(
+        'AI assistant returned an empty response.'
+      );
+    }
+
+
+    // ==================================================
+    // DISPLAY CLAUDE RESPONSE
+    // ==================================================
+
+    addQAAssistantMessage(
+      'assistant',
+      response.reply
+    );
+
+
+    // Useful during development
+    console.log(
+      '[QA CHAT] Tools used:',
+      response.toolsUsed || []
+    );
+
+
+  } catch (error) {
+
+    removeQAAssistantTyping();
+
+
+    console.error(
+      '[QA CHAT UI ERROR]',
+      error
+    );
+
+
+    addQAAssistantMessage(
+      'assistant',
+      'I could not complete that request. Please try again.'
+    );
+
+  } finally {
+
+    // ==================================================
+    // UNLOCK UI
+    // ==================================================
+
+    qaAssistantBusy = false;
+
+
+    const isReady =
+      qaAssistantSessionState ===
+      'ready' &&
+      Boolean(qaSessionId);
+
+
+    input.disabled =
+      !isReady;
+
+
+    document
+      .querySelectorAll(
+        '.qa-ai-suggestion'
+      )
+      .forEach(
+        button =>
+          button.disabled =
+            !isReady
+      );
+
+
+    updateQAAssistantSendState();
+
+
+    if (isReady) {
+      input.focus();
+    }
+  }
+
+}
+function resizeQAAssistantInput() {
+  const input = document.getElementById('qa-ai-input');
+
+  if (!input) return;
+
+  input.style.height = 'auto';
+
+  input.style.height = `${Math.min(
+    input.scrollHeight,
+    120
+  )}px`;
+}
+// function clearQAAssistantChat() {
+//   const hasData =
+//     Array.isArray(DATA) &&
+//     DATA.length > 0;
+
+//   updateQAAssistantWelcomeMessage(hasData);
+
+//   const input =
+//     document.getElementById('qa-ai-input');
+
+//   if (input) {
+//     input.value = '';
+//     resizeQAAssistantInput();
+//   }
+// }
+async function clearQAAssistantChat() {
+
+  if (qaAssistantBusy) {
+    return;
+  }
+
+
+  const hasData =
+    Array.isArray(DATA) &&
+    DATA.length > 0;
+
+
+  const input =
+    document.getElementById(
+      'qa-ai-input'
+    );
+
+
+  if (input) {
+
+    input.value = '';
+
+    resizeQAAssistantInput();
+  }
+
+
+  // ====================================================
+  // NO DATA
+  // ====================================================
+
+  if (!hasData) {
+
+    qaAssistantSessionState =
+      'no-data';
+
+    updateQAAssistantState();
+
+    return;
+  }
+
+
+  // ====================================================
+  // RESET BACKEND CONVERSATION
+  // ====================================================
+
+  qaAssistantSessionState =
+    'preparing';
+
+  updateQAAssistantState();
+
+
+  try {
+
+    await resetQASession();
+
+
+    qaAssistantSessionState =
+      'ready';
+
+
+    console.log(
+      '[QA CHAT] Conversation cleared. New session:',
+      qaSessionId
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      '[QA CHAT] Could not reset session:',
+      error
+    );
+
+
+    qaAssistantSessionState =
+      'error';
+  }
+
+
+  updateQAAssistantState();
+}
+// function updateQAAssistantSendState() {
+//   const input =
+//     document.getElementById('qa-ai-input');
+
+//   const sendButton =
+//     document.getElementById('qa-ai-send');
+
+//   if (!input || !sendButton) return;
+
+//   const hasData =
+//     Array.isArray(DATA) &&
+//     DATA.length > 0;
+
+//   const hasText =
+//     input.value.trim().length > 0;
+
+//   sendButton.disabled =
+//     !hasData ||
+//     !hasText ||
+//     input.disabled;
+// }
+function updateQAAssistantSendState() {
+
+  const input =
+    document.getElementById(
+      'qa-ai-input'
+    );
+
+  const sendButton =
+    document.getElementById(
+      'qa-ai-send'
+    );
+
+
+  if (
+    !input ||
+    !sendButton
+  ) {
+    return;
+  }
+
+
+  const hasData =
+    Array.isArray(DATA) &&
+    DATA.length > 0;
+
+
+  const hasText =
+    input.value
+      .trim()
+      .length > 0;
+
+
+  const sessionReady =
+    qaAssistantSessionState ===
+      'ready' &&
+    Boolean(qaSessionId);
+
+
+  sendButton.disabled =
+    !hasData ||
+    !hasText ||
+    !sessionReady ||
+    qaAssistantBusy ||
+    input.disabled;
+}
+
+function getQAGeneralSummary() {
+  const total = DATA.length;
+
+  const passed = DATA.filter(
+    item => item.status === 'Passed'
+  ).length;
+
+  const opportunity = DATA.filter(
+    item => item.status === 'Opportunity'
+  ).length;
+
+  const failed = DATA.filter(
+    item => item.status === 'Failed'
+  ).length;
+
+  const critical = DATA.filter(
+    item => item.status === 'Critical'
+  ).length;
+
+  const errors = failed + critical;
+
+  const passRate = total > 0
+    ? ((passed + opportunity) / total) * 100
+    : 0;
+
+  const errorRate = total > 0
+    ? (errors / total) * 100
+    : 0;
+
+  const queueAnalysis =
+    getQAQueueAnalysis({
+      data: DATA,
+      limit: 0
+    });
+
+  return {
+    total,
+    passed,
+    opportunity,
+    failed,
+    critical,
+    errors,
+    passRate,
+    errorRate,
+    pending:
+      queueAnalysis.pendingCount,
+
+    responded:
+      queueAnalysis.respondedCount,
+
+    respondedOpen:
+      queueAnalysis.respondedOpenCount
+  };
+}
+function formatQAPercentage(value) {
+  return `${value.toFixed(2)}%`;
+}
+function buildQAGeneralSummaryResponse() {
+  const summary = getQAGeneralSummary();
+
+  return [
+    `The current dataset contains ${summary.total} valid QA cases.`,
+    '',
+    `✓ Passed: ${summary.passed}`,
+    `● Opportunity: ${summary.opportunity}`,
+    `▲ Failed: ${summary.failed}`,
+    `✕ Critical: ${summary.critical}`,
+    '',
+    `Pass rate: ${formatQAPercentage(summary.passRate)}`,
+    `Error rate: ${formatQAPercentage(summary.errorRate)}`,
+    `⏳ Pending: ${summary.pending}`,
+    `💬 Responded: ${summary.responded}`,
+    `↻ Responded but open: ${summary.respondedOpen}`,
+  ].join('\n');
+}
+// function getQAMemberMetrics(ownerName) {
+//   const memberCases = DATA.filter(
+//     item => item.owner === ownerName
+//   );
+
+//   const total = memberCases.length;
+
+//   const passed = memberCases.filter(
+//     item => item.status === 'Passed'
+//   ).length;
+
+//   const opportunity = memberCases.filter(
+//     item => item.status === 'Opportunity'
+//   ).length;
+
+//   const failed = memberCases.filter(
+//     item => item.status === 'Failed'
+//   ).length;
+
+//   const critical = memberCases.filter(
+//     item => item.status === 'Critical'
+//   ).length;
+
+//   const errors = failed + critical;
+
+//   const passRate = total > 0
+//     ? ((passed + opportunity) / total) * 100
+//     : 0;
+
+//   const errorRate = total > 0
+//     ? (errors / total) * 100
+//     : 0;
+
+//   return {
+//     owner: ownerName,
+//     total,
+//     passed,
+//     opportunity,
+//     failed,
+//     critical,
+//     errors,
+//     passRate,
+//     errorRate,
+//     cases: memberCases
+//   };
+// }
+function getQAMemberMetrics(
+  ownerName,
+  data = DATA
+) {
+  const safeData =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  const memberCases =
+    safeData.filter(
+      item => item.owner === ownerName
+    );
+
+  const total =
+    memberCases.length;
+
+  const passed =
+    memberCases.filter(
+      item => item.status === 'Passed'
+    ).length;
+
+  const opportunity =
+    memberCases.filter(
+      item =>
+        item.status === 'Opportunity'
+    ).length;
+
+  const failed =
+    memberCases.filter(
+      item => item.status === 'Failed'
+    ).length;
+
+  const critical =
+    memberCases.filter(
+      item => item.status === 'Critical'
+    ).length;
+
+  const errors =
+    failed + critical;
+
+  const passRate =
+    total > 0
+      ? (
+          (
+            passed +
+            opportunity
+          ) /
+          total
+        ) * 100
+      : 0;
+
+  const errorRate =
+    total > 0
+      ? (
+          errors /
+          total
+        ) * 100
+      : 0;
+
+  return {
+    owner: ownerName,
+
+    total,
+    passed,
+    opportunity,
+    failed,
+    critical,
+    errors,
+
+    passRate,
+    errorRate,
+
+    cases: memberCases
+  };
+}
+
+function getQAOwners() {
+  return [
+    ...new Set(
+      DATA
+        .map(item => item.owner)
+        .filter(Boolean)
+    )
+  ].sort();
+}
+function normalizeQAText(text) {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+function findQAOwnerInQuestion(question) {
+  const owners = getQAOwners();
+
+  const normalizedQuestion =
+    normalizeQAText(question);
+
+  // Primero intenta nombre completo
+  const fullMatch = owners.find(owner =>
+    normalizedQuestion.includes(
+      normalizeQAText(owner)
+    )
+  );
+
+  if (fullMatch) {
+    return {
+      match: fullMatch,
+      ambiguous: false,
+      options: []
+    };
+  }
+
+  // Después intenta primer nombre
+  const firstNameMatches = owners.filter(owner => {
+    const firstName =
+      normalizeQAText(owner).split(' ')[0];
+
+    return normalizedQuestion.includes(firstName);
+  });
+
+  if (firstNameMatches.length === 1) {
+    return {
+      match: firstNameMatches[0],
+      ambiguous: false,
+      options: []
+    };
+  }
+
+  if (firstNameMatches.length > 1) {
+    return {
+      match: null,
+      ambiguous: true,
+      options: firstNameMatches
+    };
+  }
+
+  return {
+    match: null,
+    ambiguous: false,
+    options: []
+  };
+}
+function buildQAMemberSummaryResponse(ownerName) {
+  const metrics = getQAMemberMetrics(ownerName);
+
+  if (!metrics.total) {
+    return `No QA cases were found for ${ownerName}.`;
+  }
+
+  return [
+    `${metrics.owner} has ${metrics.total} QA cases.`,
+    '',
+    `✓ Passed: ${metrics.passed}`,
+    `● Opportunity: ${metrics.opportunity}`,
+    `▲ Failed: ${metrics.failed}`,
+    `✕ Critical: ${metrics.critical}`,
+    '',
+    `Pass rate: ${formatQAPercentage(metrics.passRate)}`,
+    `Error rate: ${formatQAPercentage(metrics.errorRate)}`
+  ].join('\n');
+}
+function getQAMemberRanking() {
+  return getQAOwners()
+    .map(owner => getQAMemberMetrics(owner))
+    .sort((a, b) => {
+      if (b.errors !== a.errors) {
+        return b.errors - a.errors;
+      }
+
+      return b.errorRate - a.errorRate;
+    });
+}
+function buildQATopErrorMemberResponse() {
+  const ranking = getQAMemberRanking();
+
+  if (!ranking.length) {
+    return 'No team-member data is available.';
+  }
+
+  const top = ranking[0];
+
+  return [
+    `${top.owner} has the highest number of errors.`,
+    '',
+    `Errors: ${top.errors}`,
+    `Failed: ${top.failed}`,
+    `Critical: ${top.critical}`,
+    `Total cases: ${top.total}`,
+    `Error rate: ${formatQAPercentage(top.errorRate)}`
+  ].join('\n');
+}
+
+function getQAHighestErrorRateMember() {
+  const ranking = getQAOwners()
+    .map(owner => getQAMemberMetrics(owner))
+    .filter(member => member.total > 0)
+    .sort((a, b) => {
+      if (b.errorRate !== a.errorRate) {
+        return b.errorRate - a.errorRate;
+      }
+
+      if (b.errors !== a.errors) {
+        return b.errors - a.errors;
+      }
+
+      return b.total - a.total;
+    });
+
+  return ranking[0] || null;
+}
+
+function buildQAHighestErrorRateResponse() {
+  const top = getQAHighestErrorRateMember();
+
+  if (!top) {
+    return 'No team-member data is available.';
+  }
+
+  return [
+    `${top.owner} has the highest error rate.`,
+    '',
+    `Error rate: ${formatQAPercentage(top.errorRate)}`,
+    `Errors: ${top.errors}`,
+    `Failed: ${top.failed}`,
+    `Critical: ${top.critical}`,
+    `Total cases: ${top.total}`
+  ].join('\n');
+}
+
+function getQABestPassRateMember() {
+  const ranking = getQAOwners()
+    .map(owner => getQAMemberMetrics(owner))
+    .filter(member => member.total > 0)
+    .sort((a, b) => {
+      if (b.passRate !== a.passRate) {
+        return b.passRate - a.passRate;
+      }
+
+      return b.total - a.total;
+    });
+
+  return ranking[0] || null;
+}
+function buildQABestPassRateResponse() {
+  const top = getQABestPassRateMember();
+
+  if (!top) {
+    return 'No team-member data is available.';
+  }
+
+  return [
+    `${top.owner} has the highest pass rate.`,
+    '',
+    `Pass rate: ${formatQAPercentage(top.passRate)}`,
+    `Acceptable cases: ${top.passed + top.opportunity}`,
+    `Total cases: ${top.total}`,
+    `Errors: ${top.errors}`
+  ].join('\n');
+}
+function buildQAAmbiguousMemberResponse(options) {
+  return [
+    'I found more than one matching team member.',
+    '',
+    ...options.map(name => `• ${name}`),
+    '',
+    'Please use the full name.'
+  ].join('\n');
+}
+
+function getQACategoryAnalysis({
+  data = DATA,
+  owner = null,
+  statuses = ['Opportunity', 'Failed', 'Critical'],
+  type = null
+} = {}) {
+  const safeData = Array.isArray(data)
+    ? data
+    : [];
+
+  const safeStatuses = Array.isArray(statuses)
+    ? statuses
+    : [];
+
+  // Casos que entran en el análisis
+  const scopedCases = safeData.filter(item => {
+    if (owner && item.owner !== owner) {
+      return false;
+    }
+
+    if (type && item.type !== type) {
+      return false;
+    }
+
+    if (
+      safeStatuses.length > 0 &&
+      !safeStatuses.includes(item.status)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Casos que realmente tienen categorías detectadas
+  const categorizedCases = scopedCases.filter(item =>
+    Array.isArray(item.categories) &&
+    item.categories.length > 0
+  );
+
+  const categoryMap = new Map();
+
+  categorizedCases.forEach(item => {
+    // Evita contar dos veces la misma categoría
+    // dentro de un mismo caso
+    const uniqueCategories = [
+      ...new Set(
+        item.categories.filter(Boolean)
+      )
+    ];
+
+    uniqueCategories.forEach(category => {
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, {
+          category,
+          count: 0,
+
+          byType: {
+            LP: 0,
+            Posting: 0,
+            Unknown: 0
+          },
+
+          cases: []
+        });
+      }
+
+      const entry = categoryMap.get(category);
+      const caseType = item.type || 'Unknown';
+
+      entry.count += 1;
+
+      entry.byType[caseType] =
+        (entry.byType[caseType] || 0) + 1;
+
+      entry.cases.push({
+        task_id: item.task_id,
+        owner: item.owner,
+        status: item.status,
+        type: item.type,
+        qa_by: item.qa_by,
+        day: item.day,
+        completed_date: item.completed_date
+      });
+    });
+  });
+
+  const totalOccurrences = [
+    ...categoryMap.values()
+  ].reduce(
+    (total, item) => total + item.count,
+    0
+  );
+
+  const categories = [
+    ...categoryMap.values()
+  ]
+    .map(item => ({
+      ...item,
+
+      percentageOfScope:
+        scopedCases.length > 0
+          ? (item.count / scopedCases.length) * 100
+          : 0,
+
+      percentageOfCategorizedCases:
+        categorizedCases.length > 0
+          ? (
+              item.count /
+              categorizedCases.length
+            ) * 100
+          : 0,
+
+      percentageOfOccurrences:
+        totalOccurrences > 0
+          ? (
+              item.count /
+              totalOccurrences
+            ) * 100
+          : 0
+    }))
+    .sort((a, b) => {
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+
+      return a.category.localeCompare(
+        b.category
+      );
+    });
+
+  return {
+    filters: {
+      owner,
+      statuses: [...safeStatuses],
+      type
+    },
+
+    sourceCases: safeData.length,
+    scopedCases: scopedCases.length,
+    categorizedCases: categorizedCases.length,
+
+    uncategorizedCases:
+      scopedCases.length -
+      categorizedCases.length,
+
+    totalOccurrences,
+    categories,
+
+    topCategory:
+      categories[0] || null
+  };
+}
+function findQACategoryInQuestion(question) {
+  const normalizedQuestion =
+    normalizeQAText(question);
+
+  const categoryAliases = [
+    {
+      category: 'Content',
+      aliases: [
+        'content',
+        'contenido'
+      ]
+    },
+    {
+      category: 'Styling',
+      aliases: [
+        'styling',
+        'style',
+        'estilo'
+      ]
+    },
+    {
+      category: 'Config',
+      aliases: [
+        'config',
+        'configuration',
+        'configuracion'
+      ]
+    },
+    {
+      category: 'Linking',
+      aliases: [
+        'linking',
+        'links',
+        'link',
+        'enlaces',
+        'enlace'
+      ]
+    },
+    {
+      category: 'Label',
+      aliases: [
+        'label',
+        'labels',
+        'etiqueta',
+        'etiquetas'
+      ]
+    }
+  ];
+
+  const match = categoryAliases.find(item =>
+    item.aliases.some(alias =>
+      normalizedQuestion.includes(alias)
+    )
+  );
+
+  return match
+    ? match.category
+    : null;
+}
+function buildQATopCategoryResponse(
+  options = {}
+) {
+  const analysis =
+    getQACategoryAnalysis(options);
+
+  const top =
+    analysis.topCategory;
+
+  const scopeName =
+    analysis.filters.owner ||
+    'the current dataset';
+
+  if (!analysis.scopedCases) {
+    return `No non-passed QA cases were found for ${scopeName}.`;
+  }
+
+  if (!top) {
+    return `No bug categories were detected for ${scopeName}.`;
+  }
+
+  return [
+    `The most frequent category for ${scopeName} is ${top.category}.`,
+    '',
+    `Cases: ${top.count}`,
+    `Percentage of non-passed cases: ${formatQAPercentage(top.percentageOfScope)}`,
+    `Categorized cases analyzed: ${analysis.categorizedCases}`,
+    `Non-passed cases analyzed: ${analysis.scopedCases}`,
+    '',
+    'A case may contain more than one category.'
+  ].join('\n');
+}
+function buildQACategoryBreakdownResponse(
+  options = {}
+) {
+  const analysis =
+    getQACategoryAnalysis(options);
+
+  const scopeName =
+    analysis.filters.owner ||
+    'the current dataset';
+
+  if (!analysis.scopedCases) {
+    return `No non-passed QA cases were found for ${scopeName}.`;
+  }
+
+  if (!analysis.categories.length) {
+    return `No bug categories were detected for ${scopeName}.`;
+  }
+
+  const categoryLines =
+    analysis.categories.map(
+      (item, index) =>
+        `${index + 1}. ${item.category}: ` +
+        `${item.count} cases ` +
+        `(${formatQAPercentage(item.percentageOfScope)})`
+    );
+
+  return [
+    `Bug category breakdown for ${scopeName}:`,
+    '',
+    ...categoryLines,
+    '',
+    `Non-passed cases analyzed: ${analysis.scopedCases}`,
+    `Cases with detected categories: ${analysis.categorizedCases}`,
+    `Cases without a detected category: ${analysis.uncategorizedCases}`,
+    '',
+    'Percentages use all non-passed cases in the selected scope. A case may contain multiple categories.'
+  ].join('\n');
+}
+function buildQACategoryDetailResponse(
+  categoryName,
+  options = {}
+) {
+  const analysis =
+    getQACategoryAnalysis(options);
+
+  const normalizedCategory =
+    normalizeQAText(categoryName);
+
+  const category =
+    analysis.categories.find(item =>
+      normalizeQAText(item.category) ===
+      normalizedCategory
+    );
+
+  const scopeName =
+    analysis.filters.owner ||
+    'the current dataset';
+
+  if (!category) {
+    return `${categoryName} was not detected in the selected QA cases for ${scopeName}.`;
+  }
+
+  return [
+    `${category.category} appears in ${category.count} QA cases for ${scopeName}.`,
+    '',
+    `Percentage of non-passed cases: ${formatQAPercentage(category.percentageOfScope)}`,
+    `Landing Page cases: ${category.byType.LP || 0}`,
+    `Posting cases: ${category.byType.Posting || 0}`,
+    `Unknown type: ${category.byType.Unknown || 0}`,
+    '',
+    `Non-passed cases analyzed: ${analysis.scopedCases}`
+  ].join('\n');
+}
+// ═══════════════════════════════════════
+// QA QUEUE — PENDING & RESPONDED CASES
+// ═══════════════════════════════════════
+
+function hasQAFixResponse(item) {
+  return Boolean(
+    String(item?.fix_comment || '').trim()
+  );
+}
+
+function isQAPendingCase(item) {
+  if (!item) return false;
+
+  return (
+    item.status !== 'Passed' &&
+    !hasQAFixResponse(item)
+  );
+}
+
+function isQARespondedCase(item) {
+  if (!item) return false;
+
+  return hasQAFixResponse(item);
+}
+function getQAQueueStatus(pendingCount) {
+  if (pendingCount > 10) {
+    return {
+      key: 'risk',
+      label: '🚨 At Risk'
+    };
+  }
+
+  if (pendingCount >= 5) {
+    return {
+      key: 'watch',
+      label: '⚠ Watch'
+    };
+  }
+
+  return {
+    key: 'stable',
+    label: '✓ Stable'
+  };
+}
+function truncateQAText(text, maxLength = 100) {
+  const cleanText = String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (cleanText.length <= maxLength) {
+    return cleanText;
+  }
+
+  return `${cleanText.slice(0, maxLength - 1)}…`;
+}
+
+function toQAQueueEvidence(item) {
+  return {
+    task_id: item.task_id,
+    owner: item.owner,
+    status: item.status,
+    original_status: item.original_status,
+    type: item.type,
+    category: Array.isArray(item.categories)
+      ? [...item.categories]
+      : [],
+    qa_by: item.qa_by,
+    qa_date: item.day,
+    completed_date: item.completed_date,
+    summary: item.summary,
+    fix_comment: item.fix_comment
+  };
+}
+function getQAQueueAnalysis({
+  data = DATA,
+  owner = null,
+  type = null,
+  category = null,
+  limit = 20
+} = {}) {
+  const safeData = Array.isArray(data)
+    ? data
+    : [];
+
+  const safeLimit =
+    Number.isFinite(limit) && limit >= 0
+      ? Math.floor(limit)
+      : 20;
+
+  // ── Scope filters ──
+  const scopedCases = safeData.filter(item => {
+    if (owner && item.owner !== owner) {
+      return false;
+    }
+
+    if (type && item.type !== type) {
+      return false;
+    }
+
+    if (
+      category &&
+      !(
+        Array.isArray(item.categories) &&
+        item.categories.includes(category)
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Casos que originalmente llegaron con una observación
+  const issueCases = scopedCases.filter(item =>
+    item.original_status !== 'Passed'
+  );
+
+  // No Passed + sin respuesta
+  const pendingCases = scopedCases.filter(
+    isQAPendingCase
+  );
+
+  // Cualquier caso con QA Fix Comment
+  const respondedCases = scopedCases.filter(
+    isQARespondedCase
+  );
+
+  // Respondidos que continúan abiertos
+  const respondedOpenCases =
+    respondedCases.filter(item =>
+      item.status !== 'Passed'
+    );
+
+  // Casos originalmente no Passed que ahora están Passed
+  const resolvedByResponseCases =
+    respondedCases.filter(item =>
+      item.status === 'Passed' &&
+      item.original_status !== 'Passed'
+    );
+
+  // Respuestas sobre casos que originalmente tenían issue
+  const respondedIssueCases =
+    issueCases.filter(isQARespondedCase);
+
+  const responseRate =
+    issueCases.length > 0
+      ? (
+          respondedIssueCases.length /
+          issueCases.length
+        ) * 100
+      : 0;
+
+  // ── Pending by final status ──
+  const pendingByStatus = {
+    Opportunity: pendingCases.filter(
+      item => item.status === 'Opportunity'
+    ).length,
+
+    Failed: pendingCases.filter(
+      item => item.status === 'Failed'
+    ).length,
+
+    Critical: pendingCases.filter(
+      item => item.status === 'Critical'
+    ).length
+  };
+
+  // ── Queue metrics by owner ──
+  const owners = [
+    ...new Set(
+      scopedCases
+        .map(item => item.owner)
+        .filter(Boolean)
+    )
+  ];
+
+  const byOwner = owners
+    .map(ownerName => {
+      const ownerCases =
+        scopedCases.filter(item =>
+          item.owner === ownerName
+        );
+
+      const ownerPending =
+        ownerCases.filter(isQAPendingCase);
+
+      const ownerResponded =
+        ownerCases.filter(isQARespondedCase);
+
+      const ownerRespondedOpen =
+        ownerResponded.filter(item =>
+          item.status !== 'Passed'
+        );
+
+      return {
+        owner: ownerName,
+        total: ownerCases.length,
+        pending: ownerPending.length,
+        responded: ownerResponded.length,
+        respondedOpen:
+          ownerRespondedOpen.length
+      };
+    })
+    .sort((a, b) => {
+      if (b.pending !== a.pending) {
+        return b.pending - a.pending;
+      }
+
+      if (b.respondedOpen !== a.respondedOpen) {
+        return b.respondedOpen - a.respondedOpen;
+      }
+
+      return b.total - a.total;
+    });
+
+  const queueStatus =
+    getQAQueueStatus(pendingCases.length);
+
+  return {
+    filters: {
+      owner,
+      type,
+      category
+    },
+
+    scopedCases: scopedCases.length,
+
+    issueCases: issueCases.length,
+
+    pendingCount:
+      pendingCases.length,
+
+    respondedCount:
+      respondedCases.length,
+
+    respondedIssueCount:
+      respondedIssueCases.length,
+
+    respondedOpenCount:
+      respondedOpenCases.length,
+
+    resolvedByResponseCount:
+      resolvedByResponseCases.length,
+
+    responseRate,
+
+    pendingByStatus,
+
+    queueStatus,
+
+    byOwner,
+
+    pendingCases:
+      pendingCases
+        .slice(0, safeLimit)
+        .map(toQAQueueEvidence),
+
+    respondedCases:
+      respondedCases
+        .slice(0, safeLimit)
+        .map(toQAQueueEvidence),
+
+    respondedOpenCases:
+      respondedOpenCases
+        .slice(0, safeLimit)
+        .map(toQAQueueEvidence),
+
+    resolvedByResponseCases:
+      resolvedByResponseCases
+        .slice(0, safeLimit)
+        .map(toQAQueueEvidence),
+
+    pendingTruncated:
+      pendingCases.length > safeLimit,
+
+    respondedTruncated:
+      respondedCases.length > safeLimit
+  };
+}
+function buildQAPendingSummaryResponse(
+  options = {}
+) {
+  const analysis =
+    getQAQueueAnalysis(options);
+
+  const scopeName =
+    analysis.filters.owner ||
+    'the current dataset';
+
+  if (!analysis.scopedCases) {
+    return `No QA cases were found for ${scopeName}.`;
+  }
+
+  const topOwner =
+    !analysis.filters.owner
+      ? analysis.byOwner.find(
+          item => item.pending > 0
+        )
+      : null;
+
+  return [
+    `${analysis.pendingCount} pending QA cases were found for ${scopeName}.`,
+    '',
+    `Queue status: ${analysis.queueStatus.label}`,
+    '',
+    `Opportunity pending: ${analysis.pendingByStatus.Opportunity}`,
+    `Failed pending: ${analysis.pendingByStatus.Failed}`,
+    `Critical pending: ${analysis.pendingByStatus.Critical}`,
+    '',
+    topOwner
+      ? `Owner with the most pending cases: ${topOwner.owner} (${topOwner.pending})`
+      : null,
+    '',
+    'A pending case is non-Passed and has no QA Fix Comment.'
+  ]
+    .filter(line => line !== null)
+    .join('\n');
+}
+function formatQAQueueCase(
+  item,
+  {
+    includeFixComment = false
+  } = {}
+) {
+  const categories =
+    item.category?.length
+      ? item.category.join(', ')
+      : 'No category';
+
+  const lines = [
+    `• ${item.task_id || 'No Task ID'}`,
+    `  Owner: ${item.owner || 'Unknown'}`,
+    `  Status: ${item.status}`,
+    `  Type: ${item.type || 'Unknown'}`,
+    `  Category: ${categories}`,
+    `  QA date: ${item.qa_date || 'N/A'}`
+  ];
+
+  if (includeFixComment) {
+    lines.push(
+      `  Response: ${
+        truncateQAText(
+          item.fix_comment,
+          120
+        ) || 'No response'
+      }`
+    );
+  }
+
+  return lines.join('\n');
+}
+
+function buildQAPendingListResponse(
+  options = {},
+  maxItems = 10
+) {
+  const analysis =
+    getQAQueueAnalysis({
+      ...options,
+      limit: maxItems
+    });
+
+  const scopeName =
+    analysis.filters.owner ||
+    'the current dataset';
+
+  if (!analysis.pendingCount) {
+    return `No pending QA cases were found for ${scopeName}.`;
+  }
+
+  const caseLines =
+    analysis.pendingCases.map(item =>
+      formatQAQueueCase(item)
+    );
+
+  return [
+    `${analysis.pendingCount} pending QA cases were found for ${scopeName}.`,
+    '',
+    `Showing ${analysis.pendingCases.length} of ${analysis.pendingCount}:`,
+    '',
+    ...caseLines,
+    '',
+    analysis.pendingTruncated
+      ? `Only the first ${maxItems} pending cases are shown.`
+      : 'All pending cases are shown.'
+  ].join('\n');
+}
+function buildQARespondedSummaryResponse(
+  options = {}
+) {
+  const analysis =
+    getQAQueueAnalysis(options);
+
+  const scopeName =
+    analysis.filters.owner ||
+    'the current dataset';
+
+  if (!analysis.scopedCases) {
+    return `No QA cases were found for ${scopeName}.`;
+  }
+
+  return [
+    `${analysis.respondedCount} QA cases have a Fix Comment for ${scopeName}.`,
+    '',
+    `Responses on originally non-Passed cases: ${analysis.respondedIssueCount}`,
+    `Responded but still open: ${analysis.respondedOpenCount}`,
+    `Resolved after a response: ${analysis.resolvedByResponseCount}`,
+    '',
+    `Response coverage for originally non-Passed cases: ${formatQAPercentage(analysis.responseRate)}`,
+    '',
+    'Responded means a QA Fix Comment exists. It does not always mean the case is resolved.'
+  ].join('\n');
+}
+function buildQARespondedListResponse(
+  options = {},
+  maxItems = 10
+) {
+  const analysis =
+    getQAQueueAnalysis({
+      ...options,
+      limit: maxItems
+    });
+
+  const scopeName =
+    analysis.filters.owner ||
+    'the current dataset';
+
+  if (!analysis.respondedCount) {
+    return `No responded QA cases were found for ${scopeName}.`;
+  }
+
+  const caseLines =
+    analysis.respondedCases.map(item =>
+      formatQAQueueCase(
+        item,
+        {
+          includeFixComment: true
+        }
+      )
+    );
+
+  return [
+    `${analysis.respondedCount} responded QA cases were found for ${scopeName}.`,
+    '',
+    `Showing ${analysis.respondedCases.length} of ${analysis.respondedCount}:`,
+    '',
+    ...caseLines,
+    '',
+    analysis.respondedTruncated
+      ? `Only the first ${maxItems} responded cases are shown.`
+      : 'All responded cases are shown.'
+  ].join('\n');
+}
+function buildQATopPendingOwnerResponse() {
+  const analysis =
+    getQAQueueAnalysis({
+      limit: 0
+    });
+
+  if (!analysis.pendingCount) {
+    return 'There are no pending QA cases in the current dataset.';
+  }
+
+  const maximum =
+    Math.max(
+      ...analysis.byOwner.map(
+        item => item.pending
+      )
+    );
+
+  const leaders =
+    analysis.byOwner.filter(
+      item =>
+        item.pending === maximum &&
+        item.pending > 0
+    );
+
+  if (leaders.length > 1) {
+    return [
+      `There is a tie for the highest number of pending cases:`,
+      '',
+      ...leaders.map(
+        item =>
+          `• ${item.owner}: ${item.pending} pending cases`
+      )
+    ].join('\n');
+  }
+
+  const top = leaders[0];
+
+  return [
+    `${top.owner} has the highest number of pending cases.`,
+    '',
+    `Pending cases: ${top.pending}`,
+    `Responded cases: ${top.responded}`,
+    `Responded but still open: ${top.respondedOpen}`,
+    `Total QA cases: ${top.total}`
+  ].join('\n');
+}
+function containsNormalizedPhrase(
+  text,
+  phrase
+) {
+  const normalizedText =
+    normalizeQAText(text)
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const normalizedPhrase =
+    normalizeQAText(phrase)
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  if (!normalizedPhrase) {
+    return false;
+  }
+
+  return (
+    ` ${normalizedText} `
+      .includes(
+        ` ${normalizedPhrase} `
+      )
+  );
+}
+function getQAReviewerDirectory(
+  data = DATA
+) {
+  const safeData = Array.isArray(data)
+    ? data
+    : [];
+
+  const reviewerMap = new Map();
+
+  safeData.forEach(item => {
+    if (!String(item.qa_by || '').trim()) {
+      return;
+    }
+
+    const identity =
+      resolveQAReviewerIdentity(
+        item.qa_by,
+        safeData
+      );
+
+    if (!identity.displayName) {
+      return;
+    }
+
+    const key =
+      normalizeQAText(
+        identity.displayName
+      );
+
+    if (!reviewerMap.has(key)) {
+      reviewerMap.set(key, {
+        displayName:
+          identity.displayName,
+
+        canonicalName:
+          identity.canonicalName,
+
+        resolved:
+          identity.resolved,
+
+        rawNames: new Set()
+      });
+    }
+
+    reviewerMap
+      .get(key)
+      .rawNames
+      .add(identity.rawName);
+  });
+
+  return [
+    ...reviewerMap.values()
+  ]
+    .map(item => ({
+      ...item,
+      rawNames: [...item.rawNames]
+    }))
+    .sort((a, b) =>
+      a.displayName.localeCompare(
+        b.displayName
+      )
+    );
+}
+function findQAReviewerInQuestion(
+  question
+) {
+  const directory =
+    getQAReviewerDirectory();
+
+  const directMatches =
+    directory.filter(reviewer => {
+      const possibleNames = [
+        reviewer.displayName,
+        reviewer.canonicalName,
+        ...reviewer.rawNames
+      ].filter(Boolean);
+
+      return possibleNames.some(name =>
+        containsNormalizedPhrase(
+          question,
+          name
+        )
+      );
+    });
+
+  if (directMatches.length === 1) {
+    return {
+      match: directMatches[0],
+      ambiguous: false,
+      options: []
+    };
+  }
+
+  if (directMatches.length > 1) {
+    return {
+      match: null,
+      ambiguous: true,
+      options: directMatches.map(
+        item => item.displayName
+      )
+    };
+  }
+
+  // Busca por primer nombre cuando no hubo match directo
+  const normalizedQuestion =
+    normalizeQAText(question);
+
+  const firstNameMatches =
+    directory.filter(reviewer => {
+      const firstName =
+        normalizeQAText(
+          reviewer.displayName
+        ).split(' ')[0];
+
+      return containsNormalizedPhrase(
+        normalizedQuestion,
+        firstName
+      );
+    });
+
+  if (firstNameMatches.length === 1) {
+    return {
+      match: firstNameMatches[0],
+      ambiguous: false,
+      options: []
+    };
+  }
+
+  if (firstNameMatches.length > 1) {
+    return {
+      match: null,
+      ambiguous: true,
+      options: firstNameMatches.map(
+        item => item.displayName
+      )
+    };
+  }
+
+  return {
+    match: null,
+    ambiguous: false,
+    options: []
+  };
+}
+function toQAReviewerEvidence(
+  item,
+  data = DATA
+) {
+  const identity =
+    resolveQAReviewerIdentity(
+      item.qa_by,
+      data
+    );
+
+  return {
+    task_id: item.task_id,
+    owner: item.owner,
+
+    reviewer:
+      identity.displayName,
+
+    reviewer_raw:
+      identity.rawName,
+
+    reviewer_resolved:
+      identity.resolved,
+
+    status: item.status,
+    original_status:
+      item.original_status,
+
+    type: item.type,
+
+    categories:
+      Array.isArray(item.categories)
+        ? [...item.categories]
+        : [],
+
+    qa_date: item.day,
+
+    completed_date:
+      item.completed_date,
+
+    summary: item.summary
+  };
+}
+function getQAReviewerAnalysis({
+  data = DATA,
+  reviewer = null,
+  owner = null,
+  statuses = [],
+  type = null,
+  category = null,
+  limit = 20
+} = {}) {
+  const safeData = Array.isArray(data)
+    ? data
+    : [];
+
+  const safeStatuses =
+    Array.isArray(statuses)
+      ? statuses
+      : [];
+
+  const safeLimit =
+    Number.isFinite(limit) &&
+    limit >= 0
+      ? Math.floor(limit)
+      : 20;
+
+  const normalizedReviewer =
+    reviewer
+      ? normalizeQAText(reviewer)
+      : null;
+
+  const scopedCases =
+    safeData.filter(item => {
+      if (!String(item.qa_by || '').trim()) {
+        return false;
+      }
+
+      const identity =
+        resolveQAReviewerIdentity(
+          item.qa_by,
+          safeData
+        );
+
+      if (normalizedReviewer) {
+        const possibleNames = [
+          identity.displayName,
+          identity.canonicalName,
+          identity.rawName
+        ]
+          .filter(Boolean)
+          .map(normalizeQAText);
+
+        if (
+          !possibleNames.includes(
+            normalizedReviewer
+          )
+        ) {
+          return false;
+        }
+      }
+
+      if (
+        owner &&
+        item.owner !== owner
+      ) {
+        return false;
+      }
+
+      if (
+        safeStatuses.length > 0 &&
+        !safeStatuses.includes(
+          item.status
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        type &&
+        item.type !== type
+      ) {
+        return false;
+      }
+
+      if (
+        category &&
+        !(
+          Array.isArray(item.categories) &&
+          item.categories.includes(category)
+        )
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+  const reviewerMap = new Map();
+
+  scopedCases.forEach(item => {
+    const identity =
+      resolveQAReviewerIdentity(
+        item.qa_by,
+        safeData
+      );
+
+    const displayName =
+      identity.displayName;
+
+    if (!displayName) {
+      return;
+    }
+
+    const key =
+      normalizeQAText(displayName);
+
+    if (!reviewerMap.has(key)) {
+      reviewerMap.set(key, {
+        reviewer: displayName,
+
+        canonicalName:
+          identity.canonicalName,
+
+        resolved:
+          identity.resolved,
+
+        rawNames: new Set(),
+
+        cases: []
+      });
+    }
+
+    const entry =
+      reviewerMap.get(key);
+
+    entry.rawNames.add(
+      identity.rawName
+    );
+
+    entry.cases.push(item);
+  });
+
+  const reviewers = [
+    ...reviewerMap.values()
+  ]
+    .map(entry => {
+      const cases = entry.cases;
+      const total = cases.length;
+
+      const passed = cases.filter(
+        item =>
+          item.status === 'Passed'
+      ).length;
+
+      const opportunity = cases.filter(
+        item =>
+          item.status === 'Opportunity'
+      ).length;
+
+      const failed = cases.filter(
+        item =>
+          item.status === 'Failed'
+      ).length;
+
+      const critical = cases.filter(
+        item =>
+          item.status === 'Critical'
+      ).length;
+
+      const errorsFound =
+        failed + critical;
+
+      const findings =
+        opportunity +
+        failed +
+        critical;
+
+      const passRate =
+        total > 0
+          ? (
+              (
+                passed +
+                opportunity
+              ) /
+              total
+            ) * 100
+          : 0;
+
+      const errorFindingRate =
+        total > 0
+          ? (
+              errorsFound /
+              total
+            ) * 100
+          : 0;
+
+      const findingRate =
+        total > 0
+          ? (
+              findings /
+              total
+            ) * 100
+          : 0;
+
+      const byType = {
+        LP: cases.filter(
+          item => item.type === 'LP'
+        ).length,
+
+        Posting: cases.filter(
+          item =>
+            item.type === 'Posting'
+        ).length,
+
+        Unknown: cases.filter(
+          item =>
+            item.type === 'Unknown'
+        ).length
+      };
+
+      const ownerCounts = {};
+
+      cases.forEach(item => {
+        if (!item.owner) return;
+
+        ownerCounts[item.owner] =
+          (ownerCounts[item.owner] || 0) +
+          1;
+      });
+
+      const reviewedOwners =
+        Object.entries(ownerCounts)
+          .map(([ownerName, count]) => ({
+            owner: ownerName,
+            count
+          }))
+          .sort(
+            (a, b) =>
+              b.count - a.count
+          );
+
+      return {
+        reviewer: entry.reviewer,
+
+        canonicalName:
+          entry.canonicalName,
+
+        resolved:
+          entry.resolved,
+
+        rawNames:
+          [...entry.rawNames],
+
+        total,
+        passed,
+        opportunity,
+        failed,
+        critical,
+
+        errorsFound,
+        findings,
+
+        passRate,
+        errorFindingRate,
+        findingRate,
+
+        uniqueOwnersReviewed:
+          reviewedOwners.length,
+
+        reviewedOwners,
+        byType,
+
+        cases:
+          cases
+            .slice(0, safeLimit)
+            .map(item =>
+              toQAReviewerEvidence(
+                item,
+                safeData
+              )
+            ),
+
+        casesTruncated:
+          cases.length > safeLimit
+      };
+    })
+    .sort((a, b) => {
+      if (b.total !== a.total) {
+        return b.total - a.total;
+      }
+
+      if (
+        b.errorsFound !==
+        a.errorsFound
+      ) {
+        return (
+          b.errorsFound -
+          a.errorsFound
+        );
+      }
+
+      return a.reviewer.localeCompare(
+        b.reviewer
+      );
+    });
+
+  const topByVolume =
+    reviewers[0] || null;
+
+  const topByErrorsFound =
+    [...reviewers]
+      .sort((a, b) => {
+        if (
+          b.errorsFound !==
+          a.errorsFound
+        ) {
+          return (
+            b.errorsFound -
+            a.errorsFound
+          );
+        }
+
+        return b.total - a.total;
+      })[0] || null;
+
+  return {
+    filters: {
+      reviewer,
+      owner,
+      statuses: [...safeStatuses],
+      type,
+      category
+    },
+
+    totalReviews:
+      scopedCases.length,
+
+    reviewerCount:
+      reviewers.length,
+
+    reviewers,
+
+    topByVolume,
+    topByErrorsFound
+  };
+}
+function buildQAReviewerSummaryResponse(
+  reviewerName
+) {
+  const analysis =
+    getQAReviewerAnalysis({
+      reviewer: reviewerName,
+      limit: 0
+    });
+
+  const reviewer =
+    analysis.reviewers[0];
+
+  if (!reviewer) {
+    return `No QA review activity was found for ${reviewerName}.`;
+  }
+
+  return [
+    `${reviewer.reviewer} completed ${reviewer.total} QA reviews.`,
+    '',
+    `✓ Passed: ${reviewer.passed}`,
+    `● Opportunity: ${reviewer.opportunity}`,
+    `▲ Failed: ${reviewer.failed}`,
+    `✕ Critical: ${reviewer.critical}`,
+    '',
+    `Errors found: ${reviewer.errorsFound}`,
+    `Error finding rate: ${formatQAPercentage(reviewer.errorFindingRate)}`,
+    `Pass rate: ${formatQAPercentage(reviewer.passRate)}`,
+    '',
+    `Different owners reviewed: ${reviewer.uniqueOwnersReviewed}`,
+    `Landing Pages reviewed: ${reviewer.byType.LP}`,
+    `Posting cases reviewed: ${reviewer.byType.Posting}`,
+    '',
+    'These metrics describe cases reviewed as QA, not the reviewer’s own production cases.'
+  ].join('\n');
+}
+function formatQAReviewerCase(item) {
+  const categories =
+    item.categories?.length
+      ? item.categories.join(', ')
+      : 'No category';
+
+  return [
+    `• ${item.task_id || 'No Task ID'}`,
+    `  Owner: ${item.owner || 'Unknown'}`,
+    `  Status: ${item.status}`,
+    `  Type: ${item.type || 'Unknown'}`,
+    `  Categories: ${categories}`,
+    `  QA date: ${item.qa_date || 'N/A'}`
+  ].join('\n');
+}
+function buildQAReviewerCasesResponse(
+  reviewerName,
+  maxItems = 10
+) {
+  const analysis =
+    getQAReviewerAnalysis({
+      reviewer: reviewerName,
+      limit: maxItems
+    });
+
+  const reviewer =
+    analysis.reviewers[0];
+
+  if (!reviewer) {
+    return `No QA review activity was found for ${reviewerName}.`;
+  }
+
+  return [
+    `${reviewer.reviewer} completed ${reviewer.total} QA reviews.`,
+    '',
+    `Showing ${reviewer.cases.length} of ${reviewer.total}:`,
+    '',
+    ...reviewer.cases.map(
+      formatQAReviewerCase
+    ),
+    '',
+    reviewer.casesTruncated
+      ? `Only the first ${maxItems} reviews are shown.`
+      : 'All reviewed cases are shown.'
+  ].join('\n');
+}
+function buildQATopReviewerResponse() {
+  const analysis =
+    getQAReviewerAnalysis({
+      limit: 0
+    });
+
+  if (!analysis.reviewers.length) {
+    return 'No QA review activity is available.';
+  }
+
+  const maximum =
+    Math.max(
+      ...analysis.reviewers.map(
+        item => item.total
+      )
+    );
+
+  const leaders =
+    analysis.reviewers.filter(
+      item => item.total === maximum
+    );
+
+  if (leaders.length > 1) {
+    return [
+      'There is a tie for the highest number of QA reviews:',
+      '',
+      ...leaders.map(
+        item =>
+          `• ${item.reviewer}: ${item.total} reviews`
+      )
+    ].join('\n');
+  }
+
+  const top = leaders[0];
+
+  return [
+    `${top.reviewer} completed the most QA reviews.`,
+    '',
+    `Total reviews: ${top.total}`,
+    `Passed: ${top.passed}`,
+    `Opportunity: ${top.opportunity}`,
+    `Failed: ${top.failed}`,
+    `Critical: ${top.critical}`,
+    `Different owners reviewed: ${top.uniqueOwnersReviewed}`
+  ].join('\n');
+}
+function buildQATopErrorFinderResponse() {
+  const analysis =
+    getQAReviewerAnalysis({
+      limit: 0
+    });
+
+  if (!analysis.reviewers.length) {
+    return 'No QA review activity is available.';
+  }
+
+  const maximum =
+    Math.max(
+      ...analysis.reviewers.map(
+        item => item.errorsFound
+      )
+    );
+
+  const leaders =
+    analysis.reviewers.filter(
+      item =>
+        item.errorsFound === maximum
+    );
+
+  if (leaders.length > 1) {
+    return [
+      'There is a tie for the highest number of errors found during QA reviews:',
+      '',
+      ...leaders.map(
+        item =>
+          `• ${item.reviewer}: ${item.errorsFound} errors found`
+      ),
+      '',
+      'Errors found means Failed + Critical outcomes.'
+    ].join('\n');
+  }
+
+  const top = leaders[0];
+
+  return [
+    `${top.reviewer} found the highest number of errors during QA reviews.`,
+    '',
+    `Errors found: ${top.errorsFound}`,
+    `Failed: ${top.failed}`,
+    `Critical: ${top.critical}`,
+    `Total reviews: ${top.total}`,
+    `Error finding rate: ${formatQAPercentage(top.errorFindingRate)}`,
+    '',
+    'This describes the outcomes of assigned reviews; it is not a negative performance score for the reviewer.'
+  ].join('\n');
+}
+function buildQAReviewerLeaderboardResponse() {
+  const analysis =
+    getQAReviewerAnalysis({
+      limit: 0
+    });
+
+  if (!analysis.reviewers.length) {
+    return 'No QA review activity is available.';
+  }
+
+  const rows =
+    analysis.reviewers.map(
+      (item, index) =>
+        `${index + 1}. ${item.reviewer}: ` +
+        `${item.total} reviews · ` +
+        `${item.errorsFound} errors found`
+    );
+
+  return [
+    'QA reviewer activity:',
+    '',
+    ...rows,
+    '',
+    `Total reviews: ${analysis.totalReviews}`,
+    `QA reviewers detected: ${analysis.reviewerCount}`
+  ].join('\n');
+}
+// ═══════════════════════════════════════
+// QA CASE FILTERS
+// ═══════════════════════════════════════
+
+function toQAFilterArray(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(item => String(item || '').trim())
+      .filter(Boolean);
+  }
+
+  if (value === null || value === undefined) {
+    return [];
+  }
+
+  const stringValue =
+    String(value).trim();
+
+  return stringValue
+    ? [stringValue]
+    : [];
+}
+
+function normalizeQAStatusFilterValue(value) {
+  const normalized =
+    normalizeQAText(value);
+
+  const statusMap = {
+    passed: 'Passed',
+    opportunity: 'Opportunity',
+    observed: 'Opportunity',
+    failed: 'Failed',
+    critical: 'Critical',
+    pending: 'Pending',
+    responded: 'Responded'
+  };
+
+  return (
+    statusMap[normalized] ||
+    String(value || '').trim()
+  );
+}
+
+function normalizeQATypeFilterValue(value) {
+  const normalized =
+    normalizeQAText(value);
+
+  if (
+    normalized === 'lp' ||
+    normalized === 'landing page' ||
+    normalized === 'landing pages'
+  ) {
+    return 'LP';
+  }
+
+  if (
+    normalized === 'posting' ||
+    normalized === 'posting case' ||
+    normalized === 'posting cases'
+  ) {
+    return 'Posting';
+  }
+
+  if (
+    normalized === 'unknown' ||
+    normalized === 'desconocido'
+  ) {
+    return 'Unknown';
+  }
+
+  return String(value || '').trim();
+}
+
+function getQADateTimestamp(value) {
+  const cleanValue =
+    normalizeDate(
+      String(value || '').trim()
+    );
+
+  if (!cleanValue) {
+    return null;
+  }
+
+  const parsedDate =
+    parseMDY(cleanValue);
+
+  const timestamp =
+    parsedDate.getTime();
+
+  return Number.isNaN(timestamp)
+    ? null
+    : timestamp;
+}
+
+function isQADateInRange(
+  value,
+  from = null,
+  to = null
+) {
+  if (!from && !to) {
+    return true;
+  }
+
+  const currentTimestamp =
+    getQADateTimestamp(value);
+
+  if (currentTimestamp === null) {
+    return false;
+  }
+
+  let fromTimestamp =
+    from !== null
+      ? getQADateTimestamp(from)
+      : null;
+
+  let toTimestamp =
+    to !== null
+      ? getQADateTimestamp(to)
+      : null;
+
+  if (
+    fromTimestamp !== null &&
+    toTimestamp !== null &&
+    fromTimestamp > toTimestamp
+  ) {
+    [
+      fromTimestamp,
+      toTimestamp
+    ] = [
+      toTimestamp,
+      fromTimestamp
+    ];
+  }
+
+  if (
+    fromTimestamp !== null &&
+    currentTimestamp < fromTimestamp
+  ) {
+    return false;
+  }
+
+  if (
+    toTimestamp !== null &&
+    currentTimestamp > toTimestamp
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function matchesQAReviewerFilter(
+  item,
+  reviewerFilter,
+  data = DATA
+) {
+  const itemIdentity =
+    resolveQAReviewerIdentity(
+      item.qa_by,
+      data
+    );
+
+  const requestedIdentity =
+    resolveQAReviewerIdentity(
+      reviewerFilter,
+      data
+    );
+
+  const itemNames = [
+    itemIdentity.rawName,
+    itemIdentity.displayName,
+    itemIdentity.canonicalName
+  ]
+    .filter(Boolean)
+    .map(normalizeQAText);
+
+  const requestedNames = [
+    reviewerFilter,
+    requestedIdentity.rawName,
+    requestedIdentity.displayName,
+    requestedIdentity.canonicalName
+  ]
+    .filter(Boolean)
+    .map(normalizeQAText);
+
+  return requestedNames.some(name =>
+    itemNames.includes(name)
+  );
+}
+function filterQACases({
+  data = DATA,
+
+  qaDateFrom = null,
+  qaDateTo = null,
+
+  completedDateFrom = null,
+  completedDateTo = null,
+
+  owners = [],
+  reviewers = [],
+  statuses = [],
+  categories = [],
+  types = [],
+
+  text = ''
+} = {}) {
+  const safeData =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  const ownerFilters =
+    toQAFilterArray(owners)
+      .map(normalizeQAText);
+
+  const reviewerFilters =
+    toQAFilterArray(reviewers);
+
+  const statusFilters =
+    toQAFilterArray(statuses)
+      .map(normalizeQAStatusFilterValue);
+
+  const categoryFilters =
+    toQAFilterArray(categories)
+      .map(normalizeQAText);
+
+  const typeFilters =
+    toQAFilterArray(types)
+      .map(normalizeQATypeFilterValue);
+
+  const normalizedText =
+    normalizeQAText(text);
+
+  return safeData.filter(item => {
+    // ── QA Date ──
+    if (
+      (qaDateFrom || qaDateTo) &&
+      !isQADateInRange(
+        item.day,
+        qaDateFrom,
+        qaDateTo
+      )
+    ) {
+      return false;
+    }
+
+    // ── Completed Date ──
+    if (
+      (
+        completedDateFrom ||
+        completedDateTo
+      ) &&
+      !isQADateInRange(
+        item.completed_date,
+        completedDateFrom,
+        completedDateTo
+      )
+    ) {
+      return false;
+    }
+
+    // ── Owner ──
+    if (
+      ownerFilters.length > 0 &&
+      !ownerFilters.includes(
+        normalizeQAText(item.owner)
+      )
+    ) {
+      return false;
+    }
+
+    // ── QA Reviewer ──
+    if (
+      reviewerFilters.length > 0 &&
+      !reviewerFilters.some(
+        reviewer =>
+          matchesQAReviewerFilter(
+            item,
+            reviewer,
+            safeData
+          )
+      )
+    ) {
+      return false;
+    }
+
+    // ── Status ──
+    if (
+      statusFilters.length > 0 &&
+      !statusFilters.some(status => {
+        if (status === 'Pending') {
+          return isQAPendingCase(item);
+        }
+
+        if (status === 'Responded') {
+          return isQARespondedCase(item);
+        }
+
+        return item.status === status;
+      })
+    ) {
+      return false;
+    }
+
+    // ── Category ──
+    if (categoryFilters.length > 0) {
+      const itemCategories =
+        Array.isArray(item.categories)
+          ? item.categories.map(
+              normalizeQAText
+            )
+          : [];
+
+      const categoryMatches =
+        categoryFilters.some(category =>
+          itemCategories.includes(category)
+        );
+
+      if (!categoryMatches) {
+        return false;
+      }
+    }
+
+    // ── Type ──
+    if (
+      typeFilters.length > 0 &&
+      !typeFilters.includes(item.type)
+    ) {
+      return false;
+    }
+
+    // ── Text search ──
+    if (normalizedText) {
+      const searchableText =
+        normalizeQAText([
+          item.owner,
+          item.task_id,
+          item.status,
+          item.original_status,
+          item.type,
+          item.qa_by,
+          item.summary,
+          item.fix_comment,
+          ...(item.categories || [])
+        ].join(' '));
+
+      if (
+        !searchableText.includes(
+          normalizedText
+        )
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+function toQACaseFilterEvidence(
+  item,
+  data = DATA
+) {
+  return {
+    task_id: item.task_id,
+
+    owner: item.owner,
+
+    reviewer:
+      getQAReviewerDisplayName(
+        item.qa_by,
+        data
+      ),
+
+    reviewer_raw:
+      item.qa_by,
+
+    status: item.status,
+
+    original_status:
+      item.original_status,
+
+    type: item.type,
+
+    categories:
+      Array.isArray(item.categories)
+        ? [...item.categories]
+        : [],
+
+    qa_date:
+      item.day,
+
+    completed_date:
+      item.completed_date,
+
+    pending:
+      isQAPendingCase(item),
+
+    responded:
+      isQARespondedCase(item),
+
+    summary:
+      truncateQAText(
+        item.summary,
+        180
+      ),
+
+    fix_comment:
+      truncateQAText(
+        item.fix_comment,
+        180
+      )
+  };
+}
+function getQACasesByFilters({
+  data = DATA,
+
+  qaDateFrom = null,
+  qaDateTo = null,
+
+  completedDateFrom = null,
+  completedDateTo = null,
+
+  owners = [],
+  reviewers = [],
+  statuses = [],
+  categories = [],
+  types = [],
+
+  text = '',
+  limit = 20
+} = {}) {
+  const safeData =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  const safeLimit =
+    Number.isFinite(limit) &&
+    limit >= 0
+      ? Math.floor(limit)
+      : 20;
+
+  const filteredCases =
+    filterQACases({
+      data: safeData,
+
+      qaDateFrom,
+      qaDateTo,
+
+      completedDateFrom,
+      completedDateTo,
+
+      owners,
+      reviewers,
+      statuses,
+      categories,
+      types,
+
+      text
+    });
+
+  const total =
+    filteredCases.length;
+
+  const passed =
+    filteredCases.filter(
+      item => item.status === 'Passed'
+    ).length;
+
+  const opportunity =
+    filteredCases.filter(
+      item =>
+        item.status === 'Opportunity'
+    ).length;
+
+  const failed =
+    filteredCases.filter(
+      item => item.status === 'Failed'
+    ).length;
+
+  const critical =
+    filteredCases.filter(
+      item => item.status === 'Critical'
+    ).length;
+
+  const pending =
+    filteredCases.filter(
+      isQAPendingCase
+    ).length;
+
+  const responded =
+    filteredCases.filter(
+      isQARespondedCase
+    ).length;
+
+  const errors =
+    failed + critical;
+
+  const passRate =
+    total > 0
+      ? (
+          (
+            passed +
+            opportunity
+          ) /
+          total
+        ) * 100
+      : 0;
+
+  const errorRate =
+    total > 0
+      ? (
+          errors /
+          total
+        ) * 100
+      : 0;
+
+  // ── Breakdown by owner ──
+  const ownerCounts = {};
+
+  filteredCases.forEach(item => {
+    if (!item.owner) return;
+
+    ownerCounts[item.owner] =
+      (ownerCounts[item.owner] || 0) +
+      1;
+  });
+
+  const byOwner =
+    Object.entries(ownerCounts)
+      .map(([owner, count]) => ({
+        owner,
+        count
+      }))
+      .sort(
+        (a, b) =>
+          b.count - a.count
+      );
+
+  // ── Breakdown by type ──
+  const byType = {
+    LP: filteredCases.filter(
+      item => item.type === 'LP'
+    ).length,
+
+    Posting: filteredCases.filter(
+      item => item.type === 'Posting'
+    ).length,
+
+    Unknown: filteredCases.filter(
+      item => item.type === 'Unknown'
+    ).length
+  };
+
+  // ── Breakdown by category ──
+  const categoryCounts = {};
+
+  filteredCases.forEach(item => {
+    const uniqueCategories = [
+      ...new Set(
+        item.categories || []
+      )
+    ];
+
+    uniqueCategories.forEach(category => {
+      categoryCounts[category] =
+        (categoryCounts[category] || 0) +
+        1;
+    });
+  });
+
+  const byCategory =
+    Object.entries(categoryCounts)
+      .map(([category, count]) => ({
+        category,
+        count
+      }))
+      .sort(
+        (a, b) =>
+          b.count - a.count
+      );
+
+  const reviewerAnalysis =
+    getQAReviewerAnalysis({
+      data: filteredCases,
+      limit: 0
+    });
+
+  return {
+    filters: {
+      qaDateFrom,
+      qaDateTo,
+
+      completedDateFrom,
+      completedDateTo,
+
+      owners:
+        toQAFilterArray(owners),
+
+      reviewers:
+        toQAFilterArray(reviewers),
+
+      statuses:
+        toQAFilterArray(statuses)
+          .map(
+            normalizeQAStatusFilterValue
+          ),
+
+      categories:
+        toQAFilterArray(categories),
+
+      types:
+        toQAFilterArray(types)
+          .map(
+            normalizeQATypeFilterValue
+          ),
+
+      text
+    },
+
+    sourceCount:
+      safeData.length,
+
+    matchedCount:
+      total,
+
+    summary: {
+      total,
+      passed,
+      opportunity,
+      failed,
+      critical,
+      errors,
+      pending,
+      responded,
+      passRate,
+      errorRate
+    },
+
+    uniqueOwners:
+      byOwner.length,
+
+    uniqueReviewers:
+      reviewerAnalysis.reviewerCount,
+
+    byOwner,
+    byReviewer:
+      reviewerAnalysis.reviewers,
+
+    byType,
+    byCategory,
+
+    cases:
+      filteredCases
+        .slice(0, safeLimit)
+        .map(item =>
+          toQACaseFilterEvidence(
+            item,
+            safeData
+          )
+        ),
+
+    truncated:
+      filteredCases.length >
+      safeLimit
+  };
+}
+function buildQAFilterDescription(
+  filters
+) {
+  const lines = [];
+
+  if (filters.owners.length) {
+    lines.push(
+      `Owner: ${filters.owners.join(', ')}`
+    );
+  }
+
+  if (filters.reviewers.length) {
+    lines.push(
+      `QA reviewer: ${filters.reviewers.join(', ')}`
+    );
+  }
+
+  if (filters.statuses.length) {
+    lines.push(
+      `Status: ${filters.statuses.join(', ')}`
+    );
+  }
+
+  if (filters.types.length) {
+    lines.push(
+      `Type: ${filters.types.join(', ')}`
+    );
+  }
+
+  if (filters.categories.length) {
+    lines.push(
+      `Category: ${filters.categories.join(', ')}`
+    );
+  }
+
+  if (
+    filters.qaDateFrom ||
+    filters.qaDateTo
+  ) {
+    lines.push(
+      `QA date: ${
+        filters.qaDateFrom || 'Any'
+      } – ${
+        filters.qaDateTo ||
+        filters.qaDateFrom ||
+        'Any'
+      }`
+    );
+  }
+
+  if (
+    filters.completedDateFrom ||
+    filters.completedDateTo
+  ) {
+    lines.push(
+      `Completed date: ${
+        filters.completedDateFrom ||
+        'Any'
+      } – ${
+        filters.completedDateTo ||
+        filters.completedDateFrom ||
+        'Any'
+      }`
+    );
+  }
+
+  if (filters.text) {
+    lines.push(
+      `Text: "${filters.text}"`
+    );
+  }
+
+  return lines;
+}
+
+function buildQAFilteredSummaryResponse(
+  options = {}
+) {
+  const analysis =
+    getQACasesByFilters({
+      ...options,
+      limit: 0
+    });
+
+  const filterLines =
+    buildQAFilterDescription(
+      analysis.filters
+    );
+
+  if (!analysis.matchedCount) {
+    return [
+      'No QA cases matched the selected filters.',
+      '',
+      ...filterLines.map(
+        line => `• ${line}`
+      )
+    ].join('\n');
+  }
+
+  const summary =
+    analysis.summary;
+
+  return [
+    `${analysis.matchedCount} QA cases matched the selected filters.`,
+    '',
+    'Filters:',
+    ...filterLines.map(
+      line => `• ${line}`
+    ),
+    '',
+    `✓ Passed: ${summary.passed}`,
+    `● Opportunity: ${summary.opportunity}`,
+    `▲ Failed: ${summary.failed}`,
+    `✕ Critical: ${summary.critical}`,
+    '',
+    `⏳ Pending: ${summary.pending}`,
+    `💬 Responded: ${summary.responded}`,
+    '',
+    `Pass rate: ${formatQAPercentage(summary.passRate)}`,
+    `Error rate: ${formatQAPercentage(summary.errorRate)}`
+  ].join('\n');
+}
+
+function formatQAFilteredCase(item) {
+  const categories =
+    item.categories.length
+      ? item.categories.join(', ')
+      : 'No category';
+
+  return [
+    `• ${item.task_id || 'No Task ID'}`,
+    `  Owner: ${item.owner || 'Unknown'}`,
+    `  QA reviewer: ${item.reviewer || 'Unknown'}`,
+    `  Status: ${item.status}`,
+    `  Type: ${item.type || 'Unknown'}`,
+    `  Categories: ${categories}`,
+    `  QA date: ${item.qa_date || 'N/A'}`,
+    `  Completed date: ${item.completed_date || 'N/A'}`
+  ].join('\n');
+}
+
+function buildQAFilteredCasesResponse(
+  options = {},
+  maxItems = 10
+) {
+  const analysis =
+    getQACasesByFilters({
+      ...options,
+      limit: maxItems
+    });
+
+  const filterLines =
+    buildQAFilterDescription(
+      analysis.filters
+    );
+
+  if (!analysis.matchedCount) {
+    return [
+      'No QA cases matched the selected filters.',
+      '',
+      ...filterLines.map(
+        line => `• ${line}`
+      )
+    ].join('\n');
+  }
+
+  return [
+    `${analysis.matchedCount} QA cases matched the selected filters.`,
+    '',
+    'Filters:',
+    ...filterLines.map(
+      line => `• ${line}`
+    ),
+    '',
+    `Showing ${analysis.cases.length} of ${analysis.matchedCount}:`,
+    '',
+    ...analysis.cases.map(
+      formatQAFilteredCase
+    ),
+    '',
+    analysis.truncated
+      ? `Only the first ${maxItems} cases are shown.`
+      : 'All matching cases are shown.'
+  ].join('\n');
+}
+
+function extractQAStatusFiltersFromQuestion(
+  question
+) {
+  const normalized =
+    normalizeQAText(question);
+
+  const statuses = [];
+
+  if (
+    normalized.includes('non passed') ||
+    normalized.includes('not passed') ||
+    normalized.includes('no aprobados')
+  ) {
+    return [
+      'Opportunity',
+      'Failed',
+      'Critical'
+    ];
+  }
+
+  if (
+    normalized.includes('pending') ||
+    normalized.includes('pendiente')
+  ) {
+    statuses.push('Pending');
+  }
+
+  if (
+    normalized.includes('responded') ||
+    normalized.includes('respondido') ||
+    normalized.includes('con respuesta')
+  ) {
+    statuses.push('Responded');
+  }
+
+  if (normalized.includes('critical')) {
+    statuses.push('Critical');
+  }
+
+  if (normalized.includes('failed')) {
+    statuses.push('Failed');
+  }
+
+  if (
+    normalized.includes('opportunity') ||
+    normalized.includes('observed')
+  ) {
+    statuses.push('Opportunity');
+  }
+
+  if (
+    normalized.includes('passed') &&
+    !normalized.includes('non passed') &&
+    !normalized.includes('not passed')
+  ) {
+    statuses.push('Passed');
+  }
+
+  return [...new Set(statuses)];
+}
+
+function extractQATypeFiltersFromQuestion(
+  question
+) {
+  const normalized =
+    normalizeQAText(question);
+
+  const types = [];
+
+  if (
+    containsNormalizedPhrase(
+      normalized,
+      'landing page'
+    ) ||
+    containsNormalizedPhrase(
+      normalized,
+      'lp'
+    )
+  ) {
+    types.push('LP');
+  }
+
+  if (
+    normalized.includes('posting')
+  ) {
+    types.push('Posting');
+  }
+
+  if (
+    normalized.includes('unknown type') ||
+    normalized.includes('tipo desconocido')
+  ) {
+    types.push('Unknown');
+  }
+
+  return [...new Set(types)];
+}
+function extractQADateFiltersFromQuestion(
+  question
+) {
+  const normalized =
+    normalizeQAText(question);
+
+  const dateMatches =
+    String(question).match(
+      /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g
+    ) || [];
+
+  const dates =
+    dateMatches
+      .map(normalizeDate)
+      .filter(Boolean);
+
+  const usesCompletedDate =
+    normalized.includes('completed date') ||
+    normalized.includes('completion date') ||
+    normalized.includes('fecha completada') ||
+    normalized.includes('fecha de completado');
+
+  if (!dates.length) {
+    return {};
+  }
+
+  const from =
+    dates[0];
+
+  const to =
+    dates[1] || dates[0];
+
+  if (usesCompletedDate) {
+    return {
+      completedDateFrom: from,
+      completedDateTo: to
+    };
+  }
+
+  return {
+    qaDateFrom: from,
+    qaDateTo: to
+  };
+}
+
+function parseQACombinedFilterQuestion(
+  question
+) {
+  const normalized =
+    normalizeQAText(question);
+
+  const statuses =
+    extractQAStatusFiltersFromQuestion(
+      question
+    );
+
+  const types =
+    extractQATypeFiltersFromQuestion(
+      question
+    );
+
+  const detectedCategory =
+    findQACategoryInQuestion(
+      question
+    );
+
+  const dateFilters =
+    extractQADateFiltersFromQuestion(
+      question
+    );
+
+  const ownerResult =
+    findQAOwnerInQuestion(
+      question
+    );
+
+  const reviewerResult =
+    findQAReviewerInQuestion(
+      question
+    );
+
+  const reviewerContext =
+    normalized.includes('reviewed by') ||
+    normalized.includes('qa reviewer') ||
+    normalized.includes('qa by') ||
+    normalized.includes('as qa') ||
+    normalized.includes('revisado por') ||
+    normalized.includes('como qa');
+
+  const owners = [];
+  const reviewers = [];
+
+  if (
+    reviewerContext &&
+    reviewerResult.match
+  ) {
+    reviewers.push(
+      reviewerResult.match.displayName
+    );
+  } else if (ownerResult.match) {
+    owners.push(
+      ownerResult.match
+    );
+  }
+
+  const options = {
+    owners,
+    reviewers,
+    statuses,
+
+    categories:
+      detectedCategory
+        ? [detectedCategory]
+        : [],
+
+    types,
+
+    ...dateFilters
+  };
+
+  const activeFilterCount = [
+    owners.length > 0,
+    reviewers.length > 0,
+    statuses.length > 0,
+    Boolean(detectedCategory),
+    types.length > 0,
+    Boolean(
+      dateFilters.qaDateFrom ||
+      dateFilters.completedDateFrom
+    )
+  ].filter(Boolean).length;
+
+  const asksForCount =
+    normalized.includes('how many') ||
+    normalized.includes('count') ||
+    normalized.includes('total') ||
+    normalized.includes('cuantos') ||
+    normalized.includes('cantidad');
+
+  const asksForList =
+    normalized.includes('show') ||
+    normalized.includes('list') ||
+    normalized.includes('which cases') ||
+    normalized.includes('details') ||
+    normalized.includes('muestra') ||
+    normalized.includes('lista') ||
+    normalized.includes('cuales') ||
+    normalized.includes('detalles');
+
+  return {
+    options,
+    activeFilterCount,
+    asksForCount,
+    asksForList,
+
+    shouldHandle:
+      activeFilterCount >= 2 &&
+      (
+        asksForCount ||
+        asksForList
+      )
+  };
+}
+
+function resolveQAOwnerName(
+  ownerName,
+  data = DATA
+) {
+  const requestedName =
+    String(ownerName || '').trim();
+
+  if (!requestedName) {
+    return {
+      match: null,
+      ambiguous: false,
+      options: []
+    };
+  }
+
+  const owners =
+    getQAOwnerNames(data);
+
+  const normalizedRequested =
+    normalizeQAText(requestedName);
+
+  // ── Nombre completo exacto ──
+  const exactMatch =
+    owners.find(
+      owner =>
+        normalizeQAText(owner) ===
+        normalizedRequested
+    );
+
+  if (exactMatch) {
+    return {
+      match: exactMatch,
+      ambiguous: false,
+      options: []
+    };
+  }
+
+  // ── Primer nombre ──
+  const firstNameMatches =
+    owners.filter(owner => {
+      const firstName =
+        normalizeQAText(owner)
+          .split(' ')[0];
+
+      return (
+        firstName ===
+        normalizedRequested
+      );
+    });
+
+  if (firstNameMatches.length === 1) {
+    return {
+      match: firstNameMatches[0],
+      ambiguous: false,
+      options: []
+    };
+  }
+
+  if (firstNameMatches.length > 1) {
+    return {
+      match: null,
+      ambiguous: true,
+      options: firstNameMatches
+    };
+  }
+
+  return {
+    match: null,
+    ambiguous: false,
+    options: []
+  };
+}
+function getQAMemberCategorySnapshot(
+  ownerName,
+  data = DATA
+) {
+  const analysis =
+    getQACategoryAnalysis({
+      data,
+      owner: ownerName
+    });
+
+  return {
+    categorizedCases:
+      analysis.categorizedCases,
+
+    uncategorizedCases:
+      analysis.uncategorizedCases,
+
+    topCategory:
+      analysis.topCategory
+        ? {
+            category:
+              analysis.topCategory.category,
+
+            count:
+              analysis.topCategory.count,
+
+            percentage:
+              analysis.topCategory
+                .percentageOfScope
+          }
+        : null,
+
+    categories:
+      analysis.categories.map(item => ({
+        category: item.category,
+        count: item.count,
+
+        percentage:
+          item.percentageOfScope
+      }))
+  };
+}
+function compareQAMetric(
+  memberA,
+  memberB,
+  metric,
+  direction = 'higher'
+) {
+  const valueA =
+    Number(memberA[metric] || 0);
+
+  const valueB =
+    Number(memberB[metric] || 0);
+
+  if (valueA === valueB) {
+    return {
+      metric,
+      direction,
+      tie: true,
+      winner: null,
+      loser: null,
+      valueA,
+      valueB,
+      difference: 0
+    };
+  }
+
+  const aWins =
+    direction === 'lower'
+      ? valueA < valueB
+      : valueA > valueB;
+
+  return {
+    metric,
+    direction,
+    tie: false,
+
+    winner:
+      aWins
+        ? memberA.owner
+        : memberB.owner,
+
+    loser:
+      aWins
+        ? memberB.owner
+        : memberA.owner,
+
+    valueA,
+    valueB,
+
+    difference:
+      Math.abs(valueA - valueB)
+  };
+}
+function compareQAMembers({
+  data = DATA,
+  memberA,
+  memberB
+} = {}) {
+  const safeData =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  if (!memberA || !memberB) {
+    return {
+      ok: false,
+      error: 'TWO_MEMBERS_REQUIRED',
+      message:
+        'Two team members are required.'
+    };
+  }
+
+  const resolvedA =
+    resolveQAOwnerName(
+      memberA,
+      safeData
+    );
+
+  const resolvedB =
+    resolveQAOwnerName(
+      memberB,
+      safeData
+    );
+
+  if (resolvedA.ambiguous) {
+    return {
+      ok: false,
+      error: 'MEMBER_A_AMBIGUOUS',
+      message:
+        `${memberA} matches more than one member.`,
+
+      options:
+        resolvedA.options
+    };
+  }
+
+  if (resolvedB.ambiguous) {
+    return {
+      ok: false,
+      error: 'MEMBER_B_AMBIGUOUS',
+      message:
+        `${memberB} matches more than one member.`,
+
+      options:
+        resolvedB.options
+    };
+  }
+
+  if (!resolvedA.match) {
+    return {
+      ok: false,
+      error: 'MEMBER_A_NOT_FOUND',
+      message:
+        `No team member was found for ${memberA}.`
+    };
+  }
+
+  if (!resolvedB.match) {
+    return {
+      ok: false,
+      error: 'MEMBER_B_NOT_FOUND',
+      message:
+        `No team member was found for ${memberB}.`
+    };
+  }
+
+  if (resolvedA.match === resolvedB.match) {
+    return {
+      ok: false,
+      error: 'SAME_MEMBER',
+      message:
+        'Select two different team members.'
+    };
+  }
+
+  const metricsA =
+    getQAMemberMetrics(
+      resolvedA.match,
+      safeData
+    );
+
+  const metricsB =
+    getQAMemberMetrics(
+      resolvedB.match,
+      safeData
+    );
+
+  const queueA =
+    getQAQueueAnalysis({
+      data: safeData,
+      owner: resolvedA.match,
+      limit: 0
+    });
+
+  const queueB =
+    getQAQueueAnalysis({
+      data: safeData,
+      owner: resolvedB.match,
+      limit: 0
+    });
+
+  const categoriesA =
+    getQAMemberCategorySnapshot(
+      resolvedA.match,
+      safeData
+    );
+
+  const categoriesB =
+    getQAMemberCategorySnapshot(
+      resolvedB.match,
+      safeData
+    );
+
+  const resultA = {
+    ...metricsA,
+
+    pending:
+      queueA.pendingCount,
+
+    responded:
+      queueA.respondedCount,
+
+    respondedOpen:
+      queueA.respondedOpenCount,
+
+    resolvedByResponse:
+      queueA.resolvedByResponseCount,
+
+    topCategory:
+      categoriesA.topCategory,
+
+    categories:
+      categoriesA.categories
+  };
+
+  const resultB = {
+    ...metricsB,
+
+    pending:
+      queueB.pendingCount,
+
+    responded:
+      queueB.respondedCount,
+
+    respondedOpen:
+      queueB.respondedOpenCount,
+
+    resolvedByResponse:
+      queueB.resolvedByResponseCount,
+
+    topCategory:
+      categoriesB.topCategory,
+
+    categories:
+      categoriesB.categories
+  };
+
+  const comparisons = {
+    volume:
+      compareQAMetric(
+        resultA,
+        resultB,
+        'total',
+        'higher'
+      ),
+
+    passRate:
+      compareQAMetric(
+        resultA,
+        resultB,
+        'passRate',
+        'higher'
+      ),
+
+    errorRate:
+      compareQAMetric(
+        resultA,
+        resultB,
+        'errorRate',
+        'lower'
+      ),
+
+    errors:
+      compareQAMetric(
+        resultA,
+        resultB,
+        'errors',
+        'lower'
+      ),
+
+    pending:
+      compareQAMetric(
+        resultA,
+        resultB,
+        'pending',
+        'lower'
+      )
+  };
+
+  return {
+    ok: true,
+
+    members: {
+      memberA: resultA,
+      memberB: resultB
+    },
+
+    comparisons,
+
+    differences: {
+      total:
+        resultA.total -
+        resultB.total,
+
+      passed:
+        resultA.passed -
+        resultB.passed,
+
+      opportunity:
+        resultA.opportunity -
+        resultB.opportunity,
+
+      failed:
+        resultA.failed -
+        resultB.failed,
+
+      critical:
+        resultA.critical -
+        resultB.critical,
+
+      errors:
+        resultA.errors -
+        resultB.errors,
+
+      passRate:
+        resultA.passRate -
+        resultB.passRate,
+
+      errorRate:
+        resultA.errorRate -
+        resultB.errorRate,
+
+      pending:
+        resultA.pending -
+        resultB.pending
+    }
+  };
+}
+
+function buildQAComparisonInsight(
+  comparison,
+  label,
+  formatter = value => String(value)
+) {
+  if (comparison.tie) {
+    return (
+      `${label}: tie at ` +
+      `${formatter(comparison.valueA)}.`
+    );
+  }
+
+  return (
+    `${label}: ${comparison.winner} leads ` +
+    `by ${formatter(comparison.difference)}.`
+  );
+  // value =>
+  // formatQAPercentage(value)
+}
+function buildQAMemberComparisonResponse(
+  memberA,
+  memberB
+) {
+  const comparison =
+    compareQAMembers({
+      memberA,
+      memberB
+    });
+
+  if (!comparison.ok) {
+    if (
+      comparison.error ===
+        'MEMBER_A_AMBIGUOUS' ||
+      comparison.error ===
+        'MEMBER_B_AMBIGUOUS'
+    ) {
+      return buildQAAmbiguousMemberResponse(
+        comparison.options
+      );
+    }
+
+    return comparison.message;
+  }
+
+  const a =
+    comparison.members.memberA;
+
+  const b =
+    comparison.members.memberB;
+
+  const aTopCategory =
+    a.topCategory
+      ? (
+          `${a.topCategory.category} ` +
+          `(${a.topCategory.count})`
+        )
+      : 'None detected';
+
+  const bTopCategory =
+    b.topCategory
+      ? (
+          `${b.topCategory.category} ` +
+          `(${b.topCategory.count})`
+        )
+      : 'None detected';
+
+  return [
+    `QA performance comparison: ${a.owner} vs ${b.owner}`,
+    '',
+
+    `── ${a.owner} ──`,
+    `Total cases: ${a.total}`,
+    `Passed: ${a.passed}`,
+    `Opportunity: ${a.opportunity}`,
+    `Failed: ${a.failed}`,
+    `Critical: ${a.critical}`,
+    `Errors: ${a.errors}`,
+    `Pass rate: ${formatQAPercentage(a.passRate)}`,
+    `Error rate: ${formatQAPercentage(a.errorRate)}`,
+    `Pending: ${a.pending}`,
+    `Responded: ${a.responded}`,
+    `Top category: ${aTopCategory}`,
+    '',
+
+    `── ${b.owner} ──`,
+    `Total cases: ${b.total}`,
+    `Passed: ${b.passed}`,
+    `Opportunity: ${b.opportunity}`,
+    `Failed: ${b.failed}`,
+    `Critical: ${b.critical}`,
+    `Errors: ${b.errors}`,
+    `Pass rate: ${formatQAPercentage(b.passRate)}`,
+    `Error rate: ${formatQAPercentage(b.errorRate)}`,
+    `Pending: ${b.pending}`,
+    `Responded: ${b.responded}`,
+    `Top category: ${bTopCategory}`,
+    '',
+
+    '── Key differences ──',
+
+    buildQAComparisonInsight(
+      comparison.comparisons.volume,
+      'Higher case volume'
+    ),
+
+    buildQAComparisonInsight(
+      comparison.comparisons.passRate,
+      'Higher pass rate',
+      formatQAPercentage
+    ),
+
+    buildQAComparisonInsight(
+      comparison.comparisons.errorRate,
+      'Lower error rate',
+      formatQAPercentage
+    ),
+
+    buildQAComparisonInsight(
+      comparison.comparisons.errors,
+      'Fewer errors'
+    ),
+
+    buildQAComparisonInsight(
+      comparison.comparisons.pending,
+      'Fewer pending cases'
+    ),
+
+    '',
+    'The comparison reports each metric separately and does not assign a single overall winner.'
+  ].join('\n');
+}
+
+function findQAOwnersForComparison(
+  question,
+  data = DATA
+) {
+  const owners =
+    getQAOwnerNames(data);
+
+  const matches = [];
+  const ambiguousOptions = [];
+
+  // ── Primero nombres completos ──
+  owners.forEach(owner => {
+    if (
+      containsNormalizedPhrase(
+        question,
+        owner
+      )
+    ) {
+      matches.push(owner);
+    }
+  });
+
+  // ── Luego primeros nombres únicos ──
+  owners.forEach(owner => {
+    if (matches.includes(owner)) {
+      return;
+    }
+
+    const firstName =
+      normalizeQAText(owner)
+        .split(' ')[0];
+
+    if (
+      !containsNormalizedPhrase(
+        question,
+        firstName
+      )
+    ) {
+      return;
+    }
+
+    const sameFirstName =
+      owners.filter(candidate => {
+        const candidateFirstName =
+          normalizeQAText(candidate)
+            .split(' ')[0];
+
+        return (
+          candidateFirstName ===
+          firstName
+        );
+      });
+
+    if (sameFirstName.length === 1) {
+      matches.push(owner);
+    } else {
+      ambiguousOptions.push(
+        ...sameFirstName
+      );
+    }
+  });
+
+  return {
+    matches: [...new Set(matches)],
+
+    ambiguous:
+      ambiguousOptions.length > 0,
+
+    options:
+      [...new Set(ambiguousOptions)]
+  };
+}
+
+// ═══════════════════════════════════════
+// QA WEEKLY STATUS
+// ═══════════════════════════════════════
+
+const QA_WEEKLY_STATUS_RULES = Object.freeze({
+  critical: {
+    highThreshold: 1,
+    mediumThreshold: 0,
+    highPoints: 3,
+    mediumPoints: 1,
+    lowPoints: 0
+  },
+
+  failed: {
+    highThreshold: 3,
+    mediumThreshold: 1.5,
+    highPoints: 2,
+    mediumPoints: 1,
+    lowPoints: 0
+  },
+
+  pending: {
+    highThreshold: 20,
+    mediumThreshold: 10,
+    highPoints: 3,
+    mediumPoints: 2,
+    lowPoints: 1
+  },
+
+  final: {
+    atRiskMinimum: 7,
+    needsAttentionMinimum: 4,
+    maximumScore: 8
+  }
+});
+
+function getQACriticalWeeklyPoints(
+  criticalRate
+) {
+  const rules =
+    QA_WEEKLY_STATUS_RULES.critical;
+
+  if (
+    criticalRate >
+    rules.highThreshold
+  ) {
+    return rules.highPoints;
+  }
+
+  if (
+    criticalRate >
+    rules.mediumThreshold
+  ) {
+    return rules.mediumPoints;
+  }
+
+  return rules.lowPoints;
+}
+
+function getQAFailedWeeklyPoints(
+  failedRate
+) {
+  const rules =
+    QA_WEEKLY_STATUS_RULES.failed;
+
+  if (
+    failedRate >
+    rules.highThreshold
+  ) {
+    return rules.highPoints;
+  }
+
+  if (
+    failedRate >
+    rules.mediumThreshold
+  ) {
+    return rules.mediumPoints;
+  }
+
+  return rules.lowPoints;
+}
+
+function getQAPendingWeeklyPoints(
+  pendingCount
+) {
+  const rules =
+    QA_WEEKLY_STATUS_RULES.pending;
+
+  if (
+    pendingCount >
+    rules.highThreshold
+  ) {
+    return rules.highPoints;
+  }
+
+  if (
+    pendingCount >=
+    rules.mediumThreshold
+  ) {
+    return rules.mediumPoints;
+  }
+
+  return rules.lowPoints;
+}
+
+
+function getQAWeeklyFinalStatus({
+  finalScore,
+  errors,
+  pending
+}) {
+  const rules =
+    QA_WEEKLY_STATUS_RULES.final;
+
+  if (
+    errors === 0 &&
+    pending === 0
+  ) {
+    return {
+      key: 'clean',
+      label: '✓ CLEAN WEEK',
+      shortLabel: 'Clean Week',
+      level: 0
+    };
+  }
+
+  if (
+    finalScore >=
+    rules.atRiskMinimum
+  ) {
+    return {
+      key: 'risk',
+      label: '🚨 AT RISK',
+      shortLabel: 'At Risk',
+      level: 3
+    };
+  }
+
+  if (
+    finalScore >=
+    rules.needsAttentionMinimum
+  ) {
+    return {
+      key: 'attention',
+      label: '⚠ NEEDS ATTENTION',
+      shortLabel: 'Needs Attention',
+      level: 2
+    };
+  }
+
+  return {
+    key: 'control',
+    label: '✓ UNDER CONTROL',
+    shortLabel: 'Under Control',
+    level: 1
+  };
+}
+
+function getQAWeeklyPeriod(
+  data = DATA
+) {
+  const safeData =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  const days = [
+    ...new Set(
+      safeData
+        .map(item => item.day)
+        .filter(Boolean)
+    )
+  ].sort(
+    (a, b) =>
+      parseMDY(a) - parseMDY(b)
+  );
+
+  const from =
+    days[0] || null;
+
+  const to =
+    days[days.length - 1] || null;
+
+  return {
+    from,
+    to,
+
+    daysLoaded:
+      days.length,
+
+    days,
+
+    label:
+      !from
+        ? 'No period'
+        : from === to
+          ? from
+          : `${from} – ${to}`
+  };
+}
+
+function buildQAWeeklyStatusReasons({
+  criticalRate,
+  failedRate,
+  pending,
+  criticalPoints,
+  failedPoints,
+  pendingPoints
+}) {
+  const reasons = [];
+
+  if (criticalRate > 1) {
+    reasons.push({
+      key: 'critical_high',
+      severity: 'risk',
+
+      message:
+        `Critical cases represent ` +
+        `${formatQAPercentage(criticalRate)}, ` +
+        `which is above the 1% threshold.`,
+
+      points:
+        criticalPoints
+    });
+  } else if (criticalRate > 0) {
+    reasons.push({
+      key: 'critical_present',
+      severity: 'warning',
+
+      message:
+        `Critical cases represent ` +
+        `${formatQAPercentage(criticalRate)}.`,
+
+      points:
+        criticalPoints
+    });
+  } else {
+    reasons.push({
+      key: 'critical_clean',
+      severity: 'ok',
+
+      message:
+        'No Critical cases were found.',
+
+      points:
+        criticalPoints
+    });
+  }
+
+  if (failedRate > 3) {
+    reasons.push({
+      key: 'failed_high',
+      severity: 'risk',
+
+      message:
+        `Failed cases represent ` +
+        `${formatQAPercentage(failedRate)}, ` +
+        `which is above the 3% threshold.`,
+
+      points:
+        failedPoints
+    });
+  } else if (failedRate > 1.5) {
+    reasons.push({
+      key: 'failed_medium',
+      severity: 'warning',
+
+      message:
+        `Failed cases represent ` +
+        `${formatQAPercentage(failedRate)}, ` +
+        `which is above the 1.5% threshold.`,
+
+      points:
+        failedPoints
+    });
+  } else {
+    reasons.push({
+      key: 'failed_controlled',
+      severity: 'ok',
+
+      message:
+        `Failed cases represent ` +
+        `${formatQAPercentage(failedRate)}, ` +
+        `within the 1.5% threshold.`,
+
+      points:
+        failedPoints
+    });
+  }
+
+  if (pending > 20) {
+    reasons.push({
+      key: 'pending_high',
+      severity: 'risk',
+
+      message:
+        `${pending} cases are pending, ` +
+        `which is above the limit of 20.`,
+
+      points:
+        pendingPoints
+    });
+  } else if (pending >= 10) {
+    reasons.push({
+      key: 'pending_medium',
+      severity: 'warning',
+
+      message:
+        `${pending} cases are pending, ` +
+        `within the 10–20 warning range.`,
+
+      points:
+        pendingPoints
+    });
+  } else {
+    reasons.push({
+      key: 'pending_controlled',
+      severity: pending === 0
+        ? 'ok'
+        : 'info',
+
+      message:
+        pending === 0
+          ? 'There are no pending cases.'
+          : `${pending} cases are pending, below the threshold of 10.`,
+
+      points:
+        pendingPoints
+    });
+  }
+
+  return reasons;
+}
+
+function buildQAWeeklyRecommendations({
+  critical,
+  failedRate,
+  pending,
+  topCategory,
+  riskOwners
+}) {
+  const recommendations = [];
+
+  if (critical > 0) {
+    recommendations.push({
+      priority: 'high',
+      key: 'review_critical',
+
+      message:
+        'Review Critical cases immediately and confirm their follow-up status.'
+    });
+  }
+
+  if (pending > 20) {
+    recommendations.push({
+      priority: 'high',
+      key: 'reduce_pending_high',
+
+      message:
+        'Prioritize the pending queue and assign owners for immediate resolution.'
+    });
+  } else if (pending >= 10) {
+    recommendations.push({
+      priority: 'medium',
+      key: 'reduce_pending_medium',
+
+      message:
+        'Review pending cases and prevent the queue from exceeding 20.'
+    });
+  }
+
+  if (failedRate > 3) {
+    recommendations.push({
+      priority: 'high',
+      key: 'investigate_failed',
+
+      message:
+        'Investigate repeated Failed patterns and verify whether additional guidance is needed.'
+    });
+  } else if (failedRate > 1.5) {
+    recommendations.push({
+      priority: 'medium',
+      key: 'monitor_failed',
+
+      message:
+        'Monitor Failed cases and verify whether the same issue is repeating.'
+    });
+  }
+
+  if (topCategory) {
+    recommendations.push({
+      priority: 'medium',
+      key: 'review_top_category',
+
+      message:
+        `Review the most frequent category: ` +
+        `${topCategory.category} ` +
+        `(${topCategory.count} cases).`
+    });
+  }
+
+  if (riskOwners.length > 0) {
+    recommendations.push({
+      priority: 'medium',
+      key: 'review_risk_owners',
+
+      message:
+        `Review members above the 10% error-rate threshold: ` +
+        `${riskOwners
+          .map(item => item.owner)
+          .join(', ')}.`
+    });
+  }
+
+  if (!recommendations.length) {
+    recommendations.push({
+      priority: 'low',
+      key: 'maintain_controls',
+
+      message:
+        'Maintain current QA controls and continue monitoring the pending queue.'
+    });
+  }
+
+  return recommendations;
+}
+function getQAWeeklyStatusAnalysis({
+  data = DATA
+} = {}) {
+  const safeData =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  if (!safeData.length) {
+    return {
+      ok: false,
+      error: 'NO_DATA',
+      message:
+        'No QA data is available.'
+    };
+  }
+
+  const total =
+    safeData.length;
+
+  const passed =
+    safeData.filter(
+      item => item.status === 'Passed'
+    ).length;
+
+  const opportunity =
+    safeData.filter(
+      item =>
+        item.status === 'Opportunity'
+    ).length;
+
+  const failed =
+    safeData.filter(
+      item => item.status === 'Failed'
+    ).length;
+
+  const critical =
+    safeData.filter(
+      item => item.status === 'Critical'
+    ).length;
+
+  const errors =
+    failed + critical;
+
+  const passRate =
+    total > 0
+      ? (
+          (
+            passed +
+            opportunity
+          ) /
+          total
+        ) * 100
+      : 0;
+
+  const errorRate =
+    total > 0
+      ? (
+          errors /
+          total
+        ) * 100
+      : 0;
+
+  const criticalRate =
+    total > 0
+      ? (
+          critical /
+          total
+        ) * 100
+      : 0;
+
+  const failedRate =
+    total > 0
+      ? (
+          failed /
+          total
+        ) * 100
+      : 0;
+
+  const opportunityRate =
+    total > 0
+      ? (
+          opportunity /
+          total
+        ) * 100
+      : 0;
+
+  const queueAnalysis =
+    getQAQueueAnalysis({
+      data: safeData,
+      limit: 0
+    });
+
+  const pending =
+    queueAnalysis.pendingCount;
+
+  const criticalPoints =
+    getQACriticalWeeklyPoints(
+      criticalRate
+    );
+
+  const failedPoints =
+    getQAFailedWeeklyPoints(
+      failedRate
+    );
+
+  const pendingPoints =
+    getQAPendingWeeklyPoints(
+      pending
+    );
+
+  const severityScore =
+    criticalPoints +
+    failedPoints;
+
+  const finalScore =
+    severityScore +
+    pendingPoints;
+
+  const status =
+    getQAWeeklyFinalStatus({
+      finalScore,
+      errors,
+      pending
+    });
+
+  const categoryAnalysis =
+    getQACategoryAnalysis({
+      data: safeData
+    });
+
+  const topCategory =
+    categoryAnalysis.topCategory
+      ? {
+          category:
+            categoryAnalysis
+              .topCategory
+              .category,
+
+          count:
+            categoryAnalysis
+              .topCategory
+              .count,
+
+          percentage:
+            categoryAnalysis
+              .topCategory
+              .percentageOfScope
+        }
+      : null;
+
+  const owners =
+    getQAOwnerNames(
+      safeData
+    );
+
+  const ownerMetrics =
+    owners.map(owner =>
+      getQAMemberMetrics(
+        owner,
+        safeData
+      )
+    );
+
+  const riskOwners =
+    ownerMetrics
+      .filter(
+        member =>
+          member.errorRate > 10
+      )
+      .sort(
+        (a, b) =>
+          b.errorRate -
+          a.errorRate
+      )
+      .map(member => ({
+        owner: member.owner,
+        total: member.total,
+        errors: member.errors,
+        errorRate: member.errorRate
+      }));
+
+  const reasons =
+    buildQAWeeklyStatusReasons({
+      criticalRate,
+      failedRate,
+      pending,
+      criticalPoints,
+      failedPoints,
+      pendingPoints
+    });
+
+  const recommendations =
+    buildQAWeeklyRecommendations({
+      critical,
+      failedRate,
+      pending,
+      topCategory,
+      riskOwners
+    });
+
+  return {
+    ok: true,
+
+    period:
+      getQAWeeklyPeriod(
+        safeData
+      ),
+
+    metrics: {
+      total,
+      passed,
+      opportunity,
+      failed,
+      critical,
+      errors,
+
+      pending,
+
+      responded:
+        queueAnalysis.respondedCount,
+
+      respondedOpen:
+        queueAnalysis
+          .respondedOpenCount,
+
+      passRate,
+      errorRate,
+      criticalRate,
+      failedRate,
+      opportunityRate
+    },
+
+    scoring: {
+      critical: {
+        value: criticalRate,
+        points: criticalPoints,
+        maximumPoints: 3
+      },
+
+      failed: {
+        value: failedRate,
+        points: failedPoints,
+        maximumPoints: 2
+      },
+
+      pending: {
+        value: pending,
+        points: pendingPoints,
+        maximumPoints: 3
+      },
+
+      severityScore,
+
+      finalScore,
+
+      maximumScore:
+        QA_WEEKLY_STATUS_RULES
+          .final
+          .maximumScore
+    },
+
+    status,
+
+    queueStatus:
+      queueAnalysis.queueStatus,
+
+    topCategory,
+
+    riskOwners,
+
+    reasons,
+
+    recommendations,
+
+    thresholds:
+      QA_WEEKLY_STATUS_RULES
+  };
+}
+function buildQAWeeklyStatusResponse() {
+  const analysis =
+    getQAWeeklyStatusAnalysis();
+
+  if (!analysis.ok) {
+    return analysis.message;
+  }
+
+  const metrics =
+    analysis.metrics;
+
+  const scoring =
+    analysis.scoring;
+
+  const reasonLines =
+    analysis.reasons.map(
+      reason =>
+        `• ${reason.message} ` +
+        `(+${reason.points} pts)`
+    );
+
+  const recommendationLines =
+    analysis.recommendations.map(
+      recommendation =>
+        `• ${recommendation.message}`
+    );
+
+  const topCategoryLine =
+    analysis.topCategory
+      ? (
+          `${analysis.topCategory.category} ` +
+          `(${analysis.topCategory.count} cases)`
+        )
+      : 'None detected';
+
+  return [
+    `Weekly QA status: ${analysis.status.label}`,
+    '',
+    `Period: ${analysis.period.label}`,
+    `Cases analyzed: ${metrics.total}`,
+    `Days loaded: ${analysis.period.daysLoaded}`,
+    '',
+    `Final score: ${scoring.finalScore}/${scoring.maximumScore}`,
+    '',
+    'Score breakdown:',
+    `• Critical: ${formatQAPercentage(metrics.criticalRate)} → +${scoring.critical.points} pts`,
+    `• Failed: ${formatQAPercentage(metrics.failedRate)} → +${scoring.failed.points} pts`,
+    `• Pending: ${metrics.pending} → +${scoring.pending.points} pts`,
+    `• Opportunity: ${formatQAPercentage(metrics.opportunityRate)} → informational`,
+    '',
+    'Why:',
+    ...reasonLines,
+    '',
+    `Pass rate: ${formatQAPercentage(metrics.passRate)}`,
+    `Error rate: ${formatQAPercentage(metrics.errorRate)}`,
+    `Queue status: ${analysis.queueStatus.label}`,
+    `Top category: ${topCategoryLine}`,
+    `Members above 10% error rate: ${analysis.riskOwners.length}`,
+    '',
+    'Recommended actions:',
+    ...recommendationLines
+  ].join('\n');
+}
+function buildQAWeeklyScoringRulesResponse() {
+  return [
+    'Weekly QA status scoring rules:',
+    '',
+    'Critical:',
+    '• More than 1% → +3 points',
+    '• More than 0% and up to 1% → +1 point',
+    '• 0% → +0 points',
+    '',
+    'Failed:',
+    '• More than 3% → +2 points',
+    '• More than 1.5% and up to 3% → +1 point',
+    '• Up to 1.5% → +0 points',
+    '',
+    'Pending:',
+    '• More than 20 → +3 points',
+    '• From 10 to 20 → +2 points',
+    '• Fewer than 10 → +1 point',
+    '',
+    'Final result:',
+    '• 7–8 points → 🚨 AT RISK',
+    '• 4–6 points → ⚠ NEEDS ATTENTION',
+    '• Fewer than 4 points → ✓ UNDER CONTROL',
+    '• No errors and no pending cases → ✓ CLEAN WEEK',
+    '',
+    'Opportunity is informational and does not add severity points.'
+  ].join('\n');
+}
+// ======================================================
+// STEP 13
+// QA CHAT BACKEND + TEMPORARY SESSION
+// ======================================================
+
+const QA_API_BASE_URL = 'http://localhost:3000/api';
+
+let qaSessionId = sessionStorage.getItem('qaSessionId');
+
+
+// ======================================================
+// CREATE QA SESSION
+// ======================================================
+
+async function createQASession() {
+  try {
+    // const response = await fetch(
+    //   `${QA_API_BASE_URL}/sessions`,
+    //   {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json'
+    //     }
+    //   }
+    // );
+    const response = await fetch(
+      `${QA_API_BASE_URL}/sessions`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+          cases: DATA
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Could not create QA session: ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+
+    qaSessionId = data.sessionId;
+
+    sessionStorage.setItem(
+      'qaSessionId',
+      qaSessionId
+    );
+
+    console.log(
+      '[QA CHAT] Session created:',
+      qaSessionId,
+      '| Cases stored:',
+      data.caseCount
+    );
+
+    return qaSessionId;
+
+  } catch (error) {
+    console.error(
+      '[QA CHAT] Error creating session:',
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+// ======================================================
+// GET OR CREATE SESSION
+// ======================================================
+
+async function ensureQASession() {
+  if (qaSessionId) {
+    return qaSessionId;
+  }
+
+  return await createQASession();
+}
+
+
+// ======================================================
+// SEND MESSAGE TO BACKEND
+// ======================================================
+
+async function sendQAChatMessage(message, retry = true) {
+  try {
+    const sessionId = await ensureQASession();
+
+    const response = await fetch(
+      `${QA_API_BASE_URL}/chat`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+          sessionId,
+          message
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    // Session expired or backend restarted
+    if (
+      response.status === 404 &&
+      data.code === 'SESSION_NOT_FOUND_OR_EXPIRED' &&
+      retry
+    ) {
+      console.warn(
+        '[QA CHAT] Session expired. Creating new session...'
+      );
+
+      qaSessionId = null;
+
+      sessionStorage.removeItem(
+        'qaSessionId'
+      );
+
+      await createQASession();
+
+      return sendQAChatMessage(
+        message,
+        false
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'QA Chat request failed'
+      );
+    }
+
+    console.log(
+      '[QA CHAT] Response:',
+      data
+    );
+
+    return data;
+
+  } catch (error) {
+    console.error(
+      '[QA CHAT] Error:',
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+// ======================================================
+// RESET QA SESSION
+// ======================================================
+
+async function resetQASession() {
+  try {
+
+    if (qaSessionId) {
+      await fetch(
+        `${QA_API_BASE_URL}/sessions/${qaSessionId}`,
+        {
+          method: 'DELETE'
+        }
+      );
+    }
+
+  } catch (error) {
+    console.warn(
+      '[QA CHAT] Could not delete backend session:',
+      error
+    );
+  }
+
+  qaSessionId = null;
+
+  sessionStorage.removeItem(
+    'qaSessionId'
+  );
+
+  console.log(
+    '[QA CHAT] Session reset'
+  );
+
+  return createQASession();
+}
+
+
+// ======================================================
+// CONSOLE TEST HELPERS
+// ======================================================
+
+window.createQASession = createQASession;
+window.ensureQASession = ensureQASession;
+window.sendQAChatMessage = sendQAChatMessage;
+window.resetQASession = resetQASession;
