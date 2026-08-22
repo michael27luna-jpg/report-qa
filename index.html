@@ -18,7 +18,8 @@
   <!-- ── HEADER ── -->
   <header>
     <div class="header-left">
-      <h1>QA <span>Shadow</span> Dashboard</h1>
+      <img src="Images/LOGO.png" alt="FoxTrace Logo" class="img-fluid">
+      <h1><span>Fox</span>Trace</h1>
     </div>
     <div class="week-badge">2026</div>
   </header>
@@ -483,20 +484,28 @@
         <div class="report-box" id="weekly-report"></div>
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
-          <button class="copy-btn" onclick="printReport()" style="background:var(--accent);color:#000;border-color:var(--accent);">🖨 Print / Save PDF</button>
+  
+          <button class="copy-btn" onclick="printReport()"
+            style="background:var(--accent);color:#000;border-color:var(--accent);">
+            🖨 Print / Save PDF
+          </button>
+  
+          <button class="ai-report-btn" id="ai-report-btn" onclick="generateAIReport()">
+            ✦ Generate AI Report
+          </button>
         </div>
       </div>
     </div>
-
+  
     <div class="kpi-row" id="kpi-row"></div>
-
+  
     <div class="card" style="margin-bottom:16px;">
       <div class="card-title">Cases Reviewed per Day</div>
       <div class="timeline" id="timeline"></div>
       <div class="daily-scroll" style="margin-top:14px;" id="daily-bars"></div>
       <div id="daily-bars-legend"></div>
     </div>
-
+  
     <div class="grid-2">
       <div class="card">
         <div class="card-title">Status Distribution</div>
@@ -513,12 +522,12 @@
         </div>
       </div>
     </div>
-
+  
     <div class="card" style="margin-top:16px;">
       <div class="card-title">Bug Categories</div>
       <div class="bar-chart" id="cat-bars"></div>
     </div>
-
+  
     <div class="grid-2" style="margin-top:16px;">
       <div class="card">
         <div class="card-title">Top Bug Contributors</div>
@@ -592,7 +601,7 @@
   </div>
 
   <footer class="app-footer">
-    <div>Made by Cidar & Michael DDC Team</div>
+    <div>Made by Cidar & Michael & Kattya</div>
     <div id="app-version">Version ...</div>
   </footer>
 </div><!-- /shell -->
@@ -841,7 +850,34 @@
   <div class="info-popup-title" id="info-popup-title"></div>
   <div id="info-popup-body"></div>
 </div>
-<!-- Analytics chart tooltip -->
-<div id="analytics-tooltip" style="display:none;"></div>
+  <!-- Analytics chart tooltip -->
+  <div id="analytics-tooltip" style="display:none;"></div>
+
+  <!-- ── Modal: AI Report (Agente 3) ── -->
+  <div id="ai-report-modal" class="ai-modal">
+    <div class="ai-modal-overlay"></div>
+
+    <div class="ai-modal-content">
+      <div class="ai-modal-header">
+        <div>
+          <div class="ai-modal-label">AGENT 3 · QA REPORT</div>
+          <h2>Weekly QA Report</h2>
+        </div>
+        <button class="ai-modal-close" onclick="closeAIReportModal()" aria-label="Close">×</button>
+      </div>
+
+      <div class="ai-modal-body">
+        <div id="ai-report-content"></div>
+      </div>
+
+      <div class="ai-modal-footer">
+        <button class="copy-btn" onclick="printCurrentAIReport()"
+                style="background:var(--accent);color:#000;border-color:var(--accent);">
+          🖨 Print / Save PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

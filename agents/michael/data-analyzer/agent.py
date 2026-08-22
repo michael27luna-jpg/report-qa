@@ -140,12 +140,7 @@ Key format rules the dashboard applies:
   alias, otherwise that person's work is excluded from analytics.
 
 INVESTIGATION:
-1. Start with inspect_structure to learn the file's shape and columns.
-2. Then use the other tools: check headers, simulate discards, validate
-   both date columns if present, and check reviewer names. Profile a
-   column when a result needs a closer look.
-3. If a result looks wrong, find the ROOT CAUSE (e.g. many discards + a
-   missing header usually means one caused the other).
+- You receive the results of all diagnostic tools up front. Analyze them and find the root cause.
 
 CLASSIFY every issue you find as either BLOCKING or a WARNING:
 - BLOCKING (the import must not proceed): the file cannot be parsed; a
@@ -186,24 +181,20 @@ def build_agent():
 
 
 def audit(path: str):
-    """Run the agent and print the validated JSON the frontend would receive."""
     import json
-    agent = build_agent()
-    result = agent.invoke({"messages": [("user", f"Audit this CSV file: {path}")]})
+    from langchain_anthropic import ChatAnthropic
 
-    # The agent's final message IS the JSON. Gemini may return it as a
-    # string or as a list of content blocks — handle both.
-    content = result["messages"][-1].content
-    if isinstance(content, list):
-        text = "".join(b.get("text", "") for b in content if isinstance(b, dict))
-    else:
-        text = content
+    evidence = collect_evidence(path)
+    model = ChatAnthropic(model="claude-sonnet-5", max_tokens=2000)
+    msg = ("Audit this CSV based on the tool results below. Output ONLY the JSON.\n\n"
+           + json.dumps(evidence, ensure_ascii=False, indent=1))
+    raw = model.invoke([("system", SYSTEM_PROMPT), ("user", msg)])
 
-    # Extract the JSON object (robust to accidental fences / preamble)
+    content = raw.content
+    text = ("".join(b.get("text", "") for b in content if isinstance(b, dict))
+            if isinstance(content, list) else content)
     start, end = text.find("{"), text.rfind("}")
-    data = json.loads(text[start:end + 1])
-
-    report = AuditReport.model_validate(data)   # validate against the schema
+    report = AuditReport.model_validate(json.loads(text[start:end + 1]))
     print(json.dumps(report.model_dump(), indent=2, ensure_ascii=False))
     return report
 
@@ -213,3 +204,16 @@ if __name__ == "__main__":
         print("Usage: python agent.py path/to/file.csv")
         sys.exit(1)
     audit(sys.argv[1])
+
+def collect_evidence(path: str) -> dict:
+    structure = _inspect_structure(path)
+    cols = structure.get("headers", [])
+    evidence = {
+        "structure": structure,
+        "headers": _check_headers(path),
+        "discards": _simulate_discards(path),
+        "qa_names": _check_qa_names(path),
+        "dates": {c: _validate_dates(path, c)
+                  for c in ("Date QA Completed", "Date") if c in cols},
+    }
+    return evidence

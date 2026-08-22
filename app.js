@@ -179,7 +179,8 @@ function parseCSV(text) {
     const comment    = obj['QA Comment'] || '';
     const fixComment = obj['QA Fix Comment'] || '';
 /*     const status     = resolveFixStatus(rawStatus, fixComment); */
-    const status     = resolveFixStatus(rawStatus, fixComment, comment);
+/*    const status     = resolveFixStatus(rawStatus, fixComment, comment);*/
+    const status     = rawStatus;   // Agent 2 decides Passed; resolveFixStatus stays as fallback
 
     return {
       day:            normalizeDate(obj['Date QA Completed'] || ''),
@@ -198,167 +199,6 @@ function parseCSV(text) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FILE UPLOAD
-// ─────────────────────────────────────────────────────────────
-document.getElementById('csv-file-input').addEventListener('change', function (e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  runAudit(file);
-  const reader = new FileReader();
-  // reader.onload = ev => {
-  //   try {
-  //     const parsed = parseCSV(ev.target.result);
-  //     DATA = [...parsed];
-  //     const statusEl = document.getElementById('import-status');
-  //     if (!parsed.length) {
-  //       statusEl.textContent = '⚠ File loaded but no valid rows found. Check column headers.';
-  //       statusEl.style.color = 'var(--observed)';
-  //     } else {
-  //       statusEl.textContent = `✓ Loaded ${parsed.length} cases across ${getDays().length} day(s).`;
-  //       statusEl.style.color = 'var(--passed)';
-  //     }
-  //     updateQAAssistantState();
-  //     rerender();
-  //   } catch (err) {
-  //     document.getElementById('import-status').textContent = '✗ Parse error: ' + err.message;
-  //     document.getElementById('import-status').style.color = 'var(--critical)';
-  //   }
-  // };
-    reader.onload = async ev => {
-
-    try {
-
-      // ==================================================
-      // PARSE CSV
-      // ==================================================
-
-      const parsed =
-        parseCSV(
-          ev.target.result
-        );
-
-      DATA = [
-        ...parsed
-      ];
-
-
-      const statusEl =
-        document.getElementById(
-          'import-status'
-        );
-
-
-      // ==================================================
-      // NO VALID DATA
-      // ==================================================
-
-      if (!parsed.length) {
-
-        qaAssistantSessionState =
-          'no-data';
-
-        statusEl.textContent =
-          '⚠ File loaded but no valid rows found. Check column headers.';
-
-        statusEl.style.color =
-          'var(--observed)';
-
-        updateQAAssistantState();
-
-        rerender();
-
-        return;
-      }
-
-
-      // ==================================================
-      // DASHBOARD DATA READY
-      // ==================================================
-
-      statusEl.textContent =
-        `✓ Loaded ${parsed.length} cases across ${getDays().length} day(s).`;
-
-      statusEl.style.color =
-        'var(--passed)';
-
-
-      // Dashboard must work independently
-      // from the AI backend.
-      rerender();
-
-
-      // ==================================================
-      // PREPARE AI SESSION
-      // ==================================================
-
-      qaAssistantSessionState =
-        'preparing';
-
-      updateQAAssistantState();
-
-
-      try {
-
-        // Deletes previous conversation/session
-        // and creates a new one containing current DATA.
-        await resetQASession();
-
-
-        qaAssistantSessionState =
-          'ready';
-
-
-        console.log(
-          '[QA CHAT] AI assistant ready:',
-          qaSessionId,
-          '| Cases:',
-          DATA.length
-        );
-
-
-      } catch (sessionError) {
-
-        qaAssistantSessionState =
-          'error';
-
-
-        console.error(
-          '[QA CHAT] Could not initialize AI session:',
-          sessionError
-        );
-
-      }
-
-
-      updateQAAssistantState();
-
-
-    } catch (err) {
-
-      qaAssistantSessionState =
-        'error';
-
-
-      document.getElementById(
-        'import-status'
-      ).textContent =
-        '✗ Parse error: ' +
-        err.message;
-
-
-      document.getElementById(
-        'import-status'
-      ).style.color =
-        'var(--critical)';
-
-
-      updateQAAssistantState();
-    }
-
-  };
-  reader.readAsText(file);
-});
-// ─────────────────────────────────────────────────────────────
 // CSV IMPORT + DATA ANALYZER GATE
 // ─────────────────────────────────────────────────────────────
 const AUDIT_API = 'http://localhost:8000';   // ← al migrar a Vercel, cambia solo esta línea
@@ -374,24 +214,57 @@ function auditEsc(s) {
     c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
-// Tu lógica de importación original, extraída para poder llamarla tras el gate.
-function importCsvText(text) {
+// El chat solo vive cuando hay datos aprobados por el Agente 1.
+// Archivo nuevo, bloqueado o inválido → chat fuera de servicio.
+function invalidateQASession() {
+  DATA = [];
+  qaSessionId = null;
+  try { sessionStorage.removeItem('qaSessionId'); } catch (e) {}
+  qaAssistantSessionState = 'no-data';
+  updateQAAssistantState();
+}
+
+// Importación real. Solo la llama el gate del Agente 1 (auto en 'ok', o por botón).
+async function importCsvText(text) {
   const statusEl = document.getElementById('import-status');
   try {
     const parsed = parseCSV(text);
     DATA = [...parsed];
+
     if (!parsed.length) {
       statusEl.textContent = '⚠ File loaded but no valid rows found. Check column headers.';
       statusEl.style.color = 'var(--observed)';
-    } else {
-      statusEl.textContent = '✓ Loaded ' + parsed.length + ' cases across ' + getDays().length + ' day(s).';
-      statusEl.style.color = 'var(--passed)';
+      qaAssistantSessionState = 'no-data';
+      updateQAAssistantState();
+      rerender();
+      return;
     }
+
+    statusEl.textContent = '✓ Loaded ' + parsed.length + ' cases across ' + getDays().length + ' day(s).';
+    statusEl.style.color = 'var(--passed)';
     rerender();
-    reevaluateStatuses();   // ← Agente 2 corre después de cargar
+
+    // Agente 2: esperamos para que el chat vea los estados ya reevaluados
+    await reevaluateStatuses();
+
+    // Recién ahora se arma la sesión del chatbot
+    qaAssistantSessionState = 'preparing';
+    updateQAAssistantState();
+    try {
+      await resetQASession();
+      qaAssistantSessionState = 'ready';
+      console.log('[QA CHAT] AI assistant ready:', qaSessionId, '| Cases:', DATA.length);
+    } catch (sessionError) {
+      qaAssistantSessionState = 'error';
+      console.error('[QA CHAT] Could not initialize AI session:', sessionError);
+    }
+    updateQAAssistantState();
+
   } catch (err) {
     statusEl.textContent = '✗ Parse error: ' + err.message;
     statusEl.style.color = 'var(--critical)';
+    qaAssistantSessionState = 'error';
+    updateQAAssistantState();
   }
 }
 
@@ -400,6 +273,10 @@ async function gateImport(file) {
   const panel = document.getElementById('audit-panel');
   const statusEl = document.getElementById('import-status');
   const text = await file.text();
+    // El chat queda invalidado hasta que el Agente 1 autorice la importación.
+  invalidateQASession();
+
+  panel.style.display = 'block';
 
   panel.style.display = 'block';
   panel.innerHTML = '<div class="card-title">Data Analyzer Agent</div>' +
@@ -483,6 +360,7 @@ function renderAuditPanel(report, text) {
   } else {
     statusEl.textContent = '✗ Import blocked — fix the CSV and re-upload.';
     statusEl.style.color = 'var(--danger)';
+    invalidateQASession(); 
   }
 }
 
@@ -503,55 +381,67 @@ function renderAuditUnavailable(text) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// AGENT 2 — Status Reevaluator (reemplaza el NA manual)
+// AGENT 2 — Status Reevaluator (authoritative; resolveFixStatus = fallback)
 // ─────────────────────────────────────────────────────────────
 async function reevaluateStatuses() {
   // Candidatos: tienen fix comment y NO están ya en Passed
   const candidates = DATA
     .map((r, i) => ({ i, r }))
-    .filter(({ r }) => (r.fix_comment || '').trim() && r.status !== 'Passed')
-    .map(({ i, r }) => ({
-      case_id: String(i),
-      status: r.status,
-      comment: r.summary || r.comment || '',   // ajusta al nombre real del campo del bug
-      fix: r.fix_comment || ''
-    }));
+    .filter(({ r }) => (r.fix_comment || '').trim() && r.status !== 'Passed');
 
   if (!candidates.length) return;
+
+  const payload = candidates.map(({ i, r }) => ({
+    case_id: String(i),
+    status:  r.status,
+    comment: r.summary || '',
+    fix:     r.fix_comment || ''
+  }));
+
+  window.AGENT_CHANGES = window.AGENT_CHANGES || [];
 
   try {
     const res = await fetch(AUDIT_API + '/reevaluate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cases: candidates })
+      body: JSON.stringify({ cases: payload })
     });
-    if (!res.ok) return;
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const { verdicts } = await res.json();
 
-    // Aplica los cambios y registra para el Case Log (con original para revertir)
-    window.AGENT_CHANGES = window.AGENT_CHANGES || [];
     verdicts.forEach(v => {
-      if (v.changed && v.new_status === 'Passed') {
-        const idx = Number(v.case_id);
-        const original = DATA[idx].status;
-        DATA[idx].status = 'Passed';
-        DATA[idx]._agentChanged = true;              // marca para el Case Log
-        window.AGENT_CHANGES.push({ idx, original, reason: v.reason });
-      }
+      if (v.changed && v.new_status === 'Passed') applyPassed(Number(v.case_id), v.reason);
     });
     rerender();
   } catch (err) {
-    // Si el agente no responde, no se toca nada (fallback: resolveFixStatus ya corrió)
-    console.warn('Reevaluator unavailable:', err);
+    // Servidor caído → fallback a la lógica vieja resolveFixStatus
+    console.warn('Reevaluator unavailable, using fallback:', err);
+    candidates.forEach(({ i, r }) => {
+      if (resolveFixStatus(r.original_status, r.fix_comment, r.summary) === 'Passed')
+        applyPassed(i, 'resolveFixStatus fallback');
+    });
+    rerender();
   }
 }
 
-// Revertir un cambio del agente (para el botón en el Case Log)
+// Aplica un cambio a Passed de forma consistente (vacía categorías como parseCSV)
+function applyPassed(idx, reason) {
+  const r = DATA[idx];
+  if (!r || r.status === 'Passed') return;
+  window.AGENT_CHANGES.push({ idx, original: r.status, reason });
+  r.status = 'Passed';
+  r.categories = [];          // los casos Passed no llevan categorías de bug
+  r._agentChanged = true;
+}
+
+// Revierte un cambio del agente (botón en el Case Log)
 function revertAgentChange(idx) {
   const change = (window.AGENT_CHANGES || []).find(c => c.idx === idx);
   if (!change) return;
-  DATA[idx].status = change.original;
-  DATA[idx]._agentChanged = false;
+  const r = DATA[idx];
+  r.status = change.original;
+  r.categories = parseCategories(r.summary);   // recalcula: ya no es Passed
+  r._agentChanged = false;
   window.AGENT_CHANGES = window.AGENT_CHANGES.filter(c => c.idx !== idx);
   rerender();
 }
@@ -1864,6 +1754,9 @@ function filterCases() {
           <span class="status-pill pill-${r.status}">${r.status}</span>
           ${r.original_status !== r.status
             ? `<span style="font-size:.6rem;color:var(--muted);font-family:'Space Mono',monospace;display:block;margin-top:3px;">was: ${r.original_status}</span>`
+            : ''}
+          ${r._agentChanged
+            ? `<button class="revert-btn" onclick="revertAgentChange(${DATA.indexOf(r)})">⟲ revert agent change</button>`
             : ''}
         </td>
         <td><span class="type-pill type-${r.type}">${r.type}</span></td>
@@ -10719,6 +10612,353 @@ async function resetQASession() {
   return createQASession();
 }
 
+// ═════════════════════════════════════════════════════════════
+// AGENT 3 — AI Weekly Report
+// Pegar al final de app.js (usa AUDIT_API, ya definido para los Agentes 1 y 2)
+// ═════════════════════════════════════════════════════════════
+
+// ── Helper: llamada segura a los analizadores existentes ──
+function _a3Safe(fn, arg, fallback) {
+  try { return typeof fn === 'function' ? fn(arg) : fallback; }
+  catch (e) { return fallback; }
+}
+
+function _a3Pct(part, whole) {
+  return whole > 0 ? Math.round((part / whole) * 100) : 0;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PAYLOAD — agregados, nunca los casos crudos
+//
+// Una semana normal (270 casos) pesa ~30-40k tokens si se manda cruda.
+// Este payload pesa ~2k y contiene todo lo que el informe necesita.
+// ─────────────────────────────────────────────────────────────
+function buildReportPayload() {
+  const d = DATA;
+  const total = d.length;
+  if (!total) return null;
+
+  const by = s => d.filter(x => x.status === s).length;
+  const passed = by('Passed');
+  const opportunity = by('Opportunity');
+  const failed = by('Failed');
+  const critical = by('Critical');
+  const errors = failed + critical;
+
+  const pending = d.filter(
+    x => x.status !== 'Passed' && !(x.fix_comment || '').trim()
+  ).length;
+
+  const DAYS = getDays();
+
+  // ── Categorías de bug ──
+  const catCount = {};
+  d.forEach(r => (r.categories || []).forEach(c => {
+    catCount[c] = (catCount[c] || 0) + 1;
+  }));
+  const nonPassed = total - passed;
+  const categories = Object.entries(catCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([category, count]) => ({
+      category, count, pct: _a3Pct(count, nonPassed)
+    }));
+
+  // ── Por persona (owner) ──
+  const ownerMap = {};
+  d.forEach(r => (ownerMap[r.owner] = ownerMap[r.owner] || []).push(r));
+  const members = Object.entries(ownerMap)
+    .map(([owner, rows]) => {
+      const e = rows.filter(
+        x => x.status === 'Failed' || x.status === 'Critical'
+      ).length;
+      const p = rows.filter(
+        x => x.status === 'Passed' || x.status === 'Opportunity'
+      ).length;
+      return {
+        owner,
+        cases: rows.length,
+        errors: e,
+        errorRate: _a3Pct(e, rows.length),
+        passRate: _a3Pct(p, rows.length)
+      };
+    })
+    .sort((a, b) => b.errors - a.errors || b.errorRate - a.errorRate)
+    .slice(0, 12);   // el resto no aporta al informe y sí cuesta tokens
+
+  // ── Por reviewer (QA Shadow) ──
+  const revCount = {};
+  d.forEach(r => { if (r.qa_by) revCount[r.qa_by] = (revCount[r.qa_by] || 0) + 1; });
+  const reviewers = Object.entries(revCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([reviewer, count]) => ({ reviewer, total: count }));
+
+  // ── Por día ──
+  const dayMap = {};
+  d.forEach(r => (dayMap[r.day] = dayMap[r.day] || []).push(r));
+  const byDay = DAYS.map(day => {
+    const rows = dayMap[day] || [];
+    const e = rows.filter(
+      x => x.status === 'Failed' || x.status === 'Critical'
+    ).length;
+    return {
+      day, cases: rows.length, errors: e, errorRate: _a3Pct(e, rows.length)
+    };
+  });
+
+  // ── Por tipo de caso ──
+  const typeMap = {};
+  d.forEach(r => (typeMap[r.type] = typeMap[r.type] || []).push(r));
+  const byType = Object.entries(typeMap).map(([type, rows]) => ({
+    type,
+    cases: rows.length,
+    errors: rows.filter(
+      x => x.status === 'Failed' || x.status === 'Critical'
+    ).length
+  }));
+
+  // ── Estado semanal (reusa el analizador del dashboard si existe) ──
+  const wk = _a3Safe(
+    typeof getQAWeeklyStatusAnalysis !== 'undefined'
+      ? getQAWeeklyStatusAnalysis : null,
+    { data: d },
+    null
+  );
+
+  const status = wk && wk.metrics ? {
+    label: wk.status && wk.status.label,
+    score: wk.scoring && wk.scoring.finalScore,
+    queue: wk.queueStatus && wk.queueStatus.label,
+    criticalRate: wk.metrics.criticalRate,
+    failedRate: wk.metrics.failedRate,
+    opportunityRate: wk.metrics.opportunityRate
+  } : {
+    label: null,
+    score: null,
+    queue: null,
+    criticalRate: +(critical / total * 100).toFixed(2),
+    failedRate: +(failed / total * 100).toFixed(2),
+    opportunityRate: +(opportunity / total * 100).toFixed(2)
+  };
+
+  return {
+    period: {
+      label: DAYS.length
+        ? DAYS[0] + (DAYS.length > 1 ? ' – ' + DAYS[DAYS.length - 1] : '')
+        : 'N/A',
+      days: DAYS.length
+    },
+    totals: {
+      cases: total,
+      members: Object.keys(ownerMap).length,
+      passed, opportunity, failed, critical, errors, pending,
+      passRate: _a3Pct(passed + opportunity, total),
+      errorRate: _a3Pct(errors, total)
+    },
+    status,
+    categories,
+    members,
+    reviewers,
+    byDay,
+    byType,
+    agent_reevaluated: (window.AGENT_CHANGES || []).length
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// LLAMADA AL AGENTE 3
+// ─────────────────────────────────────────────────────────────
+window.currentAIReport = null;
+
+async function generateAIReport() {
+  const btn = document.getElementById('ai-report-btn');
+  const payload = buildReportPayload();
+
+  if (!payload) {
+    alert('Upload a CSV first — there is no data to report on.');
+    return;
+  }
+
+  const originalLabel = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '✦ Writing report…'; }
+
+  openAIReportModal();
+  document.getElementById('ai-report-content').innerHTML =
+    '<div class="ai-report-loading">Agent 3 is analyzing ' +
+    payload.totals.cases + ' cases…</div>';
+
+  try {
+    const res = await fetch(AUDIT_API + '/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metrics: payload })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    const report = await res.json();
+    window.currentAIReport = report;
+    renderAIReport(report, payload);
+
+  } catch (err) {
+    console.warn('[AGENT 3] Report agent unavailable:', err);
+    document.getElementById('ai-report-content').innerHTML =
+      '<div class="ai-report-error">' +
+        '<strong>Report agent unavailable.</strong><br>' +
+        'Could not reach ' + auditEsc(AUDIT_API) + '/report — ' +
+        auditEsc(err.message) + '.<br><br>' +
+        'The plain weekly summary in the dashboard is still available; ' +
+        'close this and use <em>Print / Save PDF</em> instead.' +
+      '</div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER — nosotros armamos el HTML, no el modelo.
+// Las cifras salen del payload real, así no pueden desviarse.
+// ─────────────────────────────────────────────────────────────
+function renderAIReport(report, p) {
+  const E = auditEsc;
+
+  const kpi = (label, val, sub, color) =>
+    '<div class="ai-kpi" style="--ai-kpi-color:' + color + '">' +
+      '<div class="ai-kpi-label">' + label + '</div>' +
+      '<div class="ai-kpi-val">' + val + '</div>' +
+      (sub ? '<div class="ai-kpi-sub">' + sub + '</div>' : '') +
+    '</div>';
+
+  const findingBlock = (items, cls) =>
+    (items || []).map(f =>
+      '<div class="ai-finding ' + cls + '">' +
+        '<div class="ai-finding-title">' + E(f.title) + '</div>' +
+        '<div class="ai-finding-detail">' + E(f.detail) + '</div>' +
+        (f.evidence
+          ? '<div class="ai-finding-evidence">' + E(f.evidence) + '</div>'
+          : '') +
+      '</div>'
+    ).join('');
+
+  const recBlock = (report.recommendations || []).map(r => {
+    const pr = (r.priority || '').toLowerCase();
+    const cls = pr.indexOf('high') === 0 ? 'high'
+              : pr.indexOf('med') === 0 ? 'med' : 'low';
+    return '<div class="ai-rec ai-rec--' + cls + '">' +
+      '<span class="ai-rec-pill">' + E(r.priority) + '</span>' +
+      '<div><div class="ai-rec-action">' + E(r.action) + '</div>' +
+      '<div class="ai-rec-why">' + E(r.rationale) + '</div></div>' +
+    '</div>';
+  }).join('');
+
+  const catRows = p.categories.map(c =>
+    '<div class="ai-bar-row">' +
+      '<span class="ai-bar-name">' + E(c.category) + '</span>' +
+      '<span class="ai-bar-track"><span class="ai-bar-fill" style="width:' +
+        Math.max(2, c.pct) + '%"></span></span>' +
+      '<span class="ai-bar-count">' + c.count + ' · ' + c.pct + '%</span>' +
+    '</div>'
+  ).join('');
+
+  const memberRows = p.members.slice(0, 8).map(m =>
+    '<tr><td>' + E(m.owner) + '</td><td>' + m.cases + '</td>' +
+    '<td>' + m.errors + '</td><td>' + m.errorRate + '%</td>' +
+    '<td>' + m.passRate + '%</td></tr>'
+  ).join('');
+
+  document.getElementById('ai-report-content').innerHTML =
+    '<div class="ai-report">' +
+
+      '<div class="ai-report-head">' +
+        '<div class="ai-report-week">' + E(p.period.label) +
+          '  ·  ' + p.period.days + ' days  ·  ' + p.totals.cases + ' cases</div>' +
+        '<h1 class="ai-report-headline">' + E(report.headline) + '</h1>' +
+      '</div>' +
+
+      '<div class="ai-kpi-row">' +
+        kpi('Pass rate', p.totals.passRate + '%',
+            p.totals.passed + p.totals.opportunity + '/' + p.totals.cases,
+            'var(--passed)') +
+        kpi('Errors', p.totals.errors,
+            p.totals.failed + ' failed · ' + p.totals.critical + ' critical',
+            'var(--critical)') +
+        kpi('Opportunities', p.totals.opportunity,
+            p.status.opportunityRate + '% of cases', 'var(--observed)') +
+        kpi('Pending', p.totals.pending,
+            p.status.queue || 'awaiting fix', 'var(--accent2)') +
+      '</div>' +
+
+      '<h2 class="ai-h2">Executive Summary</h2>' +
+      '<p class="ai-p">' + E(report.executive_summary) + '</p>' +
+
+      '<h2 class="ai-h2">Key Findings</h2>' +
+      findingBlock(report.findings, 'ai-finding--info') +
+
+      '<h2 class="ai-h2">Bug Categories</h2>' +
+      '<div class="ai-bars">' + catRows + '</div>' +
+
+      ((report.risks && report.risks.length)
+        ? '<h2 class="ai-h2">Risks</h2>' +
+          findingBlock(report.risks, 'ai-finding--risk')
+        : '') +
+
+      '<h2 class="ai-h2">Team Breakdown</h2>' +
+      '<table class="ai-table"><thead><tr>' +
+        '<th>Owner</th><th>Cases</th><th>Errors</th>' +
+        '<th>Error rate</th><th>Pass rate</th>' +
+      '</tr></thead><tbody>' + memberRows + '</tbody></table>' +
+
+      '<h2 class="ai-h2">Recommendations</h2>' +
+      recBlock +
+
+      '<h2 class="ai-h2">Conclusion</h2>' +
+      '<p class="ai-p">' + E(report.conclusion) + '</p>' +
+
+      '<div class="ai-report-foot">' +
+        'Generated by QA Shadow Agent 3 from ' + p.totals.cases +
+        ' reviewed cases' +
+        (p.agent_reevaluated
+          ? ' · ' + p.agent_reevaluated + ' statuses reevaluated by Agent 2'
+          : '') +
+        '. All figures are computed from the dataset, not by the model.' +
+      '</div>' +
+
+    '</div>';
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────────────────────
+function openAIReportModal() {
+  const m = document.getElementById('ai-report-modal');
+  if (!m) return;
+  m.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAIReportModal() {
+  const m = document.getElementById('ai-report-modal');
+  if (!m) return;
+  m.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function printCurrentAIReport() {
+  document.body.classList.add('printing-ai-report');
+  window.print();
+  setTimeout(() => document.body.classList.remove('printing-ai-report'), 500);
+}
+
+// Cerrar con overlay o Escape
+document.addEventListener('click', e => {
+  if (e.target && e.target.classList
+      && e.target.classList.contains('ai-modal-overlay')) {
+    closeAIReportModal();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAIReportModal();
+});
 
 // ======================================================
 // CONSOLE TEST HELPERS

@@ -13,6 +13,7 @@ Then your dashboard's app.js calls  http://localhost:8000/audit
 
 import os
 import tempfile
+import time
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -55,7 +56,9 @@ async def audit_csv(file: UploadFile = File(...)):
             tmp.write(content)
             tmp_path = tmp.name
 
-        report = audit(tmp_path)        # runs the ReAct agent
+        _t = time.perf_counter()
+        report = audit(tmp_path)
+        print(f"[TIMING] agent1 audit: {time.perf_counter() - _t:.1f}s", flush=True)
         return report.model_dump()      # -> JSON the frontend renders
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Audit failed: {e}")
@@ -72,6 +75,27 @@ async def reevaluate_cases(payload: dict):
     if not cases:
         return {"verdicts": []}
     try:
-        return {"verdicts": reevaluate(cases)}
+        _t = time.perf_counter()
+        verdicts = reevaluate(cases)
+        print(f"[TIMING] agent2 reevaluate: {time.perf_counter() - _t:.1f}s "
+              f"({len(cases)} casos)", flush=True)
+        return {"verdicts": verdicts}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Reevaluation failed: {e}")
+
+from reporter import write_report
+
+
+@app.post("/report")
+async def generate_report(payload: dict):
+    """Receive aggregated weekly metrics, return the written report."""
+    metrics = payload.get("metrics")
+    if not metrics:
+        raise HTTPException(status_code=400, detail="Missing 'metrics' in body.")
+    try:
+        _t = time.perf_counter()
+        result = write_report(metrics)
+        print(f"[TIMING] agent3 report: {time.perf_counter() - _t:.1f}s", flush=True)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {e}")

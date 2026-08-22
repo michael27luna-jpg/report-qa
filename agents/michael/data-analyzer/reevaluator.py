@@ -21,8 +21,8 @@ from langchain_anthropic import ChatAnthropic
 
 load_dotenv()  # ANTHROPIC_API_KEY
 
-BATCH_SIZE = 20
-MODEL = "claude-sonnet-5"   # switch to "claude-haiku-4-5-20251001" to cut cost ~50%
+BATCH_SIZE = 10
+MODEL = "claude-haiku-4-5"   # switch to "claude-haiku-4-5-20251001" to cut cost ~50%
 
 
 # ── Output schema ───────────────────────────────────────────────
@@ -64,6 +64,7 @@ RULES:
   change the status.
 - Never change a status to anything other than 'Passed'. You only move
   toward 'Passed', never away from it.
+- Keep `reason` under 12 words. It is a log entry, not an explanation.
 
 For each case return: case_id, changed (true/false), new_status ('Passed'
 if changed, otherwise the original status), a short reason, and ambiguous.
@@ -108,32 +109,26 @@ def reevaluate_batch(model, cases: list) -> List[CaseVerdict]:
     return [CaseVerdict.model_validate(v) for v in data.get("verdicts", [])]
 
 
-def reevaluate(cases: list) -> List[dict]:
-    """
-    Reevaluate all candidate cases in batches.
+from concurrent.futures import ThreadPoolExecutor
 
-    Args:
-        cases: list of dicts with keys: case_id, status, comment, fix
-    Returns:
-        list of verdict dicts (only the ones that CHANGED are actionable,
-        but all are returned so the caller can log/inspect).
-    """
+MAX_PARALLEL = 6
+
+def reevaluate(cases: list) -> List[dict]:
     model = ChatAnthropic(model=MODEL, max_tokens=4000)
-    all_verdicts = []
-    for i in range(0, len(cases), BATCH_SIZE):
-        batch = cases[i:i + BATCH_SIZE]
+    batches = [cases[i:i + BATCH_SIZE] for i in range(0, len(cases), BATCH_SIZE)]
+
+    def run(batch):
         try:
-            verdicts = reevaluate_batch(model, batch)
-            all_verdicts.extend(v.model_dump() for v in verdicts)
+            return [v.model_dump() for v in reevaluate_batch(model, batch)]
         except Exception as e:
-            # On a batch error, leave those cases unchanged (safe default)
-            for c in batch:
-                all_verdicts.append({
-                    "case_id": c["case_id"], "changed": False,
-                    "new_status": c["status"], "reason": f"batch error: {e}",
-                    "ambiguous": True,
-                })
-    return all_verdicts
+            return [{
+                "case_id": c["case_id"], "changed": False,
+                "new_status": c["status"], "reason": f"batch error: {e}",
+                "ambiguous": True,
+            } for c in batch]
+
+    with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as pool:
+        return [v for batch_result in pool.map(run, batches) for v in batch_result]
 
 
 # ── Local test ──────────────────────────────────────────────────
