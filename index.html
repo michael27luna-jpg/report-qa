@@ -180,7 +180,10 @@
     <div class="filter-pills" id="filter-pills"></div>
 
     <div class="card">
-      <div class="card-title">Bug Log — <span id="case-count-label">All Days</span></div>
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <span>Bug Log — <span id="case-count-label">All Days</span></span>
+        <button class="btn btn-outline" onclick="exportCaseLogExcel()">⬇ Export Excel</button>
+      </div>
       <div class="scroll-x">
         <table class="data-table" id="case-table">
           <thead>
@@ -596,6 +599,7 @@
 </div><!-- /shell -->
 
 <!-- JavaScript -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="version.js"></script>
 <script src="app.js"></script>
 <div id="info-popup" class="info-popup">

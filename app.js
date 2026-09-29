@@ -131,7 +131,7 @@ function normalizeType(raw) {
 function countBugsInSummary(summary) {
   if (!summary) return 0;
   // Each bug starts with M|D|M/D followed by | or /
-  const bugPattern = /(?:^|,\s*)(M\/D|M|D)\s*[|\/]/gi;
+  const bugPattern = /(?:^|,\s*|\d+\.\s*)(M\/D|M|D)\s*[|\/]/gi;
   const matches = summary.match(bugPattern);
   return matches ? matches.length : 1;
 }
@@ -1279,6 +1279,9 @@ function filterCases() {
                         activeFilters.type.length;
   const filterLabel = hasActiveFilters ? ' (filtered)' : '';
 
+  // Keep the visible rows so exportCaseLogExcel() exports exactly what the table shows
+  CASE_LOG_ROWS = rows;
+
   document.getElementById('case-count-label').textContent =
     `${rows.length} cases${filterLabel}${search ? ` matching "${search}"` : ''}`;
 
@@ -1445,6 +1448,52 @@ function clearTeamFilters() {
 
   updateTeamFilterUI();
   renderTeam();
+}
+
+// ─────────────────────────────────────────────────────────────
+// CASE LOG EXPORT (Excel)
+// ─────────────────────────────────────────────────────────────
+let CASE_LOG_ROWS = [];   // rows currently visible in the Case Log (set by filterCases)
+
+// Column headers and values of the export — mirrors the Case Log table.
+// Headers are provisional: edit only this list to rename or reorder columns.
+const CASE_LOG_EXPORT_COLUMNS = [
+  { header: 'Completed Date', value: r => r.completed_date || '',     width: 14 },
+  { header: 'QA Date',        value: r => r.day || '',                width: 10 },
+  { header: 'Owner',          value: r => r.owner,                    width: 18 },
+  { header: 'Task ID',        value: r => r.task_id,                  width: 22 },
+  { header: 'Status',         value: r => r.status,                   width: 12 },  // already resolved by QA Fix Comment
+  { header: 'Type',           value: r => r.type || '',               width: 10 },
+  { header: 'QA By',          value: r => r.qa_by || '',              width: 14 },
+  { header: 'Categories',     value: r => r.categories.join(', '),    width: 24 },
+  { header: 'Summary',        value: r => r.summary,                  width: 60 },
+  { header: 'Fix Comment',    value: r => r.fix_comment,              width: 40 },
+];
+
+function exportCaseLogExcel() {
+  if (!CASE_LOG_ROWS.length) {
+    alert('There are no cases to export. Load a CSV or adjust your filters.');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    alert('The Excel library could not be loaded. Check your internet connection and reload the page.');
+    return;
+  }
+
+  const sheetData = [
+    CASE_LOG_EXPORT_COLUMNS.map(c => c.header),
+    ...CASE_LOG_ROWS.map(r => CASE_LOG_EXPORT_COLUMNS.map(c => c.value(r))),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws['!cols']       = CASE_LOG_EXPORT_COLUMNS.map(c => ({ wch: c.width }));
+  ws['!autofilter'] = { ref: ws['!ref'] };
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Case Log');
+
+  const today = new Date().toISOString().slice(0, 10);   // YYYY-MM-DD
+  XLSX.writeFile(wb, `case-log_${today}.xlsx`);
 }
 
 // ─────────────────────────────────────────────────────────────
