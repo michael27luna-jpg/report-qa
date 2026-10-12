@@ -1554,3 +1554,50 @@ input[type="file"] { display: none; }
     padding-top: 10px;
   }
 }
+
+
+.app-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(255, 255, 255, 0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-loader.active {
+  display: flex;
+}
+
+.app-loader-content {
+  width: 280px;
+  text-align: center;
+}
+
+.app-loader-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #334155;
+}
+
+.app-loader-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.app-loader-bar {
+  width: 35%;
+  height: 100%;
+  background: #2563eb;
+  border-radius: 10px;
+  animation: loaderMove 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes loaderMove {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(285%); }
+}

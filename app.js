@@ -1309,6 +1309,24 @@ function filterCases() {
         }</td>
       </tr>`).join('');
 }
+
+async function renderCaseLogWithLoader() {
+  showAppLoader('Loading Case Log...');
+
+  // Permitir que el navegador muestre el loader
+  await new Promise(resolve => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
+
+  try {
+    filterCases();
+  } finally {
+    hideAppLoader();
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // TEAM ANALYSIS FILTERS
 // ─────────────────────────────────────────────────────────────
@@ -1470,13 +1488,42 @@ const CASE_LOG_EXPORT_COLUMNS = [
   { header: 'Fix Comment',    value: r => r.fix_comment,              width: 40 },
 ];
 
+
+function showAppAlert(message, icon = 'info', title = '') {
+  const titles = {
+    success: 'Success',
+    error: 'Error',
+    warning: 'Attention',
+    info: 'Information',
+    question: 'Confirmation',
+  };
+
+  return Swal.fire({
+    title: title || titles[icon] || 'Notice',
+    text: message,
+    icon,
+    confirmButtonText: 'OK',
+    confirmButtonColor: '#2563eb',
+  });
+}
+
 function exportCaseLogExcel() {
   if (!CASE_LOG_ROWS.length) {
-    alert('There are no cases to export. Load a CSV or adjust your filters.');
+    // alert('There are no cases to export. Load a CSV or adjust your filters.');
+    showAppAlert(
+      'There are no cases to export. Load a CSV or adjust your filters.',
+      'warning',
+      'Nothing to export'
+    );
     return;
   }
   if (typeof XLSX === 'undefined') {
-    alert('The Excel library could not be loaded. Check your internet connection and reload the page.');
+    // alert('The Excel library could not be loaded. Check your internet connection and reload the page.');
+    showAppAlert(
+      'The Excel library could not be loaded. Check your internet connection and reload the page.',
+      'error',
+      'Excel library unavailable'
+    );
     return;
   }
 
@@ -3518,7 +3565,20 @@ function showPanel(id) {
   if (id === 'report')    { renderReport(); renderOverview(); }
   if (id === 'team')      renderTeam();
   if (id === 'analytics') renderAnalytics();
-  if (id === 'cases')     renderCases();
+  // if (id === 'cases')     renderCases();
+  if (id === 'cases') {
+    showAppLoader('Loading Case Log...');
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try {
+          renderCases();
+        } finally {
+          hideAppLoader();
+        }
+      });
+    });
+  }
 }
 
 function copyText(id) {
@@ -3606,3 +3666,22 @@ document.addEventListener('scroll', function(e) {
     });
   });
 }, true);
+
+
+function showAppLoader(message = 'Loading...') {
+  const loader = document.getElementById('app-loader');
+  const title = document.getElementById('app-loader-title');
+
+  if (!loader || !title) return;
+
+  title.textContent = message;
+  loader.classList.add('active');
+}
+
+function hideAppLoader() {
+  const loader = document.getElementById('app-loader');
+  if (!loader) return;
+
+  loader.classList.remove('active');
+}
+
