@@ -593,6 +593,7 @@ header {
 }
 
 .import-area:hover { border-color: var(--accent); }
+.import-area.dragover { border-color: var(--accent); background: rgba(0, 229, 160, .06); }
 
 .import-icon {
   font-size: 2.5rem;

@@ -70,7 +70,7 @@ function extractNameFromEmail(email) {
 // Normaliza cualquier fecha m/d/yy o m/d/yyyy a un formato canónico m/d/yy
 function normalizeDate(str) {
   if (!str || !str.includes('/')) return str || '';
-  const [m, d, y] = str.split('/');
+  const [m, d, y] = str.trim().split(' ')[0].split('/');   // descarta la hora: "9/17/2026 7:59 PM" → "9/17/2026"
   if (!m || !d || !y) return str;
   const yy = y.length === 4 ? y.slice(-2) : y.padStart(2, '0');
   return `${parseInt(m, 10)}/${parseInt(d, 10)}/${yy}`;
@@ -78,9 +78,9 @@ function normalizeDate(str) {
 
 // Convierte m/d/yy o m/d/yyyy a un objeto Date, sin importar el largo del año
 function parseMDY(str) {
-  const [m, d, y] = String(str).split('/');
-  const year = y && y.length === 4 ? y : `20${y}`;
-  return new Date(`${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+  const [m, d, y] = String(str).trim().split(' ')[0].split('/');
+  const year = y && y.length === 4 ? +y : 2000 + +y;
+  return new Date(year, +m - 1, +d);   // fecha LOCAL (no UTC) para que el día de la semana sea correcto
 }
 
 function getDays() {
@@ -200,15 +200,19 @@ function parseCSV(text) {
 // ─────────────────────────────────────────────────────────────
 // FILE UPLOAD
 // ─────────────────────────────────────────────────────────────
-document.getElementById('csv-file-input').addEventListener('change', function (e) {
-  const file = e.target.files[0];
+function loadCSVFile(file) {
   if (!file) return;
+  const statusEl = document.getElementById('import-status');
+  if (!/\.csv$/i.test(file.name)) {
+    statusEl.textContent = `✗ "${file.name}" is not a .csv file.`;
+    statusEl.style.color = 'var(--critical)';
+    return;
+  }
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       const parsed = parseCSV(ev.target.result);
       DATA = [...parsed];
-      const statusEl = document.getElementById('import-status');
       if (!parsed.length) {
         statusEl.textContent = '⚠ File loaded but no valid rows found. Check column headers.';
         statusEl.style.color = 'var(--observed)';
@@ -218,12 +222,36 @@ document.getElementById('csv-file-input').addEventListener('change', function (e
       }
       rerender();
     } catch (err) {
-      document.getElementById('import-status').textContent = '✗ Parse error: ' + err.message;
-      document.getElementById('import-status').style.color = 'var(--critical)';
+      statusEl.textContent = '✗ Parse error: ' + err.message;
+      statusEl.style.color = 'var(--critical)';
     }
   };
   reader.readAsText(file);
+}
+
+const csvInput = document.getElementById('csv-file-input');
+csvInput.addEventListener('change', e => {
+  loadCSVFile(e.target.files[0]);
+  e.target.value = '';   // permite volver a subir el mismo archivo
 });
+
+// Drag & drop sobre la zona de import
+const dropZone = document.querySelector('.import-area');
+['dragenter', 'dragover'].forEach(evt => dropZone.addEventListener(evt, e => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+}));
+dropZone.addEventListener('dragleave', e => {
+  if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  loadCSVFile(e.dataTransfer.files[0]);
+});
+
+// Evita que soltar un archivo fuera de la zona abra el CSV en la pestaña y borre los datos cargados
+['dragover', 'drop'].forEach(evt => window.addEventListener(evt, e => e.preventDefault()));
 
 // ─────────────────────────────────────────────────────────────
 // DONUT CHART — full size (with legend)
@@ -482,7 +510,8 @@ function renderOverview() {
     const maxCat = Math.max(...Object.values(catCount), 1);
     document.getElementById('cat-bars').innerHTML =
       sortDesc(catCount).map(([cat, cnt]) => {
-        const pct = errors > 0 ? Math.round(cnt / errors * 100) : 0;
+        const nonPassed = total - passed;
+        const pct = nonPassed > 0 ? Math.round(cnt / nonPassed * 100) : 0;
         const bt  = catByType[cat] || { LP: 0, Posting: 0, Unknown: 0 };
         return `<div class="bar-row">
           <div class="bar-name">${cat}</div>
@@ -499,7 +528,7 @@ function renderOverview() {
           </div>
         </div>`;
       }).join('') +
-      `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of total errors (${errors})</div>` +
+      `<div style="font-size:.63rem;color:var(--muted);margin-top:6px;font-family:'Space Mono',monospace;">% of non-passed cases (${total - passed}) · a case can have several categories</div>` +
       `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
         ${['LP','Posting','Unknown'].map(t =>
           `<span style="font-size:.65rem;display:flex;align-items:center;gap:4px;">
@@ -1235,11 +1264,13 @@ function filterCases() {
 
   // ── Status filter (multi) ──
   if (activeFilters.status.length) {
-    rows = rows.filter(x => {
-      if (activeFilters.status.includes('Pending'))   return x.status !== 'Passed' && (!x.fix_comment || !x.fix_comment.trim());
-      if (activeFilters.status.includes('Responded')) return x.fix_comment && x.fix_comment.trim();
-      return activeFilters.status.includes(x.status);
-    });
+    const sel    = activeFilters.status;
+    const hasFix = x => !!(x.fix_comment && x.fix_comment.trim());
+    rows = rows.filter(x =>
+      sel.includes(x.status) ||
+      (sel.includes('Pending')   && x.status !== 'Passed' && !hasFix(x)) ||
+      (sel.includes('Responded') && hasFix(x))
+    );
   }
 
   // ── QA By filter (multi) ──
@@ -1924,7 +1955,7 @@ L(
 SEP(),
     TTL(' BUG PATTERNS'),
     ...(Object.keys(catCount).length
-      ? sortDesc(catCount).map(([c,n]) => L(`  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${errors>0?Math.round(n/errors*100):0}% of errors`, 'var(--text)'))
+      ? sortDesc(catCount).map(([c,n]) => L(`  › ${c.padEnd(10)} ${String(n).padStart(3)} cases - ${(total-passed)>0?Math.round(n/(total-passed)*100):0}% of non-passed`, 'var(--text)'))
       : [L('  No bugs recorded', 'var(--text)')]),
     SEP(),
 
@@ -2031,24 +2062,33 @@ SEP(),
 // ─────────────────────────────────────────────────────────────
 // ANALYTICS — STATE
 // ─────────────────────────────────────────────────────────────
-// Índice perezoso de primer-nombre -> owner(s), reconstruido si cambia DATA.
-let _firstNameIndex = null;
-let _firstNameIndexLen = -1;
+// Índices perezosos de owners, reconstruidos cuando DATA cambia (nuevo CSV).
+//   _ownerExactIndex : nombre completo en minúsculas -> owner  ("nicole gongora" -> "Nicole Gongora")
+//   _firstNameIndex  : primer nombre -> owner(s)               ("nicole" -> ["Nicole Gongora"])
+let _ownerExactIndex = null;
+let _firstNameIndex  = null;
+let _ownerIndexSrc   = null;   // referencia al DATA con el que se construyeron los índices
 function _buildFirstNameIndex() {
-  _firstNameIndex = {};
+  _ownerExactIndex = {};
+  _firstNameIndex  = {};
   const owners = [...new Set(DATA.map(x => x.owner))];
   owners.forEach(o => {
-    const f = o.toLowerCase().split(' ')[0];
+    const lower = o.toLowerCase();
+    _ownerExactIndex[lower] = o;
+    const f = lower.split(' ')[0];
     (_firstNameIndex[f] = _firstNameIndex[f] || []).push(o);
   });
-  _firstNameIndexLen = DATA.length;
+  _ownerIndexSrc = DATA;
 }
 // Devuelve el owner canónico para un valor de qa_by, o null si no se resuelve.
+// Orden: nombre completo (CSV nuevos) → alias manual → primer nombre (CSV viejos).
 function canonicalOwnerFor(qaBy) {
-  const q = (qaBy || '').trim();
+  const q = (qaBy || '').replace(/\s+/g, ' ').trim();
   if (!q) return null;
+  if (_ownerIndexSrc !== DATA) _buildFirstNameIndex();
+  const exact = _ownerExactIndex[q.toLowerCase()];
+  if (exact) return exact;
   if (QA_ALIAS[q]) return QA_ALIAS[q];
-  if (_firstNameIndex === null || _firstNameIndexLen !== DATA.length) _buildFirstNameIndex();
   const m = _firstNameIndex[q.toLowerCase()];
   return (m && m.length === 1) ? m[0] : null;  // si es ambiguo, no adivina
 }
@@ -3566,7 +3606,9 @@ function showInfoPopup(event, title, rows) {
 function hideInfoPopup() {
   document.getElementById('info-popup')?.classList.remove('active');
 }
-
+document.addEventListener('click', e => {
+  if (!e.target.closest('#info-popup') && !e.target.closest('.info-icon')) hideInfoPopup();
+});
 // ─────────────────────────────────────────────────────────────
 // PRINT / SAVE PDF
 // ─────────────────────────────────────────────────────────────

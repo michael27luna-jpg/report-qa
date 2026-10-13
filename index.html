@@ -415,6 +415,7 @@
               <li class="warn"><span class="guide-icon">⚓</span>Broken anchors (#)</li>
               <li class="warn"><span class="guide-icon">📄</span>Double H1 tags</li>
               <li class="warn"><span class="guide-icon">📦</span>Inventory config mismatch</li>
+              <li class="warn"><span class="guide-icon">🗺️</span>Don't enable sitemap XML/HTML</li>
             </ul>
           </div>
 
@@ -426,7 +427,31 @@
             </ul>
           </div>
         </div>
+        <!-- ── Case Type Classification ── -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Case Type Classification</div>
 
+          <div class="guide-section">
+            <h3>🔷 LP (Landing Page)</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">🔍</span>SEO Landing Page</li>
+              <li class="ok"><span class="guide-icon">📰</span>Just Posting Landing Page</li>
+              <li class="ok"><span class="guide-icon">🏭</span>OEM Landing Page</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🔶 Posting</h3>
+            <ul class="guide-list">
+              <li class="warn"><span class="guide-icon">📌</span>Posting Case</li>
+              <li class="warn"><span class="guide-icon">💻</span>Posting HTML</li>
+            </ul>
+          </div>
+
+          <p style="font-size:.75rem;margin-top:8px;">
+            ℹ Blog cases are excluded from type classification.
+          </p>
+        </div>
         <!-- <div class="card">
           <div class="card-title">Error Type Classification</div>
           <ul class="guide-list">
@@ -435,6 +460,18 @@
             <li class="ok"><span class="guide-icon">🎲</span><div><strong>One-time</strong> — Isolated, not repeated, context-specific</div></li>
           </ul>
         </div> -->
+                <div class="card">
+          <div class="card-title">Success Criteria</div>
+          <ul class="guide-list">
+            <li class="ok"><span class="guide-icon">✔</span>No pending work</li>
+            <li class="ok"><span class="guide-icon">✔</span>All cases reviewed</li>
+            <li class="ok"><span class="guide-icon">✔</span>Bugs followed up</li>
+            <li class="ok"><span class="guide-icon">✔</span>Queues under control</li>
+            <li class="ok"><span class="guide-icon">✔</span>Risks detected early</li>
+            <li class="ok"><span class="guide-icon">✔</span>Clear performance patterns</li>
+            <li class="ok"><span class="guide-icon">✔</span>Continuous team improvement</li>
+          </ul>
+        </div>
       </div>
 
       <!-- Right column -->
@@ -442,12 +479,53 @@
         <div class="card" style="margin-bottom:16px;">
           <div class="card-title">Control Points (Daily)</div>
           <ul class="guide-list">
-            <li class="warn"><span class="guide-icon">🕔</span><div><strong>5:00–5:30 PM</strong> → Assign same-day cases. Team pauses QA intake.</div></li>
-            <li class="warn"><span class="guide-icon">🕙</span><div><strong>11:00–11:30 AM</strong> → Assign late cases from previous day.</div></li>
+            <!--<li class="warn"><span class="guide-icon">🕔</span><div><strong>5:00–5:30 PM</strong> → Assign same-day cases. Team pauses QA intake.</div></li>
+            <li class="warn"><span class="guide-icon">🕙</span><div><strong>11:00–11:30 AM</strong> → Assign late cases from previous day.</div></li>-->
             <li class="ok"><span class="guide-icon">📊</span><div><strong>Midday update</strong> → People reviewed, key issues, patterns, pending risks.</div></li>
             <li class="ok"><span class="guide-icon">📝</span><div><strong>End-of-day report</strong> → Full summary including actions needed.</div></li>
           </ul>
         </div>
+
+<!-- ── Queue & Control · Final Status · Trend ── -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Queue &amp; Control · Final Status · Trend</div>
+
+          <div class="guide-section">
+            <h3>📥 Queue &amp; Control</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">ℹ</span><div><strong>Pending case</strong> → Status is not Passed and QA Fix Comment is empty</div></li>
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>&lt; 5 pending</strong> → Under Control</div></li>
+              <li class="warn"><span class="guide-icon">⚠</span><div><strong>5–10 pending</strong> → Watch</div></li>
+              <li class="danger"><span class="guide-icon">🚨</span><div><strong>&gt; 10 pending</strong> → At Risk</div></li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🏁 Final Status (score)</h3>
+            <ul class="guide-list">
+              <li class="danger"><span class="guide-icon">✕</span><div><strong>Critical</strong> → &gt; 1% = +3 pts · &gt; 0% = +1 pt</div></li>
+              <li class="warn"><span class="guide-icon">▲</span><div><strong>Failed</strong> → &gt; 3% = +2 pts · &gt; 1.5% = +1 pt</div></li>
+              <li class="ok"><span class="guide-icon">●</span><div><strong>Opportunity</strong> → Informational, not scored</div></li>
+              <li class="warn"><span class="guide-icon">⏳</span><div><strong>Pending</strong> → &gt; 20 = +3 pts · 10–20 = +2 pts · &lt; 10 = +1 pt</div></li>
+            </ul>
+            <ul class="guide-list" style="margin-top:8px;">
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>CLEAN WEEK</strong> → 0 errors</div></li>
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>UNDER CONTROL</strong> → &lt; 4 pts</div></li>
+              <li class="warn"><span class="guide-icon">⚠</span><div><strong>NEEDS ATTENTION</strong> → 4–6 pts</div></li>
+              <li class="danger"><span class="guide-icon">🚨</span><div><strong>AT RISK</strong> → ≥ 7 pts</div></li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>📈 Team Trend</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">ℹ</span><div><strong>Error rate</strong> → (Failed + Critical) ÷ total cases</div></li>
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>≤ 5%</strong> → On Track</div></li>
+              <li class="warn"><span class="guide-icon">◈</span><div><strong>&gt; 5% – 10%</strong> → Watch</div></li>
+              <li class="danger"><span class="guide-icon">⚠</span><div><strong>&gt; 10%</strong> → Needs Attention</div></li>
+            </ul>
+          </div>
+        </div>        
 
         <div class="card" style="margin-bottom:16px;">
           <div class="card-title">Pending Work Checklist</div>
@@ -461,18 +539,7 @@
           </ul>
         </div>
 
-        <div class="card">
-          <div class="card-title">Success Criteria</div>
-          <ul class="guide-list">
-            <li class="ok"><span class="guide-icon">✔</span>No pending work</li>
-            <li class="ok"><span class="guide-icon">✔</span>All cases reviewed</li>
-            <li class="ok"><span class="guide-icon">✔</span>Bugs followed up</li>
-            <li class="ok"><span class="guide-icon">✔</span>Queues under control</li>
-            <li class="ok"><span class="guide-icon">✔</span>Risks detected early</li>
-            <li class="ok"><span class="guide-icon">✔</span>Clear performance patterns</li>
-            <li class="ok"><span class="guide-icon">✔</span>Continuous team improvement</li>
-          </ul>
-        </div>
+
       </div>
 
     </div>
