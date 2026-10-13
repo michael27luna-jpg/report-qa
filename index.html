@@ -667,6 +667,8 @@
 
 <!-- JavaScript -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="version.js"></script>
 <script src="app.js"></script>
 <div id="info-popup" class="info-popup">
@@ -675,5 +677,18 @@
 </div>
 <!-- Analytics chart tooltip -->
 <div id="analytics-tooltip" style="display:none;"></div>
+
+
+<div id="app-loader" class="app-loader">
+  <div class="app-loader-content">
+    <div class="app-loader-title" id="app-loader-title">
+      Loading...
+    </div>
+    <div class="app-loader-track">
+      <div class="app-loader-bar"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
