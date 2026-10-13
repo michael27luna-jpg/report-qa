@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.14.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.13.0...v1.14.0) (2026-10-13)
+
+
+### Features
+
+* export Case Log to Excel + fix numbered bug count in QA summary ([61b61b7](https://github.com/michael27luna-jpg/report-qa/commit/61b61b7c91103c6580e45b25c9a6c0fabffe19de))
+* new features related to interface ([f757674](https://github.com/michael27luna-jpg/report-qa/commit/f75767461a3be4d9f8658d00df60ea998cf46d3f))
+
 ## [1.13.0](https://github.com/michael27luna-jpg/report-qa/compare/v1.11.0...v1.13.0) (2026-06-12)
 
 
