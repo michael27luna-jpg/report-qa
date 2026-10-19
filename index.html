@@ -613,7 +613,7 @@
       <p style="font-size:.82rem;color:var(--text);margin-bottom:16px;">
         Export your Excel Sheet as CSV and
         then upload below. Columns expected:
-        <code style="color:var(--accent); font-size:12px;">Name, ID / Task / Case Number,	QA Status,	QA Comment,	QA Completed by,	Date QA Completed,	QA Fix Comment,	Date, Type</code>
+        <code style="color:var(--accent); font-size:12px;">Name, ID / Task / Case Number,	QA Status,	QA Comment,	QA Completed by,	Date QA Completed,	QA Fix Comment,	Date, Type, Follow-up</code>
       </p>
       <label class="import-area" for="csv-file-input">
         <div class="import-icon">📂</div>
@@ -645,13 +645,14 @@
               <th>QA Fix Comment</th>
               <th>Date</th>
               <th>Type</th>
+              <th>Follow-up</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Opportunity</td><td>D/M | Issue | Label | Page title year wrong</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting Case</td></tr>
-            <tr><td>jesus.macedo@coxautoinc.com</td><td>D-47099</td><td>Passed</td><td>well done</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting HTML</td></tr>
-            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Opportunity</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td><td>Fixed</td><td>04/12/26</td><td>SEO Landing Page</td></tr>
-            <tr><td>nicole.gongora@coxautoinc.com</td><td>D-47999</td><td>Opportunity</td><td>D/M | Question | Content | Content isn't in the page</td><td>Cidar</td><td>04/13/26</td><td>Talked with client, fixed</td><td>04/12/26</td><td>OEM Landing Page</td></tr>
+            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Opportunity</td><td>D/M | Issue | Label | Page title year wrong</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting Case</td><td>1st Follow Up</td></tr>
+            <tr><td>jesus.macedo@coxautoinc.com</td><td>D-47099</td><td>Passed</td><td>well done</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting HTML</td><td>2nd Follow Up</td></tr>
+            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Opportunity</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td><td>Fixed</td><td>04/12/26</td><td>SEO Landing Page</td><td></td></tr>
+            <tr><td>nicole.gongora@coxautoinc.com</td><td>D-47999</td><td>Opportunity</td><td>D/M | Question | Content | Content isn't in the page</td><td>Cidar</td><td>04/13/26</td><td>Talked with client, fixed</td><td>04/12/26</td><td>OEM Landing Page</td><td>3rd Follow Up</td></tr>
           </tbody>
         </table>
       </div>
