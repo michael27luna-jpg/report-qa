@@ -2162,10 +2162,10 @@ let analyticsErrTeam           = 'general';
 
 const ERR_TEAMS = {
   general: { label: 'Team General',    members: null },
-  it:      { label: 'IT Team',         members: ['Nicole Gongora','Mikaela Cardenas','Jorge Loza','Dylan Jitton','Paulo Tintaya','Nestor Apaza','Sebastian Salazar','Jesus Macedo'] },
-  rangers: { label: 'Web Rangers',     members: ['Diego Delgadillo','Javier Callejas','Romel Pinto','Michael Luna','Kattya Torrez'] },
-  sin:     { label: 'Sin Nombre',      members: ['Diego Torrez','Gustavo Pillco','Richard Villalba','Ariel Vargas'] },
-  slim:    { label: 'The Slim Shadys', members: ['Luis Ajhuacho','Cidar Dealencar','Ignacio Lizarazu','Ambar Rojas'] },
+  it:      { label: 'Code Runners',    members: ['Victor Mollinedo','Nicole Gongora','Gustavo Maidana','Jorge Loza','Dylan Jitton','Paulo Tintaya','Luis Ajhuacho','Sebastian Salazar'] },
+  rangers: { label: 'Web Rangers',     members: ['Diego Delgadillo','Romel Pinto','Ambar Rojas','Michael Luna','Jesus Macedo','Edmundo Morales'] },
+  sin:     { label: 'The Bug Hunters', members: ['Fernanda Pinto','Diego Torrez','Gustavo Pillco','Richard Villalba','Alejandro Vila'] },
+  slim:    { label: 'The Slim Shadys', members: ['Miguel Atencio','Cidar Dealencar','Mariana Lino','Javier Callejas','Nestor Apaza'] },
 };
 
 function getErrTeamData() {
