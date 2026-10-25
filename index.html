@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QA Shadow — Week Dashboard</title>
+  <title>QA Shadow Dashboard</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -25,7 +25,7 @@
 
   <!-- ── TABS ── -->
   <div class="tabs">
-    <div class="tab active"  onclick="showPanel('report')">Weekly Report</div>
+    <div class="tab active"  onclick="showPanel('report')" id="report-tab-label">Weekly Report</div>
     <div class="tab"         onclick="showPanel('team')">Team Analysis</div>
     <div class="tab"         onclick="showPanel('analytics')">Analytics</div>
     <div class="tab"         onclick="showPanel('guidelines')">Guidelines</div>
@@ -509,7 +509,7 @@
               <li class="warn"><span class="guide-icon">⏳</span><div><strong>Pending</strong> → &gt; 20 = +3 pts · 10–20 = +2 pts · &lt; 10 = +1 pt</div></li>
             </ul>
             <ul class="guide-list" style="margin-top:8px;">
-              <li class="ok"><span class="guide-icon">✓</span><div><strong>CLEAN WEEK</strong> → 0 errors</div></li>
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>CLEAN WEEK / MONTH / PERIOD</strong> → 0 errors in the loaded data</div></li>
               <li class="ok"><span class="guide-icon">✓</span><div><strong>UNDER CONTROL</strong> → &lt; 4 pts</div></li>
               <li class="warn"><span class="guide-icon">⚠</span><div><strong>NEEDS ATTENTION</strong> → 4–6 pts</div></li>
               <li class="danger"><span class="guide-icon">🚨</span><div><strong>AT RISK</strong> → ≥ 7 pts</div></li>
@@ -548,7 +548,7 @@
   <!-- ════════════════════════ WEEKLY REPORT ════════════════════════ -->
   <div class="panel active" id="panel-report">
     <div style="margin-bottom:20px;">
-      <div class="card-title" style="margin-bottom:12px;">Weekly Summary</div>
+      <div class="card-title" style="margin-bottom:12px;" id="report-card-title">Weekly Summary</div>
       <div class="report-box-wrap">
         <div class="report-box" id="weekly-report"></div>
         <div style="display:flex;gap:8px;margin-top:12px;">

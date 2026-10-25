@@ -88,6 +88,26 @@ function getDays() {
   return days.sort((a, b) => parseMDY(a) - parseMDY(b));
 }
 
+// Detecta el periodo cargado (semana / mes / periodo) según el rango de fechas de QA
+function getPeriodInfo(days = getDays()) {
+  if (!days.length) return { unit: 'week', adj: 'Weekly', range: 'N/A', span: 0 };
+  const first = parseMDY(days[0]);
+  const last  = parseMDY(days[days.length - 1]);
+  const span  = Math.round((last - first) / 86400000) + 1;   // días calendario
+  const unit  = span <= 7 ? 'week' : span <= 31 ? 'month' : 'period';
+  const adj   = { week: 'Weekly', month: 'Monthly', period: 'Period' }[unit];
+  const range = days.length > 1 ? `${days[0]} – ${days[days.length - 1]}` : days[0];
+  return { unit, adj, range, span };
+}
+
+// Línea de cobertura para Queue & Control
+function getCoverageLabel(days, p) {
+  if (!days.length) return '';
+  if (p.unit === 'week') return days.length < 5 ? `${5 - days.length} day(s) pending — updates on re-upload` : 'Full week loaded';
+  const expected = getAllWorkingDays(days[0], days[days.length - 1]).length;
+  return `${days.length} of ${expected} working days with data`;
+}
+
 function getCompletedDates() {
   const dates = [...new Set(DATA.map(x => x.completed_date).filter(Boolean))];
   return dates.sort((a, b) => parseMDY(a) - parseMDY(b));
@@ -412,7 +432,7 @@ function renderOverview() {
     {
       label:'Team Members',
       val: owners,
-      sub: 'reviewed this week',
+      sub: `reviewed this ${getPeriodInfo().unit}`,
       color: 'var(--accent2)'
     },
     {
@@ -1786,10 +1806,17 @@ function renderReport() {
   const d     = DATA;
   const total = d.length;
   const DAYS  = getDays();
+  const PERIOD = getPeriodInfo(DAYS);
+
+  // Etiquetas del tab y de la card según el periodo cargado
+  const tabEl   = document.getElementById('report-tab-label');
+  const titleEl = document.getElementById('report-card-title');
+  if (tabEl)   tabEl.textContent   = `${PERIOD.adj} Report`;
+  if (titleEl) titleEl.textContent = `${PERIOD.adj} Summary`;
 
   if (!total) {
      if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent = 'Upload a CSV to generate the daily report.';
-    document.getElementById('weekly-report').textContent = 'Upload a CSV to generate the weekly summary.';
+    document.getElementById('weekly-report').textContent = 'Upload a CSV to generate the summary.';
     return;
   }
 
@@ -1845,7 +1872,7 @@ function renderReport() {
   const finalStatus =
     finalScore >= 7 ? '🚨 AT RISK' :
     finalScore >= 4 ? '⚠ NEEDS ATTENTION' :
-    errors === 0    ? '✓ CLEAN WEEK' :
+    errors === 0    ? `✓ CLEAN ${PERIOD.unit.toUpperCase()}` :
                       'UNDER CONTROL';
 
 if (document.getElementById('daily-report')) document.getElementById('daily-report').textContent =
@@ -1917,8 +1944,8 @@ const L  = (txt, color='var(--text)') => `<div style="font-family:'Space Mono',m
   const INFO = (id)                      => `<span class="info-icon" id="${id}">ℹ</span>`;
 
   document.getElementById('weekly-report').innerHTML = [
-    L('▎ QA SHADOW — WEEKLY SUMMARY', 'var(--accent)'),
-    L(`▎ Week ${WEEK_RANGE || (DAYS.length ? DAYS[0]+' – '+DAYS[DAYS.length-1] : 'N/A')}  ·  ${DAYS.length} days loaded`, 'var(--text)'),
+    L(`▎ QA SHADOW — ${PERIOD.adj.toUpperCase()} SUMMARY`, 'var(--accent)'),
+    L(`▎ Period : ${PERIOD.range}  ·  ${DAYS.length} days loaded`, 'var(--text)'),
     SEP(),
 
     TTL(' COVERAGE'),
@@ -2016,7 +2043,7 @@ SEP(),
     TTL(' QUEUE &amp; CONTROL', INFO('queue-info-btn')),
     L(`  Status  : ${queueStatus} (${pendingCases} pending cases to fix)`, 'var(--text)'),
     L(`  WOMS    : Verify pending/rework queues`, 'var(--text)'),
-    L(`  ${DAYS.length < 5 ? `${5-DAYS.length} day(s) pending — updates on re-upload` : 'Full week loaded'}`, 'var(--text)'),
+    L(`  ${getCoverageLabel(DAYS, PERIOD)}`, 'var(--text)'),
     L(''),
 
     // TTL(' NEEDS ATTENTION'),
