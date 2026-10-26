@@ -92,6 +92,21 @@ header {
   font-family: 'Space Mono', monospace;
 }
 
+.back-home {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: .75rem;
+  letter-spacing: .05em;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .2s;
+}
+.back-home:hover,
+.back-home:focus-visible {
+  color: var(--accent);
+}
+
 .week-badge {
   background: var(--surface2);
   border: 1px solid var(--border);

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **QA Shadow Dashboard** — a fully static, zero-build web app (HTML + CSS + JS, no framework) used internally at Cox Automotive to visualize weekly QA review data. All logic runs client-side; there is no server, bundler, or test suite.
 
-Open `index.html` directly in a browser to run it. No build step required.
+Open `index.html` (Foxtrace cover) in a browser; the dashboard lives in `dashboard.html`. No build step required.
 
 ## Architecture
 
@@ -14,7 +14,7 @@ Three files contain the entire application:
 
 | File | Role |
 |------|------|
-| `index.html` | Shell, tab panels, and filter UI markup |
+| `dashboard.html` | Shell, tab panels, and filter UI markup |
 | `styles.css` | Dark-theme design system via CSS variables; all layout |
 | `app.js` | All data parsing, rendering, and interactivity |
 

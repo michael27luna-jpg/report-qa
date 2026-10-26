@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QA Shadow Dashboard</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-left">
+      <a class="back-home" href="index.html">← Home</a>
+      <h1>QA <span>Shadow</span> Dashboard</h1>
+    </div>
+    <div class="week-badge">2026</div>
+  </header>
+
+  <!-- ── TABS ── -->
+  <div class="tabs">
+    <div class="tab active"  onclick="showPanel('report')" id="report-tab-label">Weekly Report</div>
+    <div class="tab"         onclick="showPanel('team')">Team Analysis</div>
+    <div class="tab"         onclick="showPanel('analytics')">Analytics</div>
+    <div class="tab"         onclick="showPanel('guidelines')">Guidelines</div>
+    <div class="tab"         onclick="showPanel('cases')">Case Log</div>
+    <div class="tab"         onclick="showPanel('import')">+ Import Data</div>
+  </div>
+
+  <!-- ════════════════════════ CASE LOG ════════════════════════ -->
+  <div class="panel" id="panel-cases">
+
+    <!-- Search -->
+    <div style="margin-bottom:12px;">
+      <input
+        id="case-search"
+        type="text"
+        placeholder="🔍  Search by owner, task ID, summary or fix comment..."
+        oninput="filterCases()"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+               padding:10px 16px;border-radius:6px;font-family:'Space Mono',monospace;font-size:.8rem;
+               outline:none;transition:border-color .2s;"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border)'"
+      />
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <!-- Completed Date -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-datecompleted" onclick="toggleDropdown('datecompleted')">
+          📆 Completed Date <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-datecompleted">
+          <div class="date-picker-wrap">
+            <div class="date-picker-header">
+              <span class="date-picker-nav" onclick="datePickerNavDC(-1)">‹</span>
+              <span id="date-picker-month-label-dc"></span>
+              <span class="date-picker-nav" onclick="datePickerNavDC(1)">›</span>
+            </div>
+            <div class="date-picker-grid" id="date-picker-grid-dc"></div>
+            <div class="date-picker-actions">
+              <button class="date-picker-clear" onclick="clearDateFilterDC()">Clear</button>
+              <button class="date-picker-apply" onclick="applyDateFilterDC()">Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QA Date -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-date" onclick="toggleDropdown('date')">
+          📅 QA Date <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-date">
+          <div class="date-picker-wrap">
+            <div class="date-picker-header">
+              <span class="date-picker-nav" onclick="datePickerNav(-1)">‹</span>
+              <span id="date-picker-month-label"></span>
+              <span class="date-picker-nav" onclick="datePickerNav(1)">›</span>
+            </div>
+            <div class="date-picker-grid" id="date-picker-grid"></div>
+            <div class="date-picker-actions">
+              <button class="date-picker-clear" onclick="clearDateFilter()">Clear</button>
+              <button class="date-picker-apply" onclick="applyDateFilter()">Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-status" onclick="toggleDropdown('status')">
+          ● Status <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-status">
+          <div class="filter-option" onclick="toggleFilterOption('status','Passed')"     id="fopt-status-Passed">
+            <div class="filter-checkbox"></div><span class="filter-option-label">✓ Passed</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Opportunity')" id="fopt-status-Opportunity">
+            <div class="filter-checkbox"></div><span class="filter-option-label">● Opportunity</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Failed')"     id="fopt-status-Failed">
+            <div class="filter-checkbox"></div><span class="filter-option-label">▲ Failed</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Critical')"   id="fopt-status-Critical">
+            <div class="filter-checkbox"></div><span class="filter-option-label">✕ Critical</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Pending')"    id="fopt-status-Pending">
+            <div class="filter-checkbox"></div><span class="filter-option-label">⏳ Pending</span>
+          </div>
+          <div class="filter-option" onclick="toggleFilterOption('status','Responded')"  id="fopt-status-Responded">
+            <div class="filter-checkbox"></div><span class="filter-option-label">💬 Responded</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- QA By -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-qaby" onclick="toggleDropdown('qaby')">
+          👤 QA By <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-qaby">
+          <div class="filter-dropdown-search">
+            <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+            <input type="text" placeholder="Search..." oninput="searchDropdown('qaby', this.value)"/>
+          </div>
+          <div id="filter-options-qaby"></div>
+        </div>
+      </div>
+
+      <!-- Category -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-category" onclick="toggleDropdown('category')">
+          🏷 Category <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-category">
+          <div id="filter-options-category"></div>
+        </div>
+      </div>
+
+      <!-- Owner -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-owner" onclick="toggleDropdown('owner')">
+          👥 Owner <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-owner">
+          <div class="filter-dropdown-search">
+            <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+            <input type="text" placeholder="Search..." oninput="searchDropdown('owner', this.value)"/>
+          </div>
+          <div id="filter-options-owner"></div>
+        </div>
+      </div>
+
+      <!-- Type -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="filter-btn-type" onclick="toggleDropdown('type')">
+          📋 Type <span class="filter-btn-arrow">▾</span>
+        </div>
+        <div class="filter-dropdown" id="filter-dropdown-type">
+          <div id="filter-options-type"></div>
+        </div>
+      </div>
+
+      <!-- Clear All -->
+      <button class="filter-clear-all" id="filter-clear-all" onclick="clearAllFilters()">
+        × Clear All
+      </button>
+    </div>
+
+    <!-- Active filter pills -->
+    <div class="filter-pills" id="filter-pills"></div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <span>Bug Log — <span id="case-count-label">All Days</span></span>
+        <button class="btn btn-outline" onclick="exportCaseLogExcel()">⬇ Export Excel</button>
+      </div>
+      <div class="scroll-x">
+        <table class="data-table" id="case-table">
+          <thead>
+            <tr>
+              <th>Completed Date</th>
+              <th>QA Date</th>
+              <th>Owner</th>
+              <th>Task ID</th>
+              <th>Status</th>
+              <th>Type</th>
+              <th>QA By</th>
+              <th>Categories</th>
+              <th>Summary</th>
+              <th>Fix Comment</th>
+            </tr>
+          </thead>
+          <tbody id="case-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ TEAM ════════════════════════ -->
+  <div class="panel" id="panel-team">
+
+    <!-- Search -->
+    <!-- <div style="margin-bottom:12px;">
+      <input
+        id="team-search"
+        type="text"
+        placeholder="🔍 Search by team member name..."
+        oninput="renderTeam()"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+              padding:10px 16px;border-radius:6px;font-family:'Space Mono',monospace;font-size:.8rem;
+              outline:none;transition:border-color .2s;"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border)'"
+      />
+    </div> -->
+
+    <!-- Filter bar -->
+    <div class="filter-bar" style="margin-bottom:12px;">
+
+      <!-- Team Member -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="team-filter-btn-member" onclick="toggleTeamDropdown('member')">
+          👤 Team Member <span class="filter-btn-arrow">▾</span>
+        </div>
+
+        <div class="filter-dropdown" id="team-filter-dropdown-member">
+          <div class="filter-dropdown-search">
+            <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+            <input type="text" placeholder="Search..." oninput="renderTeamMemberOptions(this.value)"/>
+          </div>
+          <div id="team-filter-options-member"></div>
+        </div>
+      </div>
+
+      <!-- Trend Status -->
+      <div class="filter-wrap">
+        <div class="filter-btn" id="team-filter-btn-trend" onclick="toggleTeamDropdown('trend')">
+          ● Status <span class="filter-btn-arrow">▾</span>
+        </div>
+
+        <div class="filter-dropdown" id="team-filter-dropdown-trend">
+          <div class="filter-option" onclick="toggleTeamTrendFilter('risk')" id="team-fopt-trend-risk">
+            <div class="filter-checkbox"></div>
+            <span class="filter-option-label">⚠ Needs Attention</span>
+          </div>
+
+          <div class="filter-option" onclick="toggleTeamTrendFilter('watch')" id="team-fopt-trend-watch">
+            <div class="filter-checkbox"></div>
+            <span class="filter-option-label">◈ Watch</span>
+          </div>
+
+          <div class="filter-option" onclick="toggleTeamTrendFilter('ok')" id="team-fopt-trend-ok">
+            <div class="filter-checkbox"></div>
+            <span class="filter-option-label">✓ On Track</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clear -->
+      <button class="filter-clear-all" id="team-filter-clear-all" onclick="clearTeamFilters()">
+        × Clear All
+      </button>
+    </div>
+
+    <div class="filter-pills" id="team-filter-pills"></div>
+
+    <div style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);margin-bottom:12px;">
+      <span id="team-count-label">All team members</span>
+    </div>
+
+    <div class="owner-grid" id="owner-grid"></div>
+  </div>
+  <!-- ════════════════════════ ANALYTICS ════════════════════════ -->
+  <div class="panel" id="panel-analytics">
+
+    <!-- Sub-tabs -->
+    <div class="analytics-subtabs">
+      <div class="analytics-toggle">
+        <button class="asub active" data-sub="cases"  onclick="setAnalyticsSubTab('cases')">Cases vs Period</button>
+        <button class="asub"        data-sub="errors" onclick="setAnalyticsSubTab('errors')">Error Rate vs Period</button>
+      </div>
+    </div>
+
+    <!-- ── Sub-tab: Cases vs Period ── -->
+    <div id="analytics-sub-cases">
+
+      <!-- Team Volume -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:0;">Team Volume Over Time<span id="analytics-vol-range" style="font-size:.68rem;font-weight:400;color:var(--muted);margin-left:14px;font-family:'Space Mono',monospace;letter-spacing:0;text-transform:none;vertical-align:middle;"></span></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="analytics-toggle">
+              <button class="atype active" data-type="bar"  onclick="setVolChartType('bar')">▬ Bar</button>
+              <button class="atype"        data-type="line" onclick="setVolChartType('line')">∿ Line</button>
+            </div>
+            <div class="analytics-toggle">
+              <button class="atoggle active" data-gran="day"   onclick="setVolGranularity('day')">Day</button>
+              <button class="atoggle"        data-gran="week"  onclick="setVolGranularity('week')">Week</button>
+              <button class="atoggle"        data-gran="month" onclick="setVolGranularity('month')">Month</button>
+            </div>
+          </div>
+        </div>
+        <div id="analytics-team-stats" style="margin-bottom:16px;"></div>
+        <div style="font-size:.72rem;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);margin-bottom:10px;">QA Cases Reviewed Over Time</div>
+        <div id="analytics-vol-chart"></div>
+        <div style="border-top:1px solid var(--border);margin:20px 0;"></div>
+        <div id="analytics-completed-chart"></div>
+      </div>
+
+      <!-- Member Analysis -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">Member Analysis</div>
+        <div style="margin-bottom:20px;">
+          <div class="filter-wrap" id="analytics-person-wrap">
+            <div class="filter-btn" id="analytics-person-btn" onclick="toggleAnalyticsPersonDropdown()">
+              👤 Person <span class="filter-btn-arrow">▾</span>
+            </div>
+            <div class="filter-dropdown" id="analytics-person-dropdown">
+              <div class="filter-dropdown-search">
+                <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+                <input type="text" placeholder="Search..." oninput="searchAnalyticsPerson(this.value)"/>
+              </div>
+              <div id="analytics-person-options"></div>
+            </div>
+          </div>
+        </div>
+        <div id="analytics-member-stats" style="margin-bottom:24px;"></div>
+        <div id="analytics-cases-member-error"></div>
+        <div style="border-top:1px solid var(--border);margin:24px 0;"></div>
+        <div id="analytics-member-reviewer"></div>
+      </div>
+
+    </div><!-- /#analytics-sub-cases -->
+
+    <!-- ── Sub-tab: Error Rate vs Period ── -->
+    <div id="analytics-sub-errors" style="display:none;">
+
+      <!-- Team Error Rate -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div class="card-title" style="margin-bottom:0;">Team Error Rate Over Time<span id="analytics-err-range" style="font-size:.68rem;font-weight:400;color:var(--muted);margin-left:14px;font-family:'Space Mono',monospace;letter-spacing:0;text-transform:none;vertical-align:middle;"></span></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="analytics-toggle">
+              <button class="atype-err active" data-type="bar"  onclick="setErrChartType('bar')">▬ Bar</button>
+              <button class="atype-err"        data-type="line" onclick="setErrChartType('line')">∿ Line</button>
+            </div>
+            <div class="analytics-toggle">
+              <button class="atoggle-err active" data-gran="day"   onclick="setErrGranularity('day')">Day</button>
+              <button class="atoggle-err"        data-gran="week"  onclick="setErrGranularity('week')">Week</button>
+              <button class="atoggle-err"        data-gran="month" onclick="setErrGranularity('month')">Month</button>
+            </div>
+          </div>
+        </div>
+        <div id="analytics-err-team-stats" style="margin-bottom:12px;"></div>
+        <div id="analytics-err-team-filter" style="margin-bottom:16px;"></div>
+        <div id="analytics-err-team-chart"></div>
+      </div>
+
+      <!-- Member Error Rate -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px;">Member Error Rate</div>
+        <div style="margin-bottom:20px;">
+          <div class="filter-wrap" id="analytics-err-person-wrap">
+            <div class="filter-btn" id="analytics-err-person-btn" onclick="toggleAnalyticsErrPersonDropdown()">
+              👤 Person <span class="filter-btn-arrow">▾</span>
+            </div>
+            <div class="filter-dropdown" id="analytics-err-person-dropdown">
+              <div class="filter-dropdown-search">
+                <span style="color:var(--muted);font-size:.8rem;">🔍</span>
+                <input type="text" placeholder="Search..." oninput="searchAnalyticsErrPerson(this.value)"/>
+              </div>
+              <div id="analytics-err-person-options"></div>
+            </div>
+          </div>
+        </div>
+        <div id="analytics-err-member-stats" style="margin-bottom:24px;"></div>
+        <div id="analytics-member-error"></div>
+      </div>
+
+    </div><!-- /#analytics-sub-errors -->
+
+  </div>
+
+  <!-- ════════════════════════ GUIDELINES ════════════════════════ -->
+  <div class="panel" id="panel-guidelines">
+    <div class="grid-2">
+
+      <!-- Left column -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Bug Classification</div>
+
+          <div class="guide-section">
+            <h3>🟢 Opportunity</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">🎨</span>Styling issues (spacing, layout, responsive)</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🔴 Failed</h3>
+            <ul class="guide-list">
+              <li class="warn"><span class="guide-icon">🖼</span>Title on images</li>
+              <li class="warn"><span class="guide-icon">🔗</span>Linking errors</li>
+              <li class="warn"><span class="guide-icon">⚓</span>Broken anchors (#)</li>
+              <li class="warn"><span class="guide-icon">📄</span>Double H1 tags</li>
+              <li class="warn"><span class="guide-icon">📦</span>Inventory config mismatch</li>
+              <li class="warn"><span class="guide-icon">🗺️</span>Don't enable sitemap XML/HTML</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🚨 Critical</h3>
+            <ul class="guide-list">
+              <li class="danger"><span class="guide-icon">❌</span>Missing content</li>
+              <li class="danger"><span class="guide-icon">📋</span>Instructions not followed (custom order, content, etc.)</li>
+            </ul>
+          </div>
+        </div>
+        <!-- ── Case Type Classification ── -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Case Type Classification</div>
+
+          <div class="guide-section">
+            <h3>🔷 LP (Landing Page)</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">🔍</span>SEO Landing Page</li>
+              <li class="ok"><span class="guide-icon">📰</span>Just Posting Landing Page</li>
+              <li class="ok"><span class="guide-icon">🏭</span>OEM Landing Page</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🔶 Posting</h3>
+            <ul class="guide-list">
+              <li class="warn"><span class="guide-icon">📌</span>Posting Case</li>
+              <li class="warn"><span class="guide-icon">💻</span>Posting HTML</li>
+            </ul>
+          </div>
+
+          <p style="font-size:.75rem;margin-top:8px;">
+            ℹ Blog cases are excluded from type classification.
+          </p>
+        </div>
+        <!-- <div class="card">
+          <div class="card-title">Error Type Classification</div>
+          <ul class="guide-list">
+            <li class="danger"><span class="guide-icon">😴</span><div><strong>Careless</strong> — Simple mistakes from lack of attention (empty space, wrong image)</div></li>
+            <li class="warn"><span class="guide-icon">📚</span><div><strong>Knowledge Gap</strong> — Missing understanding of config rules or anchoring</div></li>
+            <li class="ok"><span class="guide-icon">🎲</span><div><strong>One-time</strong> — Isolated, not repeated, context-specific</div></li>
+          </ul>
+        </div> -->
+                <div class="card">
+          <div class="card-title">Success Criteria</div>
+          <ul class="guide-list">
+            <li class="ok"><span class="guide-icon">✔</span>No pending work</li>
+            <li class="ok"><span class="guide-icon">✔</span>All cases reviewed</li>
+            <li class="ok"><span class="guide-icon">✔</span>Bugs followed up</li>
+            <li class="ok"><span class="guide-icon">✔</span>Queues under control</li>
+            <li class="ok"><span class="guide-icon">✔</span>Risks detected early</li>
+            <li class="ok"><span class="guide-icon">✔</span>Clear performance patterns</li>
+            <li class="ok"><span class="guide-icon">✔</span>Continuous team improvement</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Control Points (Daily)</div>
+          <ul class="guide-list">
+            <!--<li class="warn"><span class="guide-icon">🕔</span><div><strong>5:00–5:30 PM</strong> → Assign same-day cases. Team pauses QA intake.</div></li>
+            <li class="warn"><span class="guide-icon">🕙</span><div><strong>11:00–11:30 AM</strong> → Assign late cases from previous day.</div></li>-->
+            <li class="ok"><span class="guide-icon">📊</span><div><strong>Midday update</strong> → People reviewed, key issues, patterns, pending risks.</div></li>
+            <li class="ok"><span class="guide-icon">📝</span><div><strong>End-of-day report</strong> → Full summary including actions needed.</div></li>
+          </ul>
+        </div>
+
+<!-- ── Queue & Control · Final Status · Trend ── -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Queue &amp; Control · Final Status · Trend</div>
+
+          <div class="guide-section">
+            <h3>📥 Queue &amp; Control</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">ℹ</span><div><strong>Pending case</strong> → Status is not Passed and QA Fix Comment is empty</div></li>
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>&lt; 5 pending</strong> → Under Control</div></li>
+              <li class="warn"><span class="guide-icon">⚠</span><div><strong>5–10 pending</strong> → Watch</div></li>
+              <li class="danger"><span class="guide-icon">🚨</span><div><strong>&gt; 10 pending</strong> → At Risk</div></li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>🏁 Final Status (score)</h3>
+            <ul class="guide-list">
+              <li class="danger"><span class="guide-icon">✕</span><div><strong>Critical</strong> → &gt; 1% = +3 pts · &gt; 0% = +1 pt</div></li>
+              <li class="warn"><span class="guide-icon">▲</span><div><strong>Failed</strong> → &gt; 3% = +2 pts · &gt; 1.5% = +1 pt</div></li>
+              <li class="ok"><span class="guide-icon">●</span><div><strong>Opportunity</strong> → Informational, not scored</div></li>
+              <li class="warn"><span class="guide-icon">⏳</span><div><strong>Pending</strong> → &gt; 20 = +3 pts · 10–20 = +2 pts · &lt; 10 = +1 pt</div></li>
+            </ul>
+            <ul class="guide-list" style="margin-top:8px;">
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>CLEAN WEEK / MONTH / PERIOD</strong> → 0 errors in the loaded data</div></li>
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>UNDER CONTROL</strong> → &lt; 4 pts</div></li>
+              <li class="warn"><span class="guide-icon">⚠</span><div><strong>NEEDS ATTENTION</strong> → 4–6 pts</div></li>
+              <li class="danger"><span class="guide-icon">🚨</span><div><strong>AT RISK</strong> → ≥ 7 pts</div></li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>📈 Team Trend</h3>
+            <ul class="guide-list">
+              <li class="ok"><span class="guide-icon">ℹ</span><div><strong>Error rate</strong> → (Failed + Critical) ÷ total cases</div></li>
+              <li class="ok"><span class="guide-icon">✓</span><div><strong>≤ 5%</strong> → On Track</div></li>
+              <li class="warn"><span class="guide-icon">◈</span><div><strong>&gt; 5% – 10%</strong> → Watch</div></li>
+              <li class="danger"><span class="guide-icon">⚠</span><div><strong>&gt; 10%</strong> → Needs Attention</div></li>
+            </ul>
+          </div>
+        </div>        
+
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">Pending Work Checklist</div>
+          <ul class="guide-list">
+            <li class="ok"><span class="guide-icon">✔</span>No pending bugs from previous days</li>
+            <li class="ok"><span class="guide-icon">✔</span>No missed reworks</li>
+            <li class="ok"><span class="guide-icon">✔</span>WOMS queues checked</li>
+            <li class="ok"><span class="guide-icon">✔</span>Pending Reworks filter verified</li>
+            <li class="ok"><span class="guide-icon">✔</span>Not-completed posting cases filter verified</li>
+            <li class="ok"><span class="guide-icon">✔</span>Reply received / hidden statuses reviewed</li>
+          </ul>
+        </div>
+
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════ WEEKLY REPORT ════════════════════════ -->
+  <div class="panel active" id="panel-report">
+    <div style="margin-bottom:20px;">
+      <div class="card-title" style="margin-bottom:12px;" id="report-card-title">Weekly Summary</div>
+      <div class="report-box-wrap">
+        <div class="report-box" id="weekly-report"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="copy-btn" onclick="copyText('weekly-report')">Copy ↗</button>
+          <button class="copy-btn" onclick="printReport()" style="background:var(--accent);color:#000;border-color:var(--accent);">🖨 Print / Save PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Cases Reviewed per Day</div>
+      <div class="timeline" id="timeline"></div>
+      <div class="daily-scroll" style="margin-top:14px;" id="daily-bars"></div>
+      <div id="daily-bars-legend"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Status Distribution</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="160" height="160" viewBox="0 0 110 110" id="donut-status"></svg>
+          <div class="donut-legend" id="donut-status-legend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cases by Type</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="160" height="160" viewBox="0 0 110 110" id="donut-casetype"></svg>
+          <div class="donut-legend" id="donut-casetype-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title">Bug Categories</div>
+      <div class="bar-chart" id="cat-bars"></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-title">Top Bug Contributors</div>
+        <div class="bar-chart" id="owner-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">QA Shadow Workload</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donut-type"></svg>
+          <div class="donut-legend" id="donut-type-legend"></div>
+        </div>
+        <div id="qa-donut-grid" style="margin-top:16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ IMPORT DATA ════════════════════════ -->
+  <div class="panel" id="panel-import">
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Import from SmartSheet (CSV Export)</div>
+      <p style="font-size:.82rem;color:var(--text);margin-bottom:16px;">
+        Export your Excel Sheet as CSV and
+        then upload below. Columns expected:
+        <code style="color:var(--accent); font-size:12px;">Name, ID / Task / Case Number,	QA Status,	QA Comment,	QA Completed by,	Date QA Completed,	QA Fix Comment,	Date, Type</code>
+      </p>
+      <label class="import-area" for="csv-file-input">
+        <div class="import-icon">📂</div>
+        <div class="import-label">
+          <strong>Click to upload CSV</strong><br>or drop your file here
+        </div>
+      </label>
+      <input type="file" id="csv-file-input" accept=".csv"/>
+    </div>
+    <!-- TODO: LINK CSV -->
+    <div class="card" style="margin-bottom:16px;">
+      <!-- <div class="card-title">Google Sheets CSV Link</div> -->
+      <div class="card-title"> Status</div>
+      <div id="import-status" style="font-size:.78rem;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Expected Excel Sheet Column Format</div>
+      <div class="scroll-x">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>ID / Task / Case Number</th>
+              <th>QA Status</th>
+              <th>QA Comment</th>
+              <th>QA Completed by</th>
+              <th>Date QA Completed</th>
+              <th>QA Fix Comment</th>
+              <th>Date</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>oswaldo.perez@coxautoinc.com</td><td>D-36081</td><td>Opportunity</td><td>D/M | Issue | Label | Page title year wrong</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting Case</td></tr>
+            <tr><td>jesus.macedo@coxautoinc.com</td><td>D-47099</td><td>Passed</td><td>well done</td><td>Michael</td><td>04/13/26</td><td></td><td>04/11/26</td><td>Posting HTML</td></tr>
+            <tr><td>michael.luna@coxautoinc.com</td><td>D-37214</td><td>Opportunity</td><td>D/M | Issue | Content | Double H1 tag</td><td>Cidar</td><td>04/13/26</td><td>Fixed</td><td>04/12/26</td><td>SEO Landing Page</td></tr>
+            <tr><td>nicole.gongora@coxautoinc.com</td><td>D-47999</td><td>Opportunity</td><td>D/M | Question | Content | Content isn't in the page</td><td>Cidar</td><td>04/13/26</td><td>Talked with client, fixed</td><td>04/12/26</td><td>OEM Landing Page</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="app-footer">
+    <div>Made by Cidar & Michael DDC Team</div>
+    <div id="app-version">Version ...</div>
+  </footer>
+</div><!-- /shell -->
+
+<!-- JavaScript -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="version.js"></script>
+<script src="app.js"></script>
+<div id="info-popup" class="info-popup">
+  <div class="info-popup-title" id="info-popup-title"></div>
+  <div id="info-popup-body"></div>
+</div>
+<!-- Analytics chart tooltip -->
+<div id="analytics-tooltip" style="display:none;"></div>
+</body>
+</html>
